@@ -1,0 +1,1032 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Interactive biology and earth science animation library for class use." />
+  <title>Class Animation Library</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --text: #172033;
+      --muted: #5d6b82;
+      --accent: #2563eb;
+      --accent-dark: #1746a2;
+      --accent-soft: #dbeafe;
+      --border: #dbe3ef;
+      --shadow: 0 18px 45px rgba(31, 41, 55, 0.12);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.16), transparent 34rem),
+        linear-gradient(180deg, #eef4ff 0%, var(--bg) 32rem);
+      line-height: 1.55;
+    }
+    a { color: inherit; }
+
+    .hero {
+      padding: 3rem 1.2rem 2rem;
+      text-align: center;
+    }
+    .hero-inner {
+      max-width: 1050px;
+      margin: 0 auto;
+    }
+    .credit {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      border: 1px solid rgba(37, 99, 235, .24);
+      background: rgba(255,255,255,.75);
+      color: var(--accent-dark);
+      border-radius: 999px;
+      padding: .45rem .8rem;
+      font-weight: 700;
+      font-size: .88rem;
+      box-shadow: 0 7px 20px rgba(37, 99, 235, .08);
+    }
+    h1 {
+      margin: 1rem auto .6rem;
+      font-size: clamp(2rem, 5vw, 4rem);
+      line-height: 1.02;
+      letter-spacing: -0.04em;
+      max-width: 900px;
+    }
+    .intro {
+      max-width: 820px;
+      margin: 0 auto;
+      color: var(--muted);
+      font-size: 1.08rem;
+    }
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: .7rem;
+      margin-top: 1.4rem;
+    }
+    .stat {
+      background: rgba(255,255,255,.8);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: .45rem .8rem;
+      font-weight: 700;
+      color: #22314d;
+    }
+
+    .toolbar-wrap {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(245, 247, 251, .88);
+      backdrop-filter: blur(12px);
+      border-block: 1px solid rgba(219, 227, 239, .85);
+    }
+    .toolbar {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: .85rem 1rem;
+      display: grid;
+      gap: .8rem;
+    }
+    .search-row {
+      display: flex;
+      gap: .7rem;
+      align-items: center;
+    }
+    .search {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: .85rem 1rem;
+      font-size: 1rem;
+      background: white;
+      box-shadow: 0 6px 20px rgba(31,41,55,.06);
+    }
+    .clear-btn {
+      border: 1px solid var(--border);
+      background: white;
+      border-radius: 999px;
+      padding: .75rem 1rem;
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .category-nav {
+      display: flex;
+      gap: .5rem;
+      overflow-x: auto;
+      padding-bottom: .1rem;
+    }
+    .filter-btn {
+      border: 1px solid var(--border);
+      background: white;
+      border-radius: 999px;
+      padding: .55rem .8rem;
+      cursor: pointer;
+      font-weight: 800;
+      color: #334155;
+      white-space: nowrap;
+    }
+    .filter-btn.active {
+      color: white;
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 2rem 1rem 4rem;
+    }
+    .results-line {
+      color: var(--muted);
+      margin: 0 0 1.25rem;
+      font-weight: 700;
+    }
+    .category-section {
+      margin: 2rem 0 2.4rem;
+      scroll-margin-top: 8rem;
+    }
+    .category-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: .55rem;
+      margin-bottom: 1rem;
+    }
+    h2 {
+      margin: 0;
+      font-size: clamp(1.35rem, 2.5vw, 2rem);
+      letter-spacing: -0.02em;
+    }
+    .category-count {
+      color: var(--muted);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      box-shadow: 0 10px 28px rgba(31,41,55,.08);
+      display: flex;
+      flex-direction: column;
+      min-height: 245px;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .card-top {
+      display: flex;
+      gap: .8rem;
+      align-items: flex-start;
+    }
+    .icon {
+      width: 2.6rem;
+      height: 2.6rem;
+      flex: 0 0 2.6rem;
+      border-radius: .9rem;
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 1.05rem;
+    }
+    h3 {
+      margin: 0;
+      font-size: 1.08rem;
+      line-height: 1.22;
+      letter-spacing: -0.01em;
+    }
+    .category-pill {
+      display: inline-block;
+      margin-top: .45rem;
+      color: var(--accent-dark);
+      background: var(--accent-soft);
+      border-radius: 999px;
+      padding: .18rem .55rem;
+      font-weight: 800;
+      font-size: .75rem;
+    }
+    .desc {
+      color: var(--muted);
+      margin: .9rem 0;
+      flex: 1;
+    }
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .35rem;
+      margin-bottom: 1rem;
+    }
+    .tag {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: .16rem .5rem;
+      font-size: .74rem;
+      color: #46556d;
+      background: #f8fafc;
+    }
+    .open-btn {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      gap: .35rem;
+      text-decoration: none;
+      border-radius: 999px;
+      background: var(--accent);
+      color: white;
+      padding: .7rem .9rem;
+      font-weight: 900;
+      box-shadow: 0 8px 20px rgba(37,99,235,.22);
+    }
+    .open-btn:hover { background: var(--accent-dark); }
+    .empty {
+      background: white;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      color: var(--muted);
+      text-align: center;
+    }
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 1.5rem 1rem 2.5rem;
+      text-align: center;
+      color: var(--muted);
+      background: rgba(255,255,255,.45);
+    }
+    .small-code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: .9em;
+      background: rgba(15, 23, 42, .06);
+      padding: .1rem .35rem;
+      border-radius: .35rem;
+    }
+
+    @media (max-width: 640px) {
+      .hero { padding-top: 2rem; }
+      .search-row { flex-direction: column; align-items: stretch; }
+      .clear-btn { width: 100%; }
+      .category-heading { align-items: flex-start; flex-direction: column; gap: .2rem; }
+      .card { min-height: auto; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="credit">Animation Prompted by Jerred Seveyka for his biology class.</div>
+      <h1>Interactive Class Animation Library</h1>
+      <p class="intro">A GitHub Pages landing page for class animations. Use the search box or category buttons to find the right interactive model, quiz, or physiology walkthrough.</p>
+      <div class="stats" aria-label="library summary">
+        <span class="stat"><span id="totalCount">39</span> animations</span>
+        <span class="stat">11 categories</span>
+        <span class="stat">No external dependencies</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="toolbar-wrap">
+    <nav class="toolbar" aria-label="Animation library controls">
+      <div class="search-row">
+        <input id="searchInput" class="search" type="search" placeholder="Search animations, topics, tags, or categories…" aria-label="Search animations" />
+        <button id="clearButton" class="clear-btn" type="button">Clear</button>
+      </div>
+      <div id="categoryNav" class="category-nav" aria-label="Category filters"></div>
+    </nav>
+  </div>
+
+  <main>
+    <p id="resultsLine" class="results-line"></p>
+    <div id="library"></div>
+  </main>
+
+  <footer>
+    Upload this <span class="small-code">index.html</span> and the <span class="small-code">animations</span> folder to the root of a GitHub Pages repository.
+  </footer>
+
+  <script>
+    const animations = [
+  {
+    "title": "Cell Signaling Pathways",
+    "category": "Cell Biology & Signaling",
+    "description": "Compare ligand-gated channels, G-protein-linked receptors, steroid hormone pathways, agonists, and antagonists.",
+    "tags": [
+      "receptors",
+      "GPCR",
+      "ligand-gated channel",
+      "steroid receptor",
+      "agonist",
+      "antagonist"
+    ],
+    "file": "animations/cell-signaling-pathways/cell-signaling-pathways.html",
+    "originalPath": "Cell-signaling-pathways/cell-signaling-pathways.html"
+  },
+  {
+    "title": "Cell-to-Cell Communication Systems",
+    "category": "Cell Biology & Signaling",
+    "description": "Compare direct contact, autocrine, paracrine, endocrine, and synaptic communication.",
+    "tags": [
+      "cell communication",
+      "signaling",
+      "endocrine",
+      "paracrine",
+      "synapse"
+    ],
+    "file": "animations/cell-communication-types/cell-to-cell-communication-systems.html",
+    "originalPath": "Cell Communication Types/cell-to-cell-communication-systems.html"
+  },
+  {
+    "title": "Cube Scaling: Surface Area, Volume, and SA:V Ratio",
+    "category": "Cell Biology & Signaling",
+    "description": "Use cubes to show how surface area, volume, and surface-area-to-volume ratio change with size.",
+    "tags": [
+      "surface area",
+      "volume",
+      "scaling",
+      "cells",
+      "SA:V"
+    ],
+    "file": "animations/scaling-animation/cube-scaling-animation.html",
+    "originalPath": "Scaling Animation/cube-scaling-animation.html"
+  },
+  {
+    "title": "Endosymbiosis: From Bacteria to Organelles",
+    "category": "Genetics, Evolution & Molecular Biology",
+    "description": "Trace primary and secondary endosymbiosis and the origin of mitochondria and chloroplasts.",
+    "tags": [
+      "evolution",
+      "endosymbiosis",
+      "mitochondria",
+      "chloroplasts",
+      "eukaryotes"
+    ],
+    "file": "animations/endosymbiosis/endosymbiosis.html",
+    "originalPath": "Endosymbiosis/endosymbiosis.html"
+  },
+  {
+    "title": "Histone Modification and DNA Compression",
+    "category": "Genetics, Evolution & Molecular Biology",
+    "description": "Show how histone modifications influence DNA packing and gene accessibility.",
+    "tags": [
+      "histones",
+      "DNA",
+      "chromatin",
+      "gene regulation",
+      "epigenetics"
+    ],
+    "file": "animations/histone-modifications/histone-modification-dna-compression.html",
+    "originalPath": "Histone Modifications/histone-modification-dna-compression.html"
+  },
+  {
+    "title": "Graded Potentials on a Neuron Soma",
+    "category": "Neurobiology & Control",
+    "description": "Visualize depolarizing and hyperpolarizing graded potentials spreading across a neuron soma.",
+    "tags": [
+      "neuron",
+      "graded potential",
+      "EPSP",
+      "IPSP",
+      "membrane potential"
+    ],
+    "file": "animations/graded-potentials/graded-potentials-single-file.html",
+    "originalPath": "Graded Potentials/graded-potentials-single-file.html"
+  },
+  {
+    "title": "Temporal and Spatial Summation",
+    "category": "Neurobiology & Control",
+    "description": "Compare temporal and spatial summation of synaptic inputs and their effects at the axon hillock.",
+    "tags": [
+      "neuron",
+      "summation",
+      "EPSP",
+      "IPSP",
+      "axon hillock"
+    ],
+    "file": "animations/graded-potential-summation-final/neuronsummation.html",
+    "originalPath": "graded-potential-summation_final/NeuronSummation.html"
+  },
+  {
+    "title": "Baroreceptor and Chemoreceptor Reflexes",
+    "category": "Cardiovascular, Blood & Fluids",
+    "description": "Trace sensory inputs and autonomic outputs that regulate blood pressure, blood gases, heart rate, and vessels.",
+    "tags": [
+      "blood pressure",
+      "baroreceptors",
+      "chemoreceptors",
+      "autonomic",
+      "reflex"
+    ],
+    "file": "animations/baroreceptor-chemoreceptor-reflex/baroreceptor-chemoreceptor-reflexes.html",
+    "originalPath": "Baroreceptor_chemoreceptor_Reflex/baroreceptor_chemoreceptor_reflexes.html"
+  },
+  {
+    "title": "Blood Flow and Resistance",
+    "category": "Cardiovascular, Blood & Fluids",
+    "description": "Investigate how vessel radius, length, viscosity, and pressure differences affect resistance and flow.",
+    "tags": [
+      "blood flow",
+      "resistance",
+      "Poiseuille",
+      "vessels",
+      "physiology"
+    ],
+    "file": "animations/blood-flow-and-resistance/bloodflow.html",
+    "originalPath": "blood-flow-and-resistance/BloodFLow.html"
+  },
+  {
+    "title": "Local Control of Blood Flow in Systemic Capillaries",
+    "category": "Cardiovascular, Blood & Fluids",
+    "description": "Compare metabolic and myogenic regulation of local capillary blood flow.",
+    "tags": [
+      "blood flow",
+      "capillaries",
+      "metabolic control",
+      "myogenic control",
+      "vessels"
+    ],
+    "file": "animations/local-blood-flow-control-final/local-blood-flow-control.html",
+    "originalPath": "local-blood-flow-control_final/local-blood-flow-control.html"
+  },
+  {
+    "title": "Manual Blood Pressure Measurement",
+    "category": "Cardiovascular, Blood & Fluids",
+    "description": "Step through cuff inflation, artery compression, Korotkoff sounds, systolic pressure, and diastolic pressure.",
+    "tags": [
+      "blood pressure",
+      "cuff",
+      "Korotkoff",
+      "systolic",
+      "diastolic"
+    ],
+    "file": "animations/blood-pressure-final/blood-pressure-measurement.html",
+    "originalPath": "blood-pressure-final/blood-pressure-measurement.html"
+  },
+  {
+    "title": "Pressures Across Capillary Walls",
+    "category": "Cardiovascular, Blood & Fluids",
+    "description": "Explore hydrostatic and osmotic pressures that drive filtration and reabsorption across capillary walls.",
+    "tags": [
+      "capillaries",
+      "filtration",
+      "reabsorption",
+      "osmotic pressure",
+      "hydrostatic pressure"
+    ],
+    "file": "animations/movement-across-capillaries-complete/movement-across-capillaries.html",
+    "originalPath": "movement across capillaries complete/movement-across-capillaries.html"
+  },
+  {
+    "title": "Carbon Dioxide Transport",
+    "category": "Respiratory & Gas Exchange",
+    "description": "Follow carbon dioxide transport during internal and external respiration, including bicarbonate and hemoglobin interactions.",
+    "tags": [
+      "CO2",
+      "bicarbonate",
+      "respiration",
+      "blood gases",
+      "hemoglobin"
+    ],
+    "file": "animations/co2-transport/carbon-dioxide-transport.html",
+    "originalPath": "CO2 transport/carbon-dioxide-transport.html"
+  },
+  {
+    "title": "Oxygen-Hemoglobin Dissociation Curve",
+    "category": "Respiratory & Gas Exchange",
+    "description": "Explore hemoglobin saturation, oxygen unloading, and curve shifts caused by pH and carbon dioxide.",
+    "tags": [
+      "oxygen",
+      "hemoglobin",
+      "Bohr effect",
+      "pH",
+      "CO2"
+    ],
+    "file": "animations/oxygen-hemoglobin-curve-final/oxygen-hemoglobin-curve.html",
+    "originalPath": "oxygen_hemoglobin_curve final/oxygen_hemoglobin_curve.html"
+  },
+  {
+    "title": "Partial Pressures and Gas Solubility",
+    "category": "Respiratory & Gas Exchange",
+    "description": "Connect partial pressures, solubility, and gas exchange across air-liquid boundaries.",
+    "tags": [
+      "partial pressure",
+      "gas solubility",
+      "diffusion",
+      "respiratory"
+    ],
+    "file": "animations/partial-pressures-gas-solubility/partial-pressures-gas-solubility.html",
+    "originalPath": "partial-pressures-gas-solubility/partial-pressures-gas-solubility.html"
+  },
+  {
+    "title": "Pleural Space Injury",
+    "category": "Respiratory & Gas Exchange",
+    "description": "Compare pneumothorax and hemothorax effects on pleural pressure, lung expansion, and thoracic mechanics.",
+    "tags": [
+      "pneumothorax",
+      "hemothorax",
+      "pleura",
+      "lungs",
+      "respiratory"
+    ],
+    "file": "animations/hemo-pneumo-thorax/thoracic-pleura-animation.html",
+    "originalPath": "Hemo_Pneumo_thorax/thoracic_pleura_animation.html"
+  },
+  {
+    "title": "Spirometry",
+    "category": "Respiratory & Gas Exchange",
+    "description": "Visualize lung volumes, airflow, and spirometry patterns including obstructive and restrictive changes.",
+    "tags": [
+      "spirometry",
+      "lungs",
+      "asthma",
+      "emphysema",
+      "respiratory"
+    ],
+    "file": "animations/spirometry/spirometry-animation.html",
+    "originalPath": "Spirometry/spirometry-animation.html"
+  },
+  {
+    "title": "CYP450 Enzymes",
+    "category": "Renal, pH & Biochemistry",
+    "description": "Show how CYP450 enzymes add oxygen to nonpolar molecules to make them more water soluble.",
+    "tags": [
+      "CYP450",
+      "enzymes",
+      "detoxification",
+      "metabolism",
+      "oxygenation"
+    ],
+    "file": "animations/cyp450/cyp450-animation.html",
+    "originalPath": "CYP450/cyp450-animation.html"
+  },
+  {
+    "title": "pH and Buffers",
+    "category": "Renal, pH & Biochemistry",
+    "description": "Compare unbuffered and buffered solutions and show how weak acid/conjugate base pairs reduce pH change.",
+    "tags": [
+      "pH",
+      "buffers",
+      "weak acid",
+      "conjugate base",
+      "chemistry"
+    ],
+    "file": "animations/ph-buffers-animation/ph-buffers-animation.html",
+    "originalPath": "ph_buffers_animation/ph-buffers-animation.html"
+  },
+  {
+    "title": "Renal Corpuscle Filtration and GFR",
+    "category": "Renal, pH & Biochemistry",
+    "description": "Model filtration pressures, net filtration pressure, and GFR at the renal corpuscle.",
+    "tags": [
+      "kidney",
+      "glomerulus",
+      "GFR",
+      "filtration",
+      "renal"
+    ],
+    "file": "animations/glomerulus-animation/glomerulus-animation.html",
+    "originalPath": "Glomerulus Animation/Glomerulus-animation.html"
+  },
+  {
+    "title": "Urease Breaks Down Urea",
+    "category": "Renal, pH & Biochemistry",
+    "description": "Show how urease catalyzes urea breakdown and changes the chemical environment.",
+    "tags": [
+      "urease",
+      "urea",
+      "enzyme",
+      "microbiology",
+      "biochemistry"
+    ],
+    "file": "animations/urease-animation-final/index.html",
+    "originalPath": "Urease Animation final/index.html"
+  },
+  {
+    "title": "Counter-Current Heat Exchange in the Testes",
+    "category": "Endocrine & Reproduction",
+    "description": "Model counter-current heat exchange that helps keep testes cooler than core body temperature.",
+    "tags": [
+      "testes",
+      "heat exchange",
+      "reproduction",
+      "counter-current"
+    ],
+    "file": "animations/testes-heat-exchange/counter-current-heat-exchange.html",
+    "originalPath": "Testes Heat Exchange/counter-current-heat-exchange.html"
+  },
+  {
+    "title": "Hormone Table Matching Quiz",
+    "category": "Endocrine & Reproduction",
+    "description": "Practice matching hormones with source glands, targets, effects, and regulatory patterns.",
+    "tags": [
+      "quiz",
+      "hormones",
+      "endocrine",
+      "glands",
+      "physiology"
+    ],
+    "file": "animations/hormone-quiz/hormone-quiz.html",
+    "originalPath": "Hormone Quiz/hormone_quiz.html"
+  },
+  {
+    "title": "Hypothalamus-Pituitary-Ovary Control of the Ovarian Cycle",
+    "category": "Endocrine & Reproduction",
+    "description": "Follow GnRH, FSH, LH, estrogen, progesterone, follicle development, ovulation, and feedback loops.",
+    "tags": [
+      "ovarian cycle",
+      "hormones",
+      "HPO axis",
+      "FSH",
+      "LH",
+      "estrogen",
+      "progesterone"
+    ],
+    "file": "animations/ovarian-cycle/hpo-ovarian-cycle-animation.html",
+    "originalPath": "Ovarian Cycle/hpo-ovarian-cycle-animation.html"
+  },
+  {
+    "title": "Negative Feedback Loop of Tanning in Skin",
+    "category": "Endocrine & Reproduction",
+    "description": "Show how UV exposure, melanin accumulation, and reduced UV penetration create a negative-feedback pattern.",
+    "tags": [
+      "skin",
+      "tanning",
+      "melanin",
+      "UV",
+      "negative feedback"
+    ],
+    "file": "animations/tanning/tanning-feedback-animation.html",
+    "originalPath": "Tanning/tanning-feedback-animation.html"
+  },
+  {
+    "title": "Spermatogenesis and the HPT Axis",
+    "category": "Endocrine & Reproduction",
+    "description": "Trace hypothalamus-pituitary-testis regulation of testosterone production and spermatogenesis.",
+    "tags": [
+      "spermatogenesis",
+      "HPT axis",
+      "testosterone",
+      "FSH",
+      "LH"
+    ],
+    "file": "animations/spermatogenesis/spermatogenesis-hpt-axis.html",
+    "originalPath": "Spermatogenesis/spermatogenesis-hpt-axis.html"
+  },
+  {
+    "title": "Antibody Functions",
+    "category": "Immunology",
+    "description": "Visualize major antibody actions including neutralization, opsonization, mast cell activation, complement, and NK-cell responses.",
+    "tags": [
+      "antibodies",
+      "immune system",
+      "neutralization",
+      "opsonization",
+      "complement"
+    ],
+    "file": "animations/antibody-functions/antibody-functions-animation.html",
+    "originalPath": "Antibody Functions/antibody-functions-animation.html"
+  },
+  {
+    "title": "Antibody Functions — Alternate Copy",
+    "category": "Immunology",
+    "description": "Alternate saved copy of the antibody-functions animation for immune effector mechanisms.",
+    "tags": [
+      "antibodies",
+      "immune system",
+      "alternate version"
+    ],
+    "file": "animations/antibody-functions-animation/antibody-functions-animation.html",
+    "originalPath": "antibody-functions-animation/antibody-functions-animation.html"
+  },
+  {
+    "title": "Immune Receptor Diversity",
+    "category": "Immunology",
+    "description": "Animate how developing lymphocytes generate diverse antigen receptor patterns.",
+    "tags": [
+      "immune system",
+      "B cells",
+      "recombination",
+      "antibodies",
+      "receptor diversity"
+    ],
+    "file": "animations/immune-receptor-diversity/immune-receptor-diversity.html",
+    "originalPath": "Immune_receptor_Diversity/immune-receptor-diversity.html"
+  },
+  {
+    "title": "MHC I and MHC II Antigen Presentation",
+    "category": "Immunology",
+    "description": "Compare antigen processing and presentation by MHC I and MHC II pathways.",
+    "tags": [
+      "MHC I",
+      "MHC II",
+      "antigen presentation",
+      "T cells",
+      "immune system"
+    ],
+    "file": "animations/mhc-animations/mhc-i-vs-mhc-ii-animation.html",
+    "originalPath": "MHC Animations/mhc-i-vs-mhc-ii-animation.html"
+  },
+  {
+    "title": "Autonomic Efferent Receptor Quiz",
+    "category": "Anatomy, Movement & Practice Quizzes",
+    "description": "Practice matching autonomic targets with receptor types, divisions, transmitters, and responses.",
+    "tags": [
+      "quiz",
+      "autonomic nervous system",
+      "receptors",
+      "parasympathetic",
+      "sympathetic"
+    ],
+    "file": "animations/autonomic-quiz/autonomic-quiz.html",
+    "originalPath": "Autonomic_quiz/autonomic-quiz.html"
+  },
+  {
+    "title": "Cranial Nerves Table Quiz",
+    "category": "Anatomy, Movement & Practice Quizzes",
+    "description": "Practice cranial nerve names, numbers, sensory/motor classification, parasympathetic fibers, and functions.",
+    "tags": [
+      "quiz",
+      "cranial nerves",
+      "anatomy",
+      "head and neck"
+    ],
+    "file": "animations/cranial-never-quiz/cranial-nerves-quiz.html",
+    "originalPath": "Cranial Never Quiz/cranial-nerves-quiz.html"
+  },
+  {
+    "title": "Muscles, Joints, and Torque",
+    "category": "Anatomy, Movement & Practice Quizzes",
+    "description": "Explore moment arms, force, and torque around joints using arm and muscle examples.",
+    "tags": [
+      "torque",
+      "joints",
+      "muscles",
+      "levers",
+      "biomechanics"
+    ],
+    "file": "animations/torque-around-a-joint-final/torque-around-a-joint.html",
+    "originalPath": "torque-around-a-joint-final/torque-around-a-joint.html"
+  },
+  {
+    "title": "ABC(E) Floral Pattern Genes and Flower Whorls",
+    "category": "Plant & Organismal Life Cycles",
+    "description": "Explore how floral identity gene patterns specify sepals, petals, stamens, carpels, and ovules.",
+    "tags": [
+      "plants",
+      "flowers",
+      "gene expression",
+      "development",
+      "ABC model"
+    ],
+    "file": "animations/abc-flower-patterns/abc-e-floral-pattern-genes.html",
+    "originalPath": "ABC Flower Patterns/abc-e-floral-pattern-genes.html"
+  },
+  {
+    "title": "Life Cycle of Ulva",
+    "category": "Plant & Organismal Life Cycles",
+    "description": "Animate alternation of generations in Ulva, including sporophytes, gametophytes, zoospores, and gametes.",
+    "tags": [
+      "Ulva",
+      "algae",
+      "alternation of generations",
+      "life cycle",
+      "plants"
+    ],
+    "file": "animations/ulva-life-cycle/ulva-life-cycle.html",
+    "originalPath": "Ulva Life Cycle/ulva-life-cycle.html"
+  },
+  {
+    "title": "Tapeworm Life Cycle",
+    "category": "Plant & Organismal Life Cycles",
+    "description": "Follow tapeworm stages through hosts, transmission routes, and adult parasite formation.",
+    "tags": [
+      "parasite",
+      "tapeworm",
+      "life cycle",
+      "hosts",
+      "transmission"
+    ],
+    "file": "animations/tapeworm-life-cycle/tapeworm-life-cycle.html",
+    "originalPath": "Tapeworm Life Cycle/tapeworm-life-cycle.html"
+  },
+  {
+    "title": "Adiabatic Lapse Rate",
+    "category": "Earth & Environmental Science",
+    "description": "Model how rising and sinking air changes temperature, clouds, precipitation, and rain shadows.",
+    "tags": [
+      "climate",
+      "weather",
+      "lapse rate",
+      "rain shadow",
+      "atmosphere"
+    ],
+    "file": "animations/adiabatic-lapse-rate/index.html",
+    "originalPath": "adiabatic-lapse-rate/index.html"
+  },
+  {
+    "title": "Coriolis Effect and Global Surface Winds",
+    "category": "Earth & Environmental Science",
+    "description": "Explore Earth rotation, deflection, and global wind patterns.",
+    "tags": [
+      "Coriolis",
+      "global winds",
+      "Earth science",
+      "atmosphere",
+      "climate"
+    ],
+    "file": "animations/coriolis-effect/coriolis-effect-global-winds.html",
+    "originalPath": "Coriolis Effect/coriolis-effect-global-winds.html"
+  },
+  {
+    "title": "How Tides Work",
+    "category": "Earth & Environmental Science",
+    "description": "Visualize how lunar and solar gravity produce tidal bulges and changing tide patterns.",
+    "tags": [
+      "tides",
+      "moon",
+      "sun",
+      "gravity",
+      "Earth science"
+    ],
+    "file": "animations/tides/tides-animation.html",
+    "originalPath": "Tides/tides-animation.html"
+  }
+];
+
+    const categoryOrder = ["Cell Biology & Signaling", "Genetics, Evolution & Molecular Biology", "Neurobiology & Control", "Cardiovascular, Blood & Fluids", "Respiratory & Gas Exchange", "Renal, pH & Biochemistry", "Endocrine & Reproduction", "Immunology", "Anatomy, Movement & Practice Quizzes", "Plant & Organismal Life Cycles", "Earth & Environmental Science", "Other Biology Animations"];
+    const library = document.getElementById('library');
+    const searchInput = document.getElementById('searchInput');
+    const categoryNav = document.getElementById('categoryNav');
+    const clearButton = document.getElementById('clearButton');
+    const resultsLine = document.getElementById('resultsLine');
+    let activeCategory = 'All';
+
+    function normalize(value) {
+      return String(value || '').toLowerCase();
+    }
+
+    function getCategories() {
+      const found = Array.from(new Set(animations.map(item => item.category)));
+      return found.sort((a, b) => {
+        const ai = categoryOrder.indexOf(a);
+        const bi = categoryOrder.indexOf(b);
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi) || a.localeCompare(b);
+      });
+    }
+
+    function categoryInitial(category) {
+      return category.split(/\s+/).filter(Boolean).slice(0, 2).map(word => word[0]).join('').toUpperCase();
+    }
+
+    function renderCategoryButtons() {
+      const categories = getCategories();
+      categoryNav.innerHTML = '';
+      ['All', ...categories].forEach(category => {
+        const button = document.createElement('button');
+        button.className = 'filter-btn' + (category === activeCategory ? ' active' : '');
+        button.type = 'button';
+        button.textContent = category === 'All' ? `All (${animations.length})` : `${category} (${animations.filter(a => a.category === category).length})`;
+        button.addEventListener('click', () => {
+          activeCategory = category;
+          renderCategoryButtons();
+          renderLibrary();
+        });
+        categoryNav.appendChild(button);
+      });
+    }
+
+    function matchesSearch(item, query) {
+      if (!query) return true;
+      const haystack = normalize([
+        item.title,
+        item.category,
+        item.description,
+        item.originalPath,
+        ...(item.tags || [])
+      ].join(' '));
+      return haystack.includes(query);
+    }
+
+    function buildCard(item) {
+      const article = document.createElement('article');
+      article.className = 'card';
+
+      const top = document.createElement('div');
+      top.className = 'card-top';
+
+      const icon = document.createElement('div');
+      icon.className = 'icon';
+      icon.textContent = categoryInitial(item.category);
+
+      const titleWrap = document.createElement('div');
+      const title = document.createElement('h3');
+      title.textContent = item.title;
+      const pill = document.createElement('span');
+      pill.className = 'category-pill';
+      pill.textContent = item.category;
+      titleWrap.append(title, pill);
+      top.append(icon, titleWrap);
+
+      const desc = document.createElement('p');
+      desc.className = 'desc';
+      desc.textContent = item.description;
+
+      const tags = document.createElement('div');
+      tags.className = 'tags';
+      (item.tags || []).slice(0, 5).forEach(tagText => {
+        const tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.textContent = tagText;
+        tags.appendChild(tag);
+      });
+
+      const link = document.createElement('a');
+      link.className = 'open-btn';
+      link.href = item.file;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.textContent = 'Open animation ↗';
+
+      article.append(top, desc, tags, link);
+      return article;
+    }
+
+    function renderLibrary() {
+      const query = normalize(searchInput.value.trim());
+      const filtered = animations.filter(item =>
+        (activeCategory === 'All' || item.category === activeCategory) && matchesSearch(item, query)
+      );
+      resultsLine.textContent = `${filtered.length} of ${animations.length} animations shown` + (activeCategory !== 'All' ? ` in ${activeCategory}` : '');
+      library.innerHTML = '';
+
+      if (!filtered.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = 'No animations match that search. Try a broader term or clear the filter.';
+        library.appendChild(empty);
+        return;
+      }
+
+      const groups = getCategories()
+        .map(category => [category, filtered.filter(item => item.category === category)])
+        .filter(([, items]) => items.length);
+
+      groups.forEach(([category, items]) => {
+        const section = document.createElement('section');
+        section.className = 'category-section';
+        section.id = category.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+        const heading = document.createElement('div');
+        heading.className = 'category-heading';
+        const h2 = document.createElement('h2');
+        h2.textContent = category;
+        const count = document.createElement('span');
+        count.className = 'category-count';
+        count.textContent = `${items.length} animation${items.length === 1 ? '' : 's'}`;
+        heading.append(h2, count);
+
+        const grid = document.createElement('div');
+        grid.className = 'grid';
+        items.forEach(item => grid.appendChild(buildCard(item)));
+
+        section.append(heading, grid);
+        library.appendChild(section);
+      });
+    }
+
+    searchInput.addEventListener('input', renderLibrary);
+    clearButton.addEventListener('click', () => {
+      searchInput.value = '';
+      activeCategory = 'All';
+      renderCategoryButtons();
+      renderLibrary();
+      searchInput.focus();
+    });
+
+    renderCategoryButtons();
+    renderLibrary();
+  </script>
+</body>
+</html>
