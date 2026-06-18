@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hormone Table Matching Quiz</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --surface: #ffffff;
+      --ink: #172033;
+      --muted: #5e6a7d;
+      --line: #cfd6e3;
+      --header: #22324d;
+      --header-ink: #ffffff;
+      --hormone: #eef4ff;
+      --hormone-border: #9bb7eb;
+      --correct-bg: #e8f7ee;
+      --correct-border: #288a46;
+      --wrong-bg: #fff0f0;
+      --wrong-border: #c83d3d;
+      --warn-bg: #fff7dd;
+      --warn-border: #c58a17;
+      --button: #2456a6;
+      --button-hover: #1f4a90;
+      --button-secondary: #f4f6fa;
+      --button-secondary-hover: #e8ecf4;
+      --shadow: 0 18px 48px rgba(18, 31, 56, 0.12);
+      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background:
+        linear-gradient(135deg, rgba(36, 86, 166, 0.08), transparent 34%),
+        linear-gradient(225deg, rgba(45, 146, 121, 0.10), transparent 36%),
+        var(--bg);
+      color: var(--ink);
+      font-size: 17px;
+      line-height: 1.45;
+    }
+
+    .page {
+      width: min(1540px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 20px 0 36px;
+    }
+
+    .attribution {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 0.98rem;
+      font-weight: 600;
+    }
+
+    header {
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(1.8rem, 3vw, 3rem);
+      line-height: 1.06;
+      letter-spacing: 0;
+    }
+
+    .instructions {
+      max-width: 980px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin: 18px 0 12px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 8px 24px rgba(18, 31, 56, 0.08);
+      backdrop-filter: blur(10px);
+    }
+
+    .toolbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .score {
+      min-width: max-content;
+      color: var(--ink);
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    button {
+      min-height: 42px;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      padding: 9px 14px;
+      background: var(--button);
+      color: #ffffff;
+      font: inherit;
+      font-size: 0.98rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+    }
+
+    button:hover {
+      background: var(--button-hover);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button.secondary {
+      border-color: var(--line);
+      background: var(--button-secondary);
+      color: var(--ink);
+    }
+
+    button.secondary:hover {
+      background: var(--button-secondary-hover);
+    }
+
+    button.reveal {
+      border-color: #7458b3;
+      background: #f2edff;
+      color: #45306f;
+    }
+
+    button.reveal:hover {
+      background: #e8ddff;
+    }
+
+    button[hidden],
+    .answer-summary[hidden] {
+      display: none;
+    }
+
+    .table-shell {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .quiz-table {
+      width: 100%;
+      min-width: 1480px;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    caption {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    .quiz-table thead {
+      display: table-header-group;
+    }
+
+    .quiz-table thead tr {
+      position: static;
+    }
+
+    .quiz-table thead th {
+      position: static;
+      z-index: auto;
+      border-bottom: 1px solid #17233b;
+      background: var(--header);
+      color: var(--header-ink);
+      text-align: left;
+      font-size: 0.93rem;
+      line-height: 1.2;
+    }
+
+    .quiz-table th,
+    .quiz-table td {
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 10px;
+      vertical-align: top;
+    }
+
+    .quiz-table th:last-child,
+    .quiz-table td:last-child {
+      border-right: 0;
+    }
+
+    tbody tr:nth-child(4n + 1) td,
+    tbody tr:nth-child(4n + 1) th.hormone-cell {
+      background-color: #fbfcff;
+    }
+
+    tbody tr:nth-child(4n + 3) td,
+    tbody tr:nth-child(4n + 3) th.hormone-cell {
+      background-color: #f3f7fd;
+    }
+
+    .hormone-header,
+    .hormone-cell {
+      position: sticky;
+      left: 0;
+      z-index: 4;
+      width: 260px;
+      min-width: 260px;
+      max-width: 260px;
+      border-right: 2px solid var(--hormone-border);
+      background: var(--hormone);
+    }
+
+    .hormone-header {
+      z-index: 6;
+      background: #182943;
+    }
+
+    .hormone-cell {
+      z-index: 2;
+      color: #132440;
+      font-size: 1.02rem;
+      font-weight: 750;
+      line-height: 1.25;
+    }
+
+    td.select-cell {
+      width: 155px;
+      min-width: 155px;
+    }
+
+    td.select-cell.wide {
+      width: 220px;
+      min-width: 220px;
+    }
+
+    select {
+      width: 100%;
+      min-height: 44px;
+      border: 2px solid #bac5d8;
+      border-radius: 7px;
+      padding: 8px 34px 8px 10px;
+      background-color: #ffffff;
+      color: var(--ink);
+      font: inherit;
+      font-size: 0.96rem;
+      line-height: 1.25;
+    }
+
+    select:focus {
+      outline: 3px solid rgba(36, 86, 166, 0.25);
+      outline-offset: 1px;
+      border-color: var(--button);
+    }
+
+    .cell-correct select {
+      border-color: var(--correct-border);
+      background-color: var(--correct-bg);
+    }
+
+    .cell-wrong select {
+      border-color: var(--wrong-border);
+      background-color: var(--wrong-bg);
+    }
+
+    .cell-warning select {
+      border-color: var(--warn-border);
+      background-color: var(--warn-bg);
+    }
+
+    .actions-cell {
+      width: 210px;
+      min-width: 210px;
+    }
+
+    .row-actions {
+      display: grid;
+      gap: 8px;
+    }
+
+    .row-message {
+      min-height: 26px;
+      margin: 2px 0 0;
+      font-size: 0.94rem;
+      font-weight: 800;
+    }
+
+    .row-message.correct {
+      color: var(--correct-border);
+    }
+
+    .row-message.wrong {
+      color: var(--wrong-border);
+    }
+
+    .row-message.warning {
+      color: #765102;
+    }
+
+    .summary-row td {
+      padding: 0;
+      border-bottom: 1px solid var(--line);
+      background: #faf9ff;
+    }
+
+    .answer-summary {
+      padding: 12px 16px;
+      border-left: 5px solid #7458b3;
+      color: #211b34;
+      font-size: 0.94rem;
+    }
+
+    .answer-summary strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 1rem;
+    }
+
+    .answer-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 8px 14px;
+    }
+
+    .answer-item {
+      padding: 8px 10px;
+      border: 1px solid #ddd5f7;
+      border-radius: 7px;
+      background: #ffffff;
+    }
+
+    .answer-item b {
+      display: block;
+      margin-bottom: 3px;
+      color: #4a3678;
+    }
+
+    .answer-item span {
+      white-space: pre-line;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        font-size: 16px;
+      }
+
+      .page {
+        width: calc(100% - 20px);
+        padding-top: 12px;
+      }
+
+      .toolbar {
+        align-items: stretch;
+        flex-direction: column;
+        top: 0;
+      }
+
+      .score {
+        min-width: 0;
+      }
+
+      .hormone-header,
+      .hormone-cell {
+        width: 220px;
+        min-width: 220px;
+        max-width: 220px;
+      }
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+        color: #000000;
+        font-size: 11pt;
+      }
+
+      .page {
+        width: auto;
+        padding: 0;
+      }
+
+      .toolbar,
+      .row-actions,
+      .summary-row,
+      .instructions {
+        display: none !important;
+      }
+
+      h1 {
+        font-size: 20pt;
+      }
+
+      .table-shell {
+        overflow: visible;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .quiz-table {
+        min-width: 0;
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .quiz-table thead th,
+      .hormone-header,
+      .hormone-cell {
+        position: static;
+        background: #eeeeee !important;
+        color: #000000;
+      }
+
+      .quiz-table th,
+      .quiz-table td {
+        border: 1px solid #777777;
+        padding: 6px;
+      }
+
+      td.select-cell {
+        width: auto;
+        min-width: 0;
+      }
+
+      select {
+        min-height: 32px;
+        border: 1px solid #777777;
+        color: transparent;
+        appearance: none;
+      }
+
+      select option {
+        color: #000000;
+      }
+
+      .actions-cell {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <p class="attribution">Animation Prompted by Jerred Seveyka for his biology class</p>
+
+    <header>
+      <h1>Hormone Table Matching Quiz</h1>
+      <p class="instructions">
+        Use the dropdowns to complete each hormone row, then submit one row at a time. You can check a row without completing the whole table.
+      </p>
+    </header>
+
+    <section class="toolbar" aria-label="Quiz controls">
+      <div class="toolbar-actions">
+        <button type="button" id="randomRow">Choose random row</button>
+        <button type="button" id="showAllRows" class="secondary">Show all rows</button>
+        <button type="button" id="resetAll" class="secondary">Reset all</button>
+        <button type="button" id="printBlank" class="secondary">Print blank quiz</button>
+      </div>
+      <div id="score" class="score" aria-live="polite">Score: 0 of 12 rows correct</div>
+    </section>
+
+    <div class="table-shell" role="region" aria-label="Hormone matching table" tabindex="0">
+      <table class="quiz-table">
+        <caption>Interactive hormone table matching quiz</caption>
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    const ANSWER_KEY = [
+      {
+        "Hormone": "Adrenocorticotropic hormone",
+        "Hormone type": "Lipophobic",
+        "Stimulus": "Releasing hormone from hypothalamus in response to low blood glucose or stress",
+        "Type of Control": "Hormonal",
+        "Site of Production": "Anterior Pituitary",
+        "Target": "Adrenal cortex",
+        "Response": "Release of glucocorticoids (cortisol)",
+        "Overall Effect": "Cortisol release, leading to mobilization of nutrients to respond to stress; also decreases inflammation"
+      },
+      {
+        "Hormone": "Catecholamines",
+        "Hormone type": "Lipophobic",
+        "Stimulus": "Stress",
+        "Type of Control": "Neural",
+        "Site of Production": "Adrenal Medulla",
+        "Target": "Heart; Blood Vessel; Bronchiole; Pupil; Arrector pili",
+        "Response": "Increased heart rate; Vasodilate blood vessels to skeletal muscle and vasoconstrict blood vessels to gut and skin; Dilate bronchioles; Dilate pupil; Goose bumps",
+        "Overall Effect": "Improves ability to respond to stress"
+      },
+      {
+        "Hormone": "Antidiuretic hormone (vasopressin)",
+        "Hormone type": "Lipophobic",
+        "Stimulus": "Increased blood osmolality",
+        "Type of Control": "Humoral",
+        "Site of Production": "Hypothalamus (stored in posterior pituitary)",
+        "Target": "Kidney tubules",
+        "Response": "Lower blood osmolality; decrease water loss to urine",
+        "Overall Effect": "Homeostasis of blood osmolality"
+      },
+      {
+        "Hormone": "Growth hormone",
+        "Hormone type": "Lipophobic",
+        "Stimulus": "Releasing hormone from hypothalamus",
+        "Type of Control": "Hormonal",
+        "Site of Production": "Anterior Pituitary",
+        "Target": "Most body cells",
+        "Response": "Increased protein synthesis leading to cell growth and/or division",
+        "Overall Effect": "Growth and maintenance of body"
+      },
+      {
+        "Hormone": "Mineralocorticoid (Aldosterone)",
+        "Hormone type": "Lipophilic",
+        "Stimulus": "High blood potassium levels and low blood sodium levels",
+        "Type of Control": "Humoral",
+        "Site of Production": "Adrenal Cortex",
+        "Target": "Kidney tubules",
+        "Response": "Lower blood potassium and increase blood sodium levels; leads to increased water retention",
+        "Overall Effect": "Homeostasis of blood ions and volume"
+      },
+      {
+        "Hormone": "Parathyroid hormone",
+        "Hormone type": "Lipophobic",
+        "Stimulus": "Low blood calcium",
+        "Type of Control": "Humoral",
+        "Site of Production": "Parathyroid glands",
+        "Target": "Bones; Kidneys; Small intestine",
+        "Response": "Bone reabsorption; Decreased loss of calcium to urine; Increased absorption of calcium from diet",
+        "Overall Effect": "Increase blood calcium"
+      },
+      {
+        "Hormone": "Insulin",
+        "Hormone type": "Lipophobic",
+        "Stimulus": "High blood glucose",
+        "Type of Control": "Humoral",
+        "Site of Production": "Beta cells of pancreatic islets",
+        "Target": "Liver; Adipose; Most body cells",
+        "Response": "Makes glycogen; Makes triglycerides; Take up glucose for cell respiration",
+        "Overall Effect": "Lower blood glucose, maintain glucose homeostasis"
+      },
+      {
+        "Hormone": "Glucagon",
+        "Hormone type": "Lipophobic",
+        "Stimulus": "Low blood glucose",
+        "Type of Control": "Humoral",
+        "Site of Production": "Alpha cells of pancreatic islets",
+        "Target": "Liver",
+        "Response": "Glycogen breakdown (glycogenolysis); Production of glucose (gluconeogenesis)",
+        "Overall Effect": "Raise blood glucose, maintain glucose homeostasis"
+      },
+      {
+        "Hormone": "Thyroid stimulating hormone",
+        "Hormone type": "Lipophobic",
+        "Stimulus": "Releasing hormone from hypothalamus in response to low body temperature",
+        "Type of Control": "Hormonal",
+        "Site of Production": "Anterior Pituitary",
+        "Target": "Thyroid follicular cells",
+        "Response": "Increased release of thyroid hormone",
+        "Overall Effect": "Control metabolism by increasing thyroid hormone"
+      },
+      {
+        "Hormone": "Oxytocin",
+        "Hormone type": "Lipophobic",
+        "Stimulus": "Sexual intercourse, child birth, and breast feeding",
+        "Type of Control": "Neural",
+        "Site of Production": "Hypothalamus (stored in posterior pituitary)",
+        "Target": "Brain; uterus; mammary glands",
+        "Response": "Feelings of affection; uterine contraction; milk let-down",
+        "Overall Effect": "Bonding, labor, and nursing"
+      },
+      {
+        "Hormone": "Glucocorticoid (cortisol)",
+        "Hormone type": "Lipophilic",
+        "Stimulus": "Adrenocorticotropic hormone from anterior pituitary",
+        "Type of Control": "Hormonal",
+        "Site of Production": "Adrenal Cortex",
+        "Target": "Adipose; Skeletal muscle; Liver; Immune system",
+        "Response": "Increases circulating fatty acids; Increases circulating amino acids; Increases circulating glucose; Decreases inflammation",
+        "Overall Effect": "Improves ability to respond to stress"
+      },
+      {
+        "Hormone": "Thyroid hormone",
+        "Hormone type": "Lipophobic",
+        "Stimulus": "Thyroid stimulating hormone",
+        "Type of Control": "Hormonal",
+        "Site of Production": "Follicular cells of the thyroid",
+        "Target": "Most body cells",
+        "Response": "Increased metabolic rate and heat production",
+        "Overall Effect": "Control metabolism"
+      }
+    ];
+
+    const COLUMNS = [
+      "Hormone",
+      "Hormone type",
+      "Stimulus",
+      "Type of Control",
+      "Site of Production",
+      "Target",
+      "Response",
+      "Overall Effect"
+    ];
+
+    const SELECT_COLUMNS = COLUMNS.filter(column => column !== "Hormone");
+    const WIDE_COLUMNS = new Set(["Stimulus", "Target", "Response", "Overall Effect"]);
+    const rowStates = new Map();
+
+    const fullRowOrder = ANSWER_KEY.map(row => row.Hormone);
+    let selectedRandomHormone = "";
+    let optionValuesByColumn = {};
+
+    const tableHead = document.querySelector("#tableHead");
+    const tableBody = document.querySelector("#tableBody");
+    const score = document.querySelector("#score");
+    const randomRowButton = document.querySelector("#randomRow");
+    const showAllRowsButton = document.querySelector("#showAllRows");
+    const resetAllButton = document.querySelector("#resetAll");
+    const printButton = document.querySelector("#printBlank");
+
+    function makeInitialState() {
+      const selections = {};
+      SELECT_COLUMNS.forEach(column => {
+        selections[column] = "";
+      });
+
+      return {
+        selections,
+        wrongAttempts: 0,
+        checked: false,
+        complete: false,
+        correct: false,
+        revealed: false,
+        message: ""
+      };
+    }
+
+    function initializeState() {
+      ANSWER_KEY.forEach(row => {
+        rowStates.set(row.Hormone, makeInitialState());
+      });
+    }
+
+    function getAnswerRow(hormoneName) {
+      return ANSWER_KEY.find(row => row.Hormone === hormoneName);
+    }
+
+    function getOptionsByColumn() {
+      return SELECT_COLUMNS.reduce((options, column) => {
+        options[column] = [...new Set(ANSWER_KEY.map(row => row[column]))]
+          .sort((a, b) => a.localeCompare(b));
+        return options;
+      }, {});
+    }
+
+    function renderHeader() {
+      const headerRow = document.createElement("tr");
+
+      COLUMNS.forEach(column => {
+        const th = document.createElement("th");
+        th.scope = "col";
+        th.textContent = column;
+        if (column === "Hormone") {
+          th.className = "hormone-header";
+        }
+        headerRow.appendChild(th);
+      });
+
+      const actionsHeader = document.createElement("th");
+      actionsHeader.scope = "col";
+      actionsHeader.className = "actions-cell";
+      actionsHeader.textContent = "Actions";
+      headerRow.appendChild(actionsHeader);
+
+      tableHead.replaceChildren(headerRow);
+    }
+
+    function renderTable() {
+      const fragment = document.createDocumentFragment();
+      const visibleRows = selectedRandomHormone ? [selectedRandomHormone] : fullRowOrder;
+
+      visibleRows.forEach(hormoneName => {
+        const answerRow = getAnswerRow(hormoneName);
+        const state = rowStates.get(hormoneName);
+        const row = document.createElement("tr");
+        row.dataset.hormone = hormoneName;
+
+        const hormoneCell = document.createElement("th");
+        hormoneCell.scope = "row";
+        hormoneCell.className = "hormone-cell";
+        hormoneCell.textContent = hormoneName;
+        row.appendChild(hormoneCell);
+
+        SELECT_COLUMNS.forEach(column => {
+          const cell = document.createElement("td");
+          cell.className = `select-cell${WIDE_COLUMNS.has(column) ? " wide" : ""}`;
+          cell.dataset.column = column;
+
+          const select = document.createElement("select");
+          select.dataset.hormone = hormoneName;
+          select.dataset.column = column;
+          select.setAttribute("aria-label", `${column} for ${hormoneName}`);
+
+          const placeholder = document.createElement("option");
+          placeholder.value = "";
+          placeholder.textContent = "Select...";
+          select.appendChild(placeholder);
+
+          optionValuesByColumn[column].forEach(value => {
+            const option = document.createElement("option");
+            option.value = value;
+            option.textContent = value;
+            select.appendChild(option);
+          });
+
+          select.value = state.selections[column];
+          select.addEventListener("change", handleSelectionChange);
+          cell.appendChild(select);
+
+          if (state.checked) {
+            applyCellStatus(cell, select.value, answerRow[column]);
+          }
+
+          row.appendChild(cell);
+        });
+
+        const actionsCell = document.createElement("td");
+        actionsCell.className = "actions-cell";
+        actionsCell.appendChild(createRowActions(hormoneName, state));
+        row.appendChild(actionsCell);
+        fragment.appendChild(row);
+
+        const summaryRow = document.createElement("tr");
+        summaryRow.className = "summary-row";
+        summaryRow.dataset.summaryFor = hormoneName;
+
+        const summaryCell = document.createElement("td");
+        summaryCell.colSpan = COLUMNS.length + 1;
+        summaryCell.appendChild(createAnswerSummary(answerRow, state));
+        summaryRow.appendChild(summaryCell);
+        fragment.appendChild(summaryRow);
+      });
+
+      tableBody.replaceChildren(fragment);
+      updateScore();
+    }
+
+    function createRowActions(hormoneName, state) {
+      const wrapper = document.createElement("div");
+      wrapper.className = "row-actions";
+
+      const submit = document.createElement("button");
+      submit.type = "button";
+      submit.textContent = "Submit row";
+      submit.setAttribute("aria-label", `Submit ${hormoneName} row`);
+      submit.addEventListener("click", () => checkRow(hormoneName));
+
+      const reset = document.createElement("button");
+      reset.type = "button";
+      reset.className = "secondary";
+      reset.textContent = "Reset row";
+      reset.setAttribute("aria-label", `Reset ${hormoneName} row`);
+      reset.addEventListener("click", () => resetRow(hormoneName));
+
+      const reveal = document.createElement("button");
+      reveal.type = "button";
+      reveal.className = "reveal";
+      reveal.textContent = "Show correct answer for this row";
+      reveal.setAttribute("aria-label", `Show correct answer for ${hormoneName}`);
+      reveal.hidden = state.wrongAttempts < 2 || state.correct;
+      reveal.addEventListener("click", () => showAnswer(hormoneName));
+
+      const message = document.createElement("div");
+      message.className = `row-message ${getMessageClass(state)}`;
+      message.id = `message-${slugify(hormoneName)}`;
+      message.setAttribute("aria-live", "polite");
+      message.textContent = state.message;
+
+      wrapper.append(submit, reset, reveal, message);
+      return wrapper;
+    }
+
+    function createAnswerSummary(answerRow, state) {
+      const summary = document.createElement("div");
+      summary.className = "answer-summary";
+      summary.hidden = !state.revealed;
+
+      const title = document.createElement("strong");
+      title.textContent = `Correct answers for ${answerRow.Hormone}`;
+      summary.appendChild(title);
+
+      const grid = document.createElement("div");
+      grid.className = "answer-grid";
+
+      SELECT_COLUMNS.forEach(column => {
+        const item = document.createElement("div");
+        item.className = "answer-item";
+
+        const label = document.createElement("b");
+        label.textContent = column;
+
+        const value = document.createElement("span");
+        value.textContent = formatSummaryText(answerRow[column]);
+
+        item.append(label, value);
+        grid.appendChild(item);
+      });
+
+      summary.appendChild(grid);
+      return summary;
+    }
+
+    function formatSummaryText(value) {
+      return value.replace(/;\s*/g, ";\n");
+    }
+
+    function getMessageClass(state) {
+      if (!state.message) return "";
+      if (!state.complete) return "warning";
+      return state.correct ? "correct" : "wrong";
+    }
+
+    function handleSelectionChange(event) {
+      const select = event.target;
+      const state = rowStates.get(select.dataset.hormone);
+      state.selections[select.dataset.column] = select.value;
+
+      state.checked = false;
+      state.complete = false;
+      state.correct = false;
+      state.revealed = false;
+      state.message = "";
+
+      const row = select.closest("tr");
+      row.querySelectorAll(".select-cell").forEach(cell => {
+        cell.classList.remove("cell-correct", "cell-wrong", "cell-warning");
+      });
+
+      const message = row.querySelector(".row-message");
+      message.className = "row-message";
+      message.textContent = "";
+
+      const reveal = row.querySelector(".reveal");
+      reveal.hidden = state.wrongAttempts < 2;
+
+      const summary = tableBody.querySelector(`tr[data-summary-for="${cssEscape(select.dataset.hormone)}"] .answer-summary`);
+      summary.hidden = true;
+      updateScore();
+    }
+
+    function checkRow(hormoneName) {
+      const answerRow = getAnswerRow(hormoneName);
+      const state = rowStates.get(hormoneName);
+      const missingColumns = SELECT_COLUMNS.filter(column => !state.selections[column]);
+
+      if (missingColumns.length > 0) {
+        state.checked = false;
+        state.complete = false;
+        state.correct = false;
+        state.message = "Complete all cells before checking.";
+        updateRowFeedback(hormoneName, answerRow, state, true);
+        updateScore();
+        return;
+      }
+
+      state.checked = true;
+      state.complete = true;
+      state.correct = SELECT_COLUMNS.every(column => state.selections[column] === answerRow[column]);
+
+      if (state.correct) {
+        state.message = "Correct!";
+        state.revealed = false;
+      } else {
+        state.wrongAttempts += 1;
+        state.message = "Some answers need revision.";
+      }
+
+      updateRowFeedback(hormoneName, answerRow, state, false);
+      updateScore();
+    }
+
+    function updateRowFeedback(hormoneName, answerRow, state, warningOnly) {
+      const row = tableBody.querySelector(`tr[data-hormone="${cssEscape(hormoneName)}"]`);
+      const cells = row.querySelectorAll(".select-cell");
+
+      cells.forEach(cell => {
+        const select = cell.querySelector("select");
+        const column = select.dataset.column;
+        cell.classList.remove("cell-correct", "cell-wrong", "cell-warning");
+
+        if (warningOnly) {
+          if (!select.value) {
+            cell.classList.add("cell-warning");
+          }
+          return;
+        }
+
+        applyCellStatus(cell, select.value, answerRow[column]);
+      });
+
+      const message = row.querySelector(".row-message");
+      message.className = `row-message ${getMessageClass(state)}`;
+      message.textContent = state.message;
+
+      const reveal = row.querySelector(".reveal");
+      reveal.hidden = state.wrongAttempts < 2 || state.correct;
+
+      const summary = tableBody.querySelector(`tr[data-summary-for="${cssEscape(hormoneName)}"] .answer-summary`);
+      summary.hidden = !state.revealed;
+    }
+
+    function applyCellStatus(cell, selectedValue, correctValue) {
+      cell.classList.remove("cell-correct", "cell-wrong", "cell-warning");
+
+      if (!selectedValue) {
+        cell.classList.add("cell-warning");
+      } else if (selectedValue === correctValue) {
+        cell.classList.add("cell-correct");
+      } else {
+        cell.classList.add("cell-wrong");
+      }
+    }
+
+    function resetRow(hormoneName) {
+      rowStates.set(hormoneName, makeInitialState());
+      renderTable();
+    }
+
+    function resetAllRows() {
+      initializeState();
+      renderTable();
+    }
+
+    function showAnswer(hormoneName) {
+      const state = rowStates.get(hormoneName);
+      state.revealed = true;
+      renderTable();
+    }
+
+    function chooseRandomRow() {
+      const randomIndex = Math.floor(Math.random() * ANSWER_KEY.length);
+      selectedRandomHormone = ANSWER_KEY[randomIndex].Hormone;
+      renderTable();
+    }
+
+    function showAllRows() {
+      selectedRandomHormone = "";
+      renderTable();
+    }
+
+    function updateScore() {
+      const correctCount = [...rowStates.values()].filter(state => state.correct).length;
+      score.textContent = `Score: ${correctCount} of ${ANSWER_KEY.length} rows correct`;
+    }
+
+    function printBlankQuiz() {
+      const savedStates = new Map();
+      const savedRandomHormone = selectedRandomHormone;
+      rowStates.forEach((state, hormoneName) => {
+        savedStates.set(hormoneName, {
+          ...state,
+          selections: { ...state.selections }
+        });
+        rowStates.set(hormoneName, makeInitialState());
+      });
+      selectedRandomHormone = "";
+
+      renderTable();
+      window.print();
+
+      setTimeout(() => {
+        savedStates.forEach((state, hormoneName) => {
+          rowStates.set(hormoneName, state);
+        });
+        selectedRandomHormone = savedRandomHormone;
+        renderTable();
+      }, 0);
+    }
+
+    function slugify(value) {
+      return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    }
+
+    function cssEscape(value) {
+      if (window.CSS && typeof window.CSS.escape === "function") {
+        return window.CSS.escape(value);
+      }
+
+      return value.replace(/["\\]/g, "\\$&");
+    }
+
+    function startQuiz() {
+      optionValuesByColumn = getOptionsByColumn();
+      initializeState();
+      renderHeader();
+      renderTable();
+    }
+
+    randomRowButton.addEventListener("click", chooseRandomRow);
+    showAllRowsButton.addEventListener("click", showAllRows);
+    resetAllButton.addEventListener("click", resetAllRows);
+    printButton.addEventListener("click", printBlankQuiz);
+
+    startQuiz();
+  </script>
+</body>
+</html>

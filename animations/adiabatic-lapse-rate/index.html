@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adiabatic Lapse Rate Animation</title>
+  <style>
+.animation-credit {
+  width: 100%;
+  text-align: center;
+  font-weight: bold;
+  font-size: 16px;
+  padding: 8px 0;
+  background: #f3f4f6;
+  color: #111827;
+  border-bottom: 1px solid #d1d5db;
+  box-sizing: border-box;
+}
+    :root {
+      color-scheme: light;
+      --sky: #cfefff;
+      --sky-deep: #8fd0f0;
+      --ink: #1e2a32;
+      --muted: #556974;
+      --panel: #ffffff;
+      --line: #cbd8de;
+      --ground: #5f8f55;
+      --mountain: #9b8b73;
+      --dry: #b8562a;
+      --wet: #216aa6;
+      --descent: #287a4b;
+      --accent: #f2b441;
+      --danger: #b42318;
+      --ok: #147a41;
+      --shadow: 0 12px 28px rgba(30, 42, 50, 0.14);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      background: #eef7f9;
+    }
+
+    header {
+      padding: 20px clamp(16px, 3vw, 36px) 12px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.45rem, 2.7vw, 2.35rem);
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    header p {
+      max-width: 960px;
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(560px, 1.45fr) minmax(320px, 0.8fr);
+      gap: 18px;
+      padding: 18px clamp(14px, 3vw, 36px) 32px;
+      align-items: start;
+    }
+
+    section,
+    aside {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .scene-section {
+      overflow: hidden;
+    }
+
+    .section-title {
+      margin: 0;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      font-size: 1.05rem;
+      letter-spacing: 0;
+    }
+
+    .scene {
+      position: relative;
+      height: min(62vh, 580px);
+      min-height: 440px;
+      overflow: hidden;
+      background:
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0) 38%),
+        linear-gradient(to bottom, var(--sky) 0%, var(--sky-deep) 100%);
+    }
+
+    .scene::before {
+      content: "";
+      position: absolute;
+      inset: 24px 22px 64px 70px;
+      background:
+        repeating-linear-gradient(
+          to top,
+          rgba(255, 255, 255, 0.42) 0,
+          rgba(255, 255, 255, 0.42) 1px,
+          transparent 1px,
+          transparent 68px
+        );
+      pointer-events: none;
+    }
+
+    .altitude-scale {
+      position: absolute;
+      inset: 24px auto 64px 0;
+      width: 70px;
+      border-right: 2px solid rgba(30, 42, 50, 0.32);
+      z-index: 4;
+    }
+
+    .alt-tick {
+      position: absolute;
+      right: 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transform: translateY(-50%);
+      width: 70px;
+      color: #1e3c4a;
+      font-size: 0.76rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .alt-tick::after {
+      content: "";
+      width: 10px;
+      height: 2px;
+      background: rgba(30, 42, 50, 0.45);
+      margin-left: auto;
+    }
+
+    .altitude-caption {
+      position: absolute;
+      top: 6px;
+      left: 8px;
+      color: #1e3c4a;
+      font-size: 0.74rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .ground {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 64px;
+      background:
+        linear-gradient(to right, #2f6f3d 0%, #4f8f3f 33%, #a7bd47 52%, #d8cf55 76%, #f1df6d 100%);
+      z-index: 2;
+    }
+
+    .mountain {
+      position: absolute;
+      left: 64px;
+      right: 30px;
+      bottom: 48px;
+      height: 56%;
+      background: linear-gradient(135deg, #b5a587 0%, var(--mountain) 54%, #7a6b57 100%);
+      clip-path: polygon(0 100%, 31% 48%, 47% 8%, 66% 52%, 100% 100%);
+      opacity: 0.92;
+      z-index: 1;
+    }
+
+    .mountain::after {
+      content: "";
+      position: absolute;
+      left: 40%;
+      top: 4%;
+      width: 18%;
+      height: 24%;
+      background: rgba(255, 255, 255, 0.78);
+      clip-path: polygon(50% 0, 100% 100%, 62% 72%, 48% 100%, 32% 68%, 0 100%);
+    }
+
+    .saturated-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .saturated-overlay {
+      fill: rgba(126, 132, 138, 0.24);
+      opacity: 0;
+      transition: opacity 220ms ease;
+    }
+
+    .saturated-layer.active .saturated-overlay {
+      opacity: 1;
+    }
+
+    .dew-point-boundary {
+      fill: none;
+      stroke: rgba(36, 98, 139, 0.82);
+      stroke-width: 2;
+      stroke-dasharray: 7 6;
+      stroke-linecap: round;
+    }
+
+    .parcel {
+      position: absolute;
+      width: 54px;
+      height: 54px;
+      border-radius: 46% 54% 49% 51%;
+      background:
+        radial-gradient(circle at 33% 28%, rgba(255, 255, 255, 0.95) 0 18%, transparent 19%),
+        radial-gradient(circle at 58% 62%, rgba(255, 255, 255, 0.45) 0 25%, transparent 26%),
+        #f6d061;
+      border: 3px solid #8a6221;
+      box-shadow: 0 8px 18px rgba(30, 42, 50, 0.24);
+      transform: translate(-50%, -50%);
+      z-index: 8;
+      transition: box-shadow 160ms ease;
+    }
+
+    .parcel.saturated {
+      background:
+        radial-gradient(circle at 33% 28%, rgba(255, 255, 255, 0.95) 0 18%, transparent 19%),
+        radial-gradient(circle at 58% 62%, rgba(255, 255, 255, 0.55) 0 25%, transparent 26%),
+        #dce8ef;
+      border-color: #2d6f9f;
+    }
+
+    .thermometer {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 112px;
+      padding: 6px 8px;
+      border: 2px solid rgba(30, 42, 50, 0.55);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.93);
+      font-weight: 800;
+      z-index: 9;
+      transform: translate(22px, -50%);
+      pointer-events: none;
+    }
+
+    .thermo-tube {
+      width: 11px;
+      height: 38px;
+      border: 2px solid #5f6e76;
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+      background: #f5fbfe;
+      flex: 0 0 auto;
+    }
+
+    .thermo-fill {
+      position: absolute;
+      left: 1px;
+      right: 1px;
+      bottom: 1px;
+      min-height: 5px;
+      border-radius: 6px;
+      background: #d9472b;
+      height: 50%;
+    }
+
+    .cloud {
+      position: absolute;
+      width: 150px;
+      height: 72px;
+      z-index: 5;
+      opacity: 0;
+      transform: translate(-50%, -50%);
+      transition: opacity 220ms ease;
+      pointer-events: none;
+    }
+
+    .cloud.visible {
+      opacity: 1;
+    }
+
+    .cloud span {
+      position: absolute;
+      background: #ffffff;
+      border: 2px solid #c6d8df;
+      box-shadow: 0 8px 16px rgba(30, 42, 50, 0.14);
+    }
+
+    .cloud .c1 {
+      left: 14px;
+      bottom: 10px;
+      width: 78px;
+      height: 44px;
+      border-radius: 38px;
+    }
+
+    .cloud .c2 {
+      left: 48px;
+      bottom: 18px;
+      width: 66px;
+      height: 58px;
+      border-radius: 50%;
+    }
+
+    .cloud .c3 {
+      left: 88px;
+      bottom: 10px;
+      width: 60px;
+      height: 40px;
+      border-radius: 36px;
+    }
+
+    .rain {
+      position: absolute;
+      width: 118px;
+      height: 94px;
+      z-index: 4;
+      opacity: 0;
+      transform: translateX(-50%);
+      transition: opacity 220ms ease;
+      pointer-events: none;
+    }
+
+    .rain.visible {
+      opacity: 1;
+    }
+
+    .rain i {
+      position: absolute;
+      top: 0;
+      width: 3px;
+      height: 34px;
+      border-radius: 3px;
+      background: rgba(33, 106, 166, 0.78);
+      transform: rotate(12deg);
+    }
+
+    .rain i:nth-child(1) { left: 12px; top: 4px; }
+    .rain i:nth-child(2) { left: 34px; top: 22px; }
+    .rain i:nth-child(3) { left: 57px; top: 6px; }
+    .rain i:nth-child(4) { left: 82px; top: 24px; }
+    .rain i:nth-child(5) { left: 104px; top: 8px; }
+
+    .movement-arrow {
+      position: absolute;
+      width: 34px;
+      height: 84px;
+      z-index: 7;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      opacity: 0.9;
+    }
+
+    .movement-arrow .shaft {
+      position: absolute;
+      left: 15px;
+      top: 13px;
+      width: 4px;
+      height: 56px;
+      background: #1e2a32;
+      border-radius: 5px;
+    }
+
+    .movement-arrow .head {
+      position: absolute;
+      left: 6px;
+      top: 0;
+      width: 22px;
+      height: 22px;
+      border-left: 4px solid #1e2a32;
+      border-top: 4px solid #1e2a32;
+      transform: rotate(45deg);
+    }
+
+    .movement-arrow.down .head {
+      top: 60px;
+      transform: rotate(225deg);
+    }
+
+    .movement-arrow.down .shaft {
+      top: 13px;
+    }
+
+    .scene-label {
+      position: absolute;
+      max-width: 190px;
+      padding: 5px 7px;
+      border: 1px solid rgba(30, 42, 50, 0.25);
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #1e2a32;
+      font-size: clamp(0.72rem, 1.2vw, 0.88rem);
+      font-weight: 800;
+      line-height: 1.2;
+      z-index: 6;
+    }
+
+    .live-readout {
+      position: absolute;
+      right: 14px;
+      top: 14px;
+      width: min(240px, calc(100% - 100px));
+      padding: 10px 12px;
+      border: 1px solid rgba(30, 42, 50, 0.26);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.94);
+      z-index: 10;
+    }
+
+    .live-readout h3 {
+      margin: 0 0 8px;
+      font-size: 0.95rem;
+      letter-spacing: 0;
+    }
+
+    .readout-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 4px 0;
+      border-top: 1px solid rgba(203, 216, 222, 0.7);
+      font-size: 0.88rem;
+    }
+
+    .readout-row span:first-child {
+      color: var(--muted);
+    }
+
+    .readout-row strong {
+      text-align: right;
+    }
+
+    .controls-panel {
+      padding-bottom: 14px;
+    }
+
+    .control-stack {
+      display: grid;
+      gap: 14px;
+      padding: 14px 16px 4px;
+    }
+
+    .control-row {
+      display: grid;
+      grid-template-columns: 1fr minmax(82px, 96px);
+      gap: 10px 12px;
+      align-items: center;
+    }
+
+    .control-row label {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--ink);
+      font-weight: 800;
+      line-height: 1.25;
+    }
+
+    .control-row label small {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #216aa6;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid #aebfc8;
+      border-radius: 5px;
+      padding: 7px 8px;
+      color: var(--ink);
+      font: inherit;
+      font-weight: 700;
+      background: #ffffff;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+      padding: 12px 16px 0;
+    }
+
+    button {
+      min-height: 42px;
+      border: 0;
+      border-radius: 6px;
+      padding: 9px 11px;
+      color: #ffffff;
+      background: #216aa6;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 3px 0 rgba(30, 42, 50, 0.18);
+    }
+
+    button:hover {
+      filter: brightness(1.04);
+    }
+
+    button:focus-visible,
+    input:focus-visible {
+      outline: 3px solid rgba(242, 180, 65, 0.8);
+      outline-offset: 2px;
+    }
+
+    .secondary {
+      color: var(--ink);
+      background: #e6f1f6;
+    }
+
+    .warning-note {
+      min-height: 42px;
+      margin: 12px 16px 0;
+      padding: 10px 11px;
+      border-left: 5px solid var(--accent);
+      background: #fff9e8;
+      color: #4d3b0b;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .model-note {
+      margin: 10px 16px 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.35;
+    }
+
+    .challenge-section {
+      overflow: hidden;
+    }
+
+    .challenge-body {
+      padding: 14px 16px 16px;
+    }
+
+    .challenge-summary {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .summary-item {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 9px;
+      background: #f7fbfc;
+    }
+
+    .summary-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .summary-item strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 1.05rem;
+    }
+
+    .challenge-question {
+      margin: 8px 0 10px;
+      color: var(--ink);
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .prediction-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .prediction-row input {
+      min-width: 0;
+    }
+
+    .result-message {
+      margin-top: 12px;
+      padding: 10px 11px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #f7fbfc;
+      color: var(--muted);
+      line-height: 1.45;
+      font-weight: 700;
+    }
+
+    .result-message.correct {
+      border-color: rgba(20, 122, 65, 0.45);
+      background: #edf8f1;
+      color: var(--ok);
+    }
+
+    .result-message.incorrect,
+    .result-message.error {
+      border-color: rgba(180, 35, 24, 0.35);
+      background: #fff1ef;
+      color: var(--danger);
+    }
+
+    .calc-explanation {
+      margin-top: 10px;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #ffffff;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+
+    .calc-explanation[hidden] {
+      display: none;
+    }
+
+    @media (max-width: 1020px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      .scene {
+        height: 540px;
+      }
+    }
+
+    @media (max-width: 680px) {
+      header {
+        padding-top: 16px;
+      }
+
+      main {
+        padding-inline: 10px;
+      }
+
+      .scene {
+        min-height: 500px;
+      }
+
+      .live-readout {
+        position: absolute;
+        left: 78px;
+        right: 10px;
+        top: 10px;
+        width: auto;
+      }
+
+      .button-row,
+      .challenge-summary,
+      .prediction-row {
+        grid-template-columns: 1fr;
+      }
+
+      .scene-label {
+        max-width: 150px;
+        font-size: 0.72rem;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="animation-credit">
+  Animation Prompted by Jerred Seveyka for his biology class
+</div>
+  <header>
+    <h1>Adiabatic Lapse Rates During Vertical Air Movement</h1>
+    <p>Move an air parcel up a mountain, watch it cool before and after condensation, then see descending air warm in a simplified rain-shadow model.</p>
+  </header>
+
+  <main>
+    <section class="scene-section" aria-label="Atmosphere scene">
+      <div class="scene" id="scene" aria-label="Animated side-view of an air parcel rising and descending">
+        <div class="altitude-caption">Altitude</div>
+        <div class="altitude-scale" id="altitudeScale"></div>
+        <div class="mountain" aria-hidden="true"></div>
+        <svg class="saturated-layer" id="saturatedLayer" aria-hidden="true">
+          <polygon class="saturated-overlay" id="saturatedOverlay"></polygon>
+          <polyline class="dew-point-boundary" id="cloudBaseBoundary"></polyline>
+        </svg>
+        <div class="ground" aria-hidden="true"></div>
+
+        <div class="cloud" id="cloud" aria-hidden="true">
+          <span class="c1"></span>
+          <span class="c2"></span>
+          <span class="c3"></span>
+        </div>
+        <div class="rain" id="rain" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i>
+        </div>
+
+        <div class="movement-arrow" id="movementArrow" aria-hidden="true">
+          <span class="shaft"></span>
+          <span class="head"></span>
+        </div>
+
+        <div class="parcel" id="parcel" aria-hidden="true"></div>
+        <div class="thermometer" id="thermometer" aria-live="polite">
+          <span class="thermo-tube"><span class="thermo-fill" id="thermoFill"></span></span>
+          <span id="parcelTempLabel">20.0°C</span>
+        </div>
+
+        <div class="scene-label" id="condensationLabel">Condensation begins here</div>
+
+        <div class="live-readout" aria-live="polite">
+          <h3>Live Readout</h3>
+          <div class="readout-row"><span>Current altitude</span><strong id="readoutAltitude">0 m</strong></div>
+          <div class="readout-row"><span>Current temperature</span><strong id="readoutTemp">20.0°C</strong></div>
+          <div class="readout-row"><span>Current lapse rate</span><strong id="readoutRate">Dry cooling</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="controls-panel" aria-labelledby="controls-title">
+      <h2 class="section-title" id="controls-title">Controls</h2>
+      <div class="control-stack">
+        <div class="control-row">
+          <label for="startTemp">Starting air temperature at ground level <small>°C</small></label>
+          <input id="startTemp" data-pair="startTempNumber" type="range" min="-20" max="40" step="0.5" value="20">
+          <input id="startTempNumber" data-pair="startTemp" type="number" min="-20" max="40" step="0.5" value="20">
+        </div>
+
+        <div class="control-row">
+          <label for="dewAltitude">Dew point altitude <small>meters</small></label>
+          <input id="dewAltitude" data-pair="dewAltitudeNumber" type="range" min="0" max="5000" step="100" value="1000">
+          <input id="dewAltitudeNumber" data-pair="dewAltitude" type="number" min="0" max="5000" step="100" value="1000">
+        </div>
+
+        <div class="control-row">
+          <label for="maxAltitude">Maximum rise altitude <small>meters</small></label>
+          <input id="maxAltitude" data-pair="maxAltitudeNumber" type="range" min="0" max="6000" step="100" value="3000">
+          <input id="maxAltitudeNumber" data-pair="maxAltitude" type="number" min="0" max="6000" step="100" value="3000">
+        </div>
+
+        <div class="control-row">
+          <label for="finalAltitude">Final descent altitude <small>meters</small></label>
+          <input id="finalAltitude" data-pair="finalAltitudeNumber" type="range" min="0" max="5000" step="100" value="0">
+          <input id="finalAltitudeNumber" data-pair="finalAltitude" type="number" min="0" max="5000" step="100" value="0">
+        </div>
+
+        <div class="control-row">
+          <label for="animationSpeed">Animation speed <small>multiplier</small></label>
+          <input id="animationSpeed" data-pair="animationSpeedNumber" type="range" min="0.5" max="4" step="0.25" value="1.5">
+          <input id="animationSpeedNumber" data-pair="animationSpeed" type="number" min="0.5" max="4" step="0.25" value="1.5">
+        </div>
+      </div>
+
+      <div class="button-row">
+        <button type="button" id="animateRise">Animate rise</button>
+        <button type="button" id="animateFull">Animate rise and fall</button>
+        <button type="button" id="reset" class="secondary">Reset</button>
+        <button type="button" id="checkPredictionTop" class="secondary">Check prediction</button>
+      </div>
+
+      <p class="warning-note" id="settingsNote">Ready. Cloud forms only after the parcel reaches the dew point altitude.</p>
+      <p class="model-note">After moisture has condensed/precipitated, descending air warms at the dry rate.</p>
+    </aside>
+
+    <section class="challenge-section" aria-labelledby="challenge-title">
+      <h2 class="section-title" id="challenge-title">Challenge Mode: Predict the Final Temperature</h2>
+      <div class="challenge-body">
+        <div class="challenge-summary" aria-live="polite">
+          <div class="summary-item"><span>Starting temperature</span><strong id="summaryStart">20.0°C</strong></div>
+          <div class="summary-item"><span>Dew point</span><strong id="summaryDew">1000 m</strong></div>
+          <div class="summary-item"><span>Maximum rise</span><strong id="summaryMax">3000 m</strong></div>
+          <div class="summary-item"><span>Final descent</span><strong id="summaryFinal">0 m</strong></div>
+        </div>
+
+        <p class="challenge-question">What will the final air parcel temperature be after it rises and then descends?</p>
+        <div class="prediction-row">
+          <input id="predictionInput" type="number" step="0.1" placeholder="Predicted final temperature in °C" aria-label="Predicted final temperature in degrees Celsius">
+          <button type="button" id="checkPrediction">Check prediction</button>
+        </div>
+
+        <div class="result-message" id="predictionResult">Answer hidden until checked.</div>
+        <div class="calc-explanation" id="calculationExplanation" hidden></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    /*
+      Simplified classroom lapse-rate model.
+      Every visual, readout, and challenge answer uses these functions.
+    */
+    const DRY_RATE = 10; // °C per 1000 m
+    const WET_RATE = 6;  // °C per 1000 m
+    const SCENE_MAX_ALTITUDE = 6000;
+    const ANSWER_TOLERANCE = 0.5;
+
+    const controls = {
+      startTemp: document.getElementById("startTemp"),
+      startTempNumber: document.getElementById("startTempNumber"),
+      dewAltitude: document.getElementById("dewAltitude"),
+      dewAltitudeNumber: document.getElementById("dewAltitudeNumber"),
+      maxAltitude: document.getElementById("maxAltitude"),
+      maxAltitudeNumber: document.getElementById("maxAltitudeNumber"),
+      finalAltitude: document.getElementById("finalAltitude"),
+      finalAltitudeNumber: document.getElementById("finalAltitudeNumber"),
+      animationSpeed: document.getElementById("animationSpeed"),
+      animationSpeedNumber: document.getElementById("animationSpeedNumber")
+    };
+
+    const scene = document.getElementById("scene");
+    const altitudeScale = document.getElementById("altitudeScale");
+    const saturatedLayer = document.getElementById("saturatedLayer");
+    const saturatedOverlay = document.getElementById("saturatedOverlay");
+    const cloudBaseBoundary = document.getElementById("cloudBaseBoundary");
+    const parcel = document.getElementById("parcel");
+    const thermometer = document.getElementById("thermometer");
+    const thermoFill = document.getElementById("thermoFill");
+    const parcelTempLabel = document.getElementById("parcelTempLabel");
+    const cloud = document.getElementById("cloud");
+    const rain = document.getElementById("rain");
+    const movementArrow = document.getElementById("movementArrow");
+
+    const readout = {
+      altitude: document.getElementById("readoutAltitude"),
+      temp: document.getElementById("readoutTemp"),
+      rate: document.getElementById("readoutRate")
+    };
+
+    const labels = {
+      condensation: document.getElementById("condensationLabel")
+    };
+
+    const summary = {
+      start: document.getElementById("summaryStart"),
+      dew: document.getElementById("summaryDew"),
+      max: document.getElementById("summaryMax"),
+      final: document.getElementById("summaryFinal")
+    };
+
+    const settingsNote = document.getElementById("settingsNote");
+    const predictionInput = document.getElementById("predictionInput");
+    const predictionResult = document.getElementById("predictionResult");
+    const calculationExplanation = document.getElementById("calculationExplanation");
+
+    let animationFrame = null;
+    let animationStart = 0;
+    let animationPlan = null;
+    let currentAltitude = 0;
+    let currentPhase = "ascent";
+    let cloudHasAppeared = false;
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    function roundOne(value) {
+      return Math.round(value * 10) / 10;
+    }
+
+    function formatTemp(value) {
+      return `${roundOne(value).toFixed(1)}°C`;
+    }
+
+    function formatMeters(value) {
+      return `${Math.round(value)} m`;
+    }
+
+    function readSettings() {
+      return {
+        T0: Number(controls.startTemp.value),
+        zDew: Number(controls.dewAltitude.value),
+        zMax: Number(controls.maxAltitude.value),
+        zFinal: Number(controls.finalAltitude.value),
+        speed: Number(controls.animationSpeed.value)
+      };
+    }
+
+    function syncPair(changedInput) {
+      const pair = document.getElementById(changedInput.dataset.pair);
+      if (!pair) return;
+      pair.value = changedInput.value;
+    }
+
+    function syncConstraints() {
+      controls.finalAltitude.max = controls.maxAltitude.value;
+      controls.finalAltitudeNumber.max = controls.maxAltitude.value;
+
+      const zMax = Number(controls.maxAltitude.value);
+      const zFinal = Number(controls.finalAltitude.value);
+      if (zFinal > zMax) {
+        controls.finalAltitude.value = zMax;
+        controls.finalAltitudeNumber.value = zMax;
+      }
+    }
+
+    function calculateAscentTemp(z, settings) {
+      if (z <= settings.zDew) {
+        return settings.T0 - DRY_RATE * (z / 1000);
+      }
+
+      const tAtDew = settings.T0 - DRY_RATE * (settings.zDew / 1000);
+      return tAtDew - WET_RATE * ((z - settings.zDew) / 1000);
+    }
+
+    function calculateFinalTemp(settings) {
+      const tempAtMax = calculateAscentTemp(settings.zMax, settings);
+      return roundOne(tempAtMax + DRY_RATE * ((settings.zMax - settings.zFinal) / 1000));
+    }
+
+    function calculateCurrentTemp(z, phase, settings) {
+      if (phase === "descent") {
+        const tempAtMax = calculateAscentTemp(settings.zMax, settings);
+        return tempAtMax + DRY_RATE * ((settings.zMax - z) / 1000);
+      }
+      return calculateAscentTemp(z, settings);
+    }
+
+    function getCurrentRateLabel(z, phase, settings) {
+      if (phase === "descent") {
+        return "Dry warming";
+      }
+      return z > settings.zDew ? "Wet cooling" : "Dry cooling";
+    }
+
+    function getAirState(z, phase, settings) {
+      if (phase === "ascent" && z >= settings.zDew && settings.zMax >= settings.zDew) {
+        return "Saturated";
+      }
+      if (phase === "descent" && cloudHasAppeared) {
+        return "Descending, warming";
+      }
+      return "Unsaturated";
+    }
+
+    function cloudCanForm(settings) {
+      return settings.zMax >= settings.zDew;
+    }
+
+    function altitudeToSceneY(z) {
+      const top = 24;
+      const bottom = 64;
+      const usable = scene.clientHeight - top - bottom;
+      return top + (1 - z / SCENE_MAX_ALTITUDE) * usable;
+    }
+
+    function getCloudBaseVisualRise(settings) {
+      if (!cloudCanForm(settings)) {
+        return 2600;
+      }
+
+      const wetRange = Math.max(settings.zMax - settings.zDew, 0);
+      return clamp(wetRange * 2, 2600, 4000);
+    }
+
+    function getBoundaryRange() {
+      return {
+        left: 70,
+        right: scene.clientWidth - 16
+      };
+    }
+
+    function cloudBaseAltitudeAtX(x, settings) {
+      const range = getBoundaryRange();
+      const progress = clamp((x - range.left) / Math.max(range.right - range.left, 1), 0, 1);
+      return clamp(settings.zDew + progress * getCloudBaseVisualRise(settings), 0, SCENE_MAX_ALTITUDE);
+    }
+
+    function getCloudBaseBoundaryPoints(settings) {
+      const range = getBoundaryRange();
+      const points = [];
+      const steps = 10;
+
+      for (let i = 0; i <= steps; i += 1) {
+        const progress = i / steps;
+        const x = range.left + (range.right - range.left) * progress;
+        const altitude = cloudBaseAltitudeAtX(x, settings);
+        points.push({ x, y: altitudeToSceneY(altitude), altitude });
+      }
+
+      return points;
+    }
+
+    function updateSaturatedVisuals(settings) {
+      const width = scene.clientWidth;
+      const height = scene.clientHeight;
+      const topY = altitudeToSceneY(SCENE_MAX_ALTITUDE);
+      const points = getCloudBaseBoundaryPoints(settings);
+      const boundaryPoints = points.map((point) => `${point.x},${point.y}`).join(" ");
+      const overlayBoundary = [...points].reverse().map((point) => `${point.x},${point.y}`).join(" ");
+
+      saturatedLayer.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      cloudBaseBoundary.setAttribute("points", boundaryPoints);
+      saturatedOverlay.setAttribute("points", `${points[0].x},${topY} ${points[points.length - 1].x},${topY} ${overlayBoundary}`);
+      saturatedLayer.classList.toggle("active", cloudHasAppeared && cloudCanForm(settings));
+    }
+
+    function pointForAltitude(z, phase, settings) {
+      const y = altitudeToSceneY(z);
+      const progressUp = settings.zMax > 0 ? z / settings.zMax : 0;
+      let xRatio;
+
+      if (phase === "descent") {
+        const descentDistance = Math.max(settings.zMax - settings.zFinal, 1);
+        const progressDown = clamp((settings.zMax - z) / descentDistance, 0, 1);
+        xRatio = 0.50 + progressDown * 0.32;
+      } else {
+        xRatio = 0.18 + progressUp * 0.32;
+      }
+
+      const leftPadding = 76;
+      const rightPadding = 24;
+      const x = leftPadding + xRatio * (scene.clientWidth - leftPadding - rightPadding);
+      return { x, y };
+    }
+
+    function getCondensationOnsetPoint(settings) {
+      const pathSettings = {
+        ...settings,
+        zMax: Math.max(settings.zMax, settings.zDew, 1)
+      };
+      return pointForAltitude(settings.zDew, "ascent", pathSettings);
+    }
+
+    function getWindwardCloudAnchor(settings) {
+      const onsetPoint = getCondensationOnsetPoint(settings);
+      const x = clamp(onsetPoint.x + 28, 170, scene.clientWidth * 0.43);
+      const boundaryY = altitudeToSceneY(cloudBaseAltitudeAtX(x, settings));
+      const y = clamp(boundaryY - 42, 76, scene.clientHeight - 132);
+
+      return { x, y, boundaryY };
+    }
+
+    function buildAltitudeScale() {
+      altitudeScale.innerHTML = "";
+      for (let z = 0; z <= SCENE_MAX_ALTITUDE; z += 1000) {
+        const tick = document.createElement("div");
+        tick.className = "alt-tick";
+        tick.style.top = `${altitudeToSceneY(z) - 24}px`;
+        tick.textContent = z === 0 ? "0 m" : `${z} m`;
+        altitudeScale.appendChild(tick);
+      }
+    }
+
+    function positionSceneLabels(settings) {
+      const onsetPoint = getCondensationOnsetPoint(settings);
+      const onsetBoundaryY = altitudeToSceneY(cloudBaseAltitudeAtX(onsetPoint.x, settings));
+
+      labels.condensation.style.left = `${clamp(onsetPoint.x + 58, 94, scene.clientWidth - 230)}px`;
+      labels.condensation.style.top = `${clamp(onsetBoundaryY - 20, 44, scene.clientHeight - 124)}px`;
+    }
+
+    function updateWarning(settings) {
+      if (settings.zMax < settings.zDew) {
+        settingsNote.textContent = "The parcel never reaches the dew point, so no cloud forms.";
+      } else if (settings.zFinal > settings.zMax) {
+        settingsNote.textContent = "Final descent altitude is higher than maximum rise altitude, so it has been clamped.";
+      } else {
+        settingsNote.textContent = "Ready. Cloud forms only after the parcel reaches the dew point altitude.";
+      }
+    }
+
+    function updateSummary(settings) {
+      summary.start.textContent = formatTemp(settings.T0);
+      summary.dew.textContent = formatMeters(settings.zDew);
+      summary.max.textContent = formatMeters(settings.zMax);
+      summary.final.textContent = formatMeters(settings.zFinal);
+    }
+
+    function updateCloudAndRain(z, phase, settings) {
+      if (cloudCanForm(settings) && z >= settings.zDew) {
+        cloudHasAppeared = true;
+      }
+
+      const cloudAnchor = getWindwardCloudAnchor(settings);
+      cloud.style.left = `${cloudAnchor.x}px`;
+      cloud.style.top = `${cloudAnchor.y}px`;
+      rain.style.left = `${cloudAnchor.x}px`;
+      rain.style.top = `${cloudAnchor.y + 36}px`;
+
+      const showCloud = cloudHasAppeared && cloudCanForm(settings);
+      const showRain = showCloud && (z > settings.zDew || phase === "descent");
+      cloud.classList.toggle("visible", showCloud);
+      rain.classList.toggle("visible", showRain);
+      updateSaturatedVisuals(settings);
+    }
+
+    function updateParcel(z, phase = "ascent") {
+      const settings = readSettings();
+      currentAltitude = clamp(z, 0, SCENE_MAX_ALTITUDE);
+      currentPhase = phase;
+
+      const temp = calculateCurrentTemp(currentAltitude, currentPhase, settings);
+      const point = pointForAltitude(currentAltitude, currentPhase, settings);
+      const state = getAirState(currentAltitude, currentPhase, settings);
+      const rateLabel = getCurrentRateLabel(currentAltitude, currentPhase, settings);
+
+      parcel.style.left = `${point.x}px`;
+      parcel.style.top = `${point.y}px`;
+      parcel.classList.toggle("saturated", state === "Saturated");
+
+      thermometer.style.left = `${point.x}px`;
+      thermometer.style.top = `${point.y}px`;
+      parcelTempLabel.textContent = formatTemp(temp);
+      thermoFill.style.height = `${clamp((temp + 25) / 65 * 100, 8, 92)}%`;
+
+      movementArrow.style.left = `${point.x - 42}px`;
+      movementArrow.style.top = `${point.y}px`;
+      movementArrow.classList.toggle("down", currentPhase === "descent");
+
+      updateCloudAndRain(currentAltitude, currentPhase, settings);
+
+      readout.altitude.textContent = formatMeters(currentAltitude);
+      readout.temp.textContent = formatTemp(temp);
+      readout.rate.textContent = rateLabel;
+    }
+
+    function clearPrediction() {
+      predictionResult.className = "result-message";
+      predictionResult.textContent = "Answer hidden until checked.";
+      calculationExplanation.hidden = true;
+      calculationExplanation.textContent = "";
+    }
+
+    function buildExplanation(settings, finalTemp) {
+      const tempAtMax = roundOne(calculateAscentTemp(settings.zMax, settings));
+      const descentChange = roundOne(DRY_RATE * ((settings.zMax - settings.zFinal) / 1000));
+
+      if (settings.zMax === 0) {
+        return `The parcel stays at 0 m, so its temperature remains about ${formatTemp(finalTemp)}.`;
+      }
+
+      if (settings.zMax < settings.zDew) {
+        const dryCooling = roundOne(DRY_RATE * (settings.zMax / 1000));
+        return `The parcel never reached the dew point, so it cooled only at the dry rate during ascent and no cloud formed. It cooled by ${dryCooling.toFixed(1)}°C to about ${formatTemp(tempAtMax)} at ${formatMeters(settings.zMax)}. During descent, it warmed at the dry rate by ${descentChange.toFixed(1)}°C, ending near ${formatTemp(finalTemp)}.`;
+      }
+
+      const tempAtDew = roundOne(calculateAscentTemp(settings.zDew, settings));
+      const dryCooling = roundOne(DRY_RATE * (settings.zDew / 1000));
+      const wetCooling = roundOne(WET_RATE * ((settings.zMax - settings.zDew) / 1000));
+      return `From 0 m to ${formatMeters(settings.zDew)}, the parcel cooled at the dry rate by ${dryCooling.toFixed(1)}°C, reaching about ${formatTemp(tempAtDew)}. Above the dew point, it cooled at the wet rate by ${wetCooling.toFixed(1)}°C, reaching about ${formatTemp(tempAtMax)} at ${formatMeters(settings.zMax)}. During descent, it warmed at the dry rate by ${descentChange.toFixed(1)}°C. After moisture has condensed/precipitated, descending air warms at the dry rate, so the final temperature is about ${formatTemp(finalTemp)}.`;
+    }
+
+    function checkPrediction() {
+      const raw = predictionInput.value.trim();
+      if (raw === "" || Number.isNaN(Number(raw))) {
+        predictionResult.className = "result-message error";
+        predictionResult.textContent = "Enter a number for your temperature prediction.";
+        calculationExplanation.hidden = true;
+        return;
+      }
+
+      const settings = readSettings();
+      const finalTemp = calculateFinalTemp(settings);
+      const prediction = Number(raw);
+      const isCorrect = Math.abs(prediction - finalTemp) <= ANSWER_TOLERANCE;
+
+      predictionResult.className = `result-message ${isCorrect ? "correct" : "incorrect"}`;
+      predictionResult.textContent = isCorrect
+        ? `Correct! The predicted final temperature is about ${formatTemp(finalTemp)}.`
+        : `Not quite. The final temperature is about ${formatTemp(finalTemp)}.`;
+      calculationExplanation.textContent = buildExplanation(settings, finalTemp);
+      calculationExplanation.hidden = false;
+    }
+
+    function updateAll({ resetCloud = false, resetPrediction = true } = {}) {
+      syncConstraints();
+      const settings = readSettings();
+      if (resetCloud) cloudHasAppeared = false;
+
+      currentAltitude = clamp(currentAltitude, 0, settings.zMax || SCENE_MAX_ALTITUDE);
+      buildAltitudeScale();
+      positionSceneLabels(settings);
+      updateWarning(settings);
+      updateSummary(settings);
+      updateParcel(currentAltitude, currentPhase);
+      if (resetPrediction) clearPrediction();
+    }
+
+    function stopAnimation() {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+        animationFrame = null;
+      }
+      animationPlan = null;
+    }
+
+    function animate(mode) {
+      stopAnimation();
+      const settings = readSettings();
+      cloudHasAppeared = false;
+      clearPrediction();
+
+      const ascentDuration = Math.max(900, (settings.zMax / 3000) * 4200) / settings.speed;
+      const descentDistance = Math.max(settings.zMax - settings.zFinal, 0);
+      const descentDuration = Math.max(800, (descentDistance / 3000) * 3600) / settings.speed;
+
+      animationPlan = {
+        settings,
+        mode,
+        segments: [
+          { phase: "ascent", from: 0, to: settings.zMax, duration: ascentDuration }
+        ]
+      };
+
+      if (mode === "full") {
+        animationPlan.segments.push({ phase: "descent", from: settings.zMax, to: settings.zFinal, duration: descentDuration });
+      }
+
+      animationStart = performance.now();
+
+      function step(now) {
+        if (!animationPlan) return;
+        let elapsed = now - animationStart;
+        let segmentStart = 0;
+        let activeSegment = animationPlan.segments[0];
+
+        for (const segment of animationPlan.segments) {
+          const segmentEnd = segmentStart + segment.duration;
+          if (elapsed <= segmentEnd) {
+            activeSegment = segment;
+            break;
+          }
+          segmentStart = segmentEnd;
+        }
+
+        const progress = clamp((elapsed - segmentStart) / activeSegment.duration, 0, 1);
+        const z = activeSegment.from + (activeSegment.to - activeSegment.from) * progress;
+        updateParcel(z, activeSegment.phase);
+
+        const totalDuration = animationPlan.segments.reduce((sum, segment) => sum + segment.duration, 0);
+        if (elapsed < totalDuration) {
+          animationFrame = requestAnimationFrame(step);
+        } else {
+          const last = animationPlan.segments[animationPlan.segments.length - 1];
+          updateParcel(last.to, last.phase);
+          stopAnimation();
+        }
+      }
+
+      animationFrame = requestAnimationFrame(step);
+    }
+
+    function reset() {
+      stopAnimation();
+      currentAltitude = 0;
+      currentPhase = "ascent";
+      cloudHasAppeared = false;
+      updateAll({ resetCloud: true, resetPrediction: true });
+    }
+
+    Object.values(controls).forEach((input) => {
+      input.addEventListener("input", () => {
+        syncPair(input);
+        stopAnimation();
+        currentAltitude = 0;
+        currentPhase = "ascent";
+        updateAll({ resetCloud: true, resetPrediction: true });
+      });
+    });
+
+    document.getElementById("animateRise").addEventListener("click", () => animate("rise"));
+    document.getElementById("animateFull").addEventListener("click", () => animate("full"));
+    document.getElementById("reset").addEventListener("click", reset);
+    document.getElementById("checkPrediction").addEventListener("click", checkPrediction);
+    document.getElementById("checkPredictionTop").addEventListener("click", checkPrediction);
+    window.addEventListener("resize", () => updateAll({ resetPrediction: false }));
+
+    // Expose the model for quick classroom/debug checks in the browser console.
+    window.lapseModel = {
+      calculateAscentTemp,
+      calculateFinalTemp,
+      DRY_RATE,
+      WET_RATE
+    };
+
+    updateAll({ resetCloud: true, resetPrediction: true });
+  </script>
+</body>
+</html>
