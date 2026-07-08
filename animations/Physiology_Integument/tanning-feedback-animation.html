@@ -1,0 +1,1350 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Negative Feedback Loop of Tanning in Skin</title>
+  <style>
+    :root {
+      --ink: #263238;
+      --muted: #59656d;
+      --surface: #fffdf8;
+      --panel: #ffffff;
+      --line: #d7d0c5;
+      --epidermis: #f6b9a3;
+      --epidermis-dark: #ad7447;
+      --corneum: #f3d69b;
+      --dermis: #eeb5c2;
+      --melanocyte: #76502d;
+      --melanin: #2d1a10;
+      --uv: #f3cf2b;
+      --uv-soft: #ffef8a;
+      --teal: #1f8a83;
+      --danger: #c55e32;
+      --button: #174e77;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, #f6fbff 0%, #fffdf8 34%, #fff7ee 100%);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.4;
+    }
+
+    main {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 20px 0 28px;
+    }
+
+    .attribution {
+      margin: 0 0 4px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #36556a;
+    }
+
+    h1 {
+      margin: 0 0 14px;
+      font-size: clamp(1.65rem, 3vw, 2.65rem);
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .animation-shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .scene-frame {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      overflow: hidden;
+      box-shadow: 0 14px 38px rgba(68, 50, 35, 0.12);
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .side-panel {
+      border-left: 4px solid #8ab6d6;
+      padding: 4px 0 0 16px;
+      min-width: 0;
+    }
+
+    .stage-kicker {
+      margin: 0 0 4px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .stage-title {
+      min-height: 2.6em;
+      margin: 0 0 10px;
+      font-size: 1.55rem;
+      line-height: 1.18;
+    }
+
+    .stage-text {
+      min-height: 6.4em;
+      margin: 0 0 16px;
+      color: #43525a;
+      font-size: 1.03rem;
+    }
+
+    .controls {
+      display: grid;
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    button {
+      min-height: 44px;
+      border: 0;
+      border-radius: 8px;
+      color: #fff;
+      background: var(--button);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover,
+    button:focus-visible {
+      background: #0f3d60;
+      outline: 3px solid rgba(31, 138, 131, 0.22);
+      outline-offset: 2px;
+    }
+
+    button.secondary {
+      background: #476b7e;
+    }
+
+    button.secondary:hover,
+    button.secondary:focus-visible {
+      background: #34586c;
+    }
+
+    .slider-wrap {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fffaf1;
+    }
+
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-weight: 700;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--danger);
+    }
+
+    .stage-dots {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      margin-top: 14px;
+    }
+
+    .stage-dot {
+      height: 8px;
+      border-radius: 999px;
+      background: #d6dce0;
+      transition: background-color 180ms ease, transform 180ms ease;
+    }
+
+    .stage-dot.active {
+      background: var(--teal);
+      transform: scaleY(1.5);
+    }
+
+    .feedback-loop {
+      display: grid;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .loop-title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    .loop-chain {
+      display: grid;
+      gap: 7px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .loop-item {
+      position: relative;
+      padding: 8px 10px;
+      border: 1px solid #cfd9db;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #3f4f55;
+      font-size: 0.96rem;
+      font-weight: 700;
+      transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease;
+    }
+
+    .loop-item.active {
+      border-color: var(--teal);
+      background: #edf8f6;
+      color: #145f5a;
+    }
+
+    .loop-item.final {
+      border-color: #d39b6a;
+      background: #fff3e5;
+    }
+
+    .loop-arrow {
+      color: #6c7a80;
+      font-size: 1.1rem;
+      font-weight: 900;
+      text-align: center;
+      line-height: 1;
+    }
+
+    .layer-label,
+    .callout-label,
+    .stage-label,
+    .feedback-label {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      fill: var(--ink);
+      paint-order: stroke;
+      stroke: #fffaf2;
+      stroke-width: 5px;
+      stroke-linejoin: round;
+    }
+
+    .small-label {
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .callout-line {
+      stroke: #51636d;
+      stroke-width: 2.5;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .layer-boundary {
+      stroke: rgba(92, 74, 58, 0.32);
+      stroke-width: 2;
+      fill: none;
+    }
+
+    .corneocyte {
+      fill: #efcc82;
+      stroke: #ca9a4b;
+      stroke-width: 1.5;
+    }
+
+    .keratinocyte {
+      stroke: rgba(111, 76, 58, 0.42);
+      stroke-width: 2;
+      transition: fill 240ms ease;
+    }
+
+    .keratinocyte-nucleus {
+      fill: #8e6cab;
+      stroke: rgba(53, 38, 68, 0.4);
+      stroke-width: 1.5;
+    }
+
+    .melanocyte-body {
+      fill: #7b5632;
+      stroke: #4e351f;
+      stroke-width: 2.5;
+      transition: filter 160ms ease;
+    }
+
+    .melanocyte-branch {
+      stroke: #7b5632;
+      stroke-width: 8;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .melanocyte-branch-shadow {
+      stroke: rgba(78, 53, 31, 0.32);
+      stroke-width: 12;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .melanin-dot,
+    .melanin-cap-dot,
+    .moving-granule {
+      fill: var(--melanin);
+      stroke: rgba(255, 255, 255, 0.34);
+      stroke-width: 1.2;
+    }
+
+    .melanin-cap-crescent {
+      fill: rgba(45, 26, 16, 0.84);
+      stroke: rgba(255, 255, 255, 0.28);
+      stroke-width: 1;
+    }
+
+    .uv-ray {
+      stroke: var(--uv);
+      stroke-width: 8;
+      stroke-linecap: round;
+      filter: drop-shadow(0 0 4px rgba(255, 210, 0, 0.8));
+    }
+
+    .uv-ray.secondary {
+      stroke-width: 5;
+      stroke: var(--uv-soft);
+    }
+
+    .uv-hit {
+      fill: none;
+      stroke: #f5b642;
+      stroke-width: 4;
+      opacity: 0;
+      transform-origin: center;
+    }
+
+    .glow-ring {
+      fill: none;
+      stroke: #ffcf5d;
+      stroke-width: 6;
+      opacity: 0;
+      filter: url(#softGlow);
+    }
+
+    .feedback-arrow {
+      fill: none;
+      stroke: #d27b3b;
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 9 8;
+      opacity: 0;
+    }
+
+    .dermis-fiber {
+      fill: none;
+      stroke: rgba(149, 68, 92, 0.45);
+      stroke-width: 5;
+      stroke-linecap: round;
+    }
+
+    .dermis-fiber.teal {
+      stroke: rgba(47, 127, 124, 0.36);
+      stroke-width: 4;
+    }
+
+    .darkening-overlay {
+      fill: var(--epidermis-dark);
+      opacity: 0;
+      mix-blend-mode: multiply;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% {
+        opacity: 0.3;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.9;
+        transform: scale(1.08);
+      }
+    }
+
+    .is-pulsing {
+      animation: pulseGlow 1.1s ease-in-out infinite;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        width: min(100% - 20px, 1180px);
+      }
+
+      .animation-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .side-panel {
+        border-left: 0;
+        border-top: 4px solid #8ab6d6;
+        padding: 14px 0 0;
+      }
+
+      .stage-title,
+      .stage-text {
+        min-height: auto;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .button-row {
+        grid-template-columns: 1fr;
+      }
+
+      button {
+        min-height: 42px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="attribution">Animation Prompted by Jerred Seveyka for his biology class.</p>
+    <h1>Negative Feedback Loop of Tanning in Skin</h1>
+
+    <div class="animation-shell">
+      <div class="scene-frame" aria-label="Interactive animation of tanning as a negative feedback loop">
+        <svg id="skinScene" viewBox="0 0 1120 690" role="img" aria-labelledby="svgTitle svgDesc">
+          <title id="svgTitle">Negative Feedback Loop of Tanning in Skin</title>
+          <desc id="svgDesc">A skin cross-section showing UV exposure, melanocyte activation, melanin transfer to keratinocytes, melanin caps, reduced UV penetration, and reduced melanocyte activity.</desc>
+          <defs>
+            <marker id="uvArrow" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth">
+              <path d="M 0 0 L 5 2.5 L 0 5 Z" fill="#f3cf2b"></path>
+            </marker>
+            <marker id="feedbackArrowHead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+              <path d="M 0 0 L 12 6 L 0 12 Z" fill="#d27b3b"></path>
+            </marker>
+            <filter id="softGlow" x="-60%" y="-60%" width="220%" height="220%">
+              <feGaussianBlur stdDeviation="7" result="blur"></feGaussianBlur>
+              <feMerge>
+                <feMergeNode in="blur"></feMergeNode>
+                <feMergeNode in="SourceGraphic"></feMergeNode>
+              </feMerge>
+            </filter>
+          </defs>
+
+          <rect x="0" y="0" width="1120" height="690" fill="#fffdf8"></rect>
+          <rect x="88" y="82" width="686" height="585" rx="8" fill="#fff7ec" stroke="#e0c9ac" stroke-width="2"></rect>
+
+          <g id="skinLayers">
+            <path d="M 105 96 C 204 87, 315 101, 421 92 C 535 82, 647 99, 755 91 L 755 150 L 105 150 Z" fill="var(--corneum)"></path>
+            <g id="stratumCells">
+              <rect class="corneocyte" x="122" y="105" width="78" height="21" rx="10"></rect>
+              <rect class="corneocyte" x="202" y="111" width="88" height="19" rx="10"></rect>
+              <rect class="corneocyte" x="294" y="101" width="93" height="23" rx="10"></rect>
+              <rect class="corneocyte" x="391" y="111" width="79" height="20" rx="10"></rect>
+              <rect class="corneocyte" x="474" y="102" width="91" height="23" rx="10"></rect>
+              <rect class="corneocyte" x="569" y="112" width="83" height="19" rx="10"></rect>
+              <rect class="corneocyte" x="656" y="103" width="75" height="21" rx="10"></rect>
+              <rect class="corneocyte" x="138" y="128" width="100" height="17" rx="9"></rect>
+              <rect class="corneocyte" x="245" y="127" width="95" height="18" rx="9"></rect>
+              <rect class="corneocyte" x="348" y="130" width="113" height="16" rx="8"></rect>
+              <rect class="corneocyte" x="468" y="128" width="104" height="17" rx="9"></rect>
+              <rect class="corneocyte" x="582" y="130" width="116" height="16" rx="8"></rect>
+            </g>
+
+            <rect x="105" y="150" width="650" height="330" fill="var(--epidermis)"></rect>
+            <g id="keratinocytes"></g>
+            <rect id="epidermisDarkening" class="darkening-overlay" x="105" y="150" width="650" height="330"></rect>
+            <path class="layer-boundary" d="M 105 150 C 221 145, 326 154, 438 149 C 554 144, 647 154, 755 148"></path>
+            <path class="layer-boundary" d="M 105 480 C 225 487, 325 472, 448 482 C 565 492, 645 474, 755 481"></path>
+
+            <rect x="105" y="480" width="650" height="170" fill="var(--dermis)"></rect>
+            <path class="dermis-fiber" d="M 145 520 C 205 490, 263 548, 330 515 S 459 501, 526 533 S 652 568, 720 518"></path>
+            <path class="dermis-fiber teal" d="M 132 586 C 202 548, 266 607, 340 574 S 472 548, 540 589 S 638 613, 728 568"></path>
+            <path class="dermis-fiber" d="M 176 632 C 246 598, 298 646, 374 616 S 518 598, 602 628 S 680 641, 744 610"></path>
+            <path class="dermis-fiber teal" d="M 128 548 C 185 578, 246 533, 306 560 S 421 597, 477 555 S 609 520, 704 557"></path>
+          </g>
+
+          <g id="melaninCaps"></g>
+          <g id="movingMelanin"></g>
+          <g id="uvRays"></g>
+          <g id="uvHits"></g>
+          <g id="melanocytes"></g>
+          <g id="melaninProduction"></g>
+
+          <g id="dynamicLabels">
+            <text id="uvLabel" class="callout-label" x="128" y="50">UV rays</text>
+            <path id="uvLabelLine" class="callout-line" d="M 206 56 L 238 78"></path>
+
+            <text id="stageMessage" class="stage-label" x="120" y="38"></text>
+
+            <text id="reducedUvLabel" class="callout-label small-label" x="782" y="76">Reduced UV penetration</text>
+            <path id="reducedUvLine" class="callout-line" d="M 778 82 C 704 105, 653 146, 621 202"></path>
+
+            <path id="feedbackArrow" class="feedback-arrow" d="M 832 116 C 1020 226, 870 438, 588 436" marker-end="url(#feedbackArrowHead)"></path>
+            <text id="negativeFeedbackLabel" class="feedback-label small-label" x="802" y="494">Negative feedback: reduced</text>
+            <text id="negativeFeedbackLabel2" class="feedback-label small-label" x="802" y="518">melanocyte activity</text>
+          </g>
+
+          <g id="staticLabels">
+            <text class="layer-label" x="806" y="213">Epidermis</text>
+            <path class="callout-line" d="M 794 207 C 745 206, 699 209, 662 214"></path>
+
+            <text class="layer-label" x="806" y="279">Keratinocyte</text>
+            <path class="callout-line" d="M 794 273 C 735 281, 698 293, 657 303"></path>
+
+            <text class="layer-label" x="806" y="452">Melanocyte</text>
+            <path class="callout-line" d="M 794 446 C 718 441, 650 437, 560 437"></path>
+
+            <text class="layer-label" x="806" y="572">Dermis</text>
+            <path class="callout-line" d="M 794 566 C 734 552, 686 541, 638 532"></path>
+          </g>
+        </svg>
+      </div>
+
+      <aside class="side-panel">
+        <p class="stage-kicker" id="stageCounter">Stage 1 of 7</p>
+        <h2 class="stage-title" id="stageTitle">Baseline Skin</h2>
+        <p class="stage-text" id="stageText">The skin cross-section begins with little melanin. Melanocytes sit near the basal epidermis and extend branches between keratinocytes.</p>
+
+        <div class="controls" aria-label="Animation controls">
+          <div class="button-row">
+            <button type="button" id="stepBackward" class="secondary">Step Backward</button>
+            <button type="button" id="stepForward" class="secondary">Step Forward</button>
+          </div>
+
+          <label class="slider-wrap" for="uvIntensity">
+            <span class="slider-label">
+              <span>UV intensity</span>
+              <span id="uvValue">30%</span>
+            </span>
+            <input id="uvIntensity" type="range" min="0" max="100" value="30">
+          </label>
+        </div>
+
+        <div class="stage-dots" aria-hidden="true">
+          <span class="stage-dot active"></span>
+          <span class="stage-dot"></span>
+          <span class="stage-dot"></span>
+          <span class="stage-dot"></span>
+          <span class="stage-dot"></span>
+          <span class="stage-dot"></span>
+          <span class="stage-dot"></span>
+        </div>
+
+        <section class="feedback-loop" aria-label="Negative feedback loop diagram">
+          <p class="loop-title">Feedback loop</p>
+          <ol class="loop-chain" id="loopChain">
+            <li class="loop-item" data-loop="0">UV exposure</li>
+            <li class="loop-arrow" aria-hidden="true">&darr;</li>
+            <li class="loop-item" data-loop="1">Melanocyte activation</li>
+            <li class="loop-arrow" aria-hidden="true">&darr;</li>
+            <li class="loop-item" data-loop="2">Melanin production</li>
+            <li class="loop-arrow" aria-hidden="true">&darr;</li>
+            <li class="loop-item" data-loop="3">Darker epidermis</li>
+            <li class="loop-arrow" aria-hidden="true">&darr;</li>
+            <li class="loop-item" data-loop="4">Less UV penetration</li>
+            <li class="loop-arrow" aria-hidden="true">&darr;</li>
+            <li class="loop-item final" data-loop="5">Reduced melanocyte stimulation</li>
+          </ol>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    const SVG_NS = "http://www.w3.org/2000/svg";
+    const BASE_CELL_FILL = "#f6c1ae";
+    const DARK_CELL_FILL = "#b67748";
+
+    const stageData = [
+      {
+        title: "Baseline Skin",
+        text: "Prior to tanning, the skin has less melanin accumulated in the epidermis. Melanocytes sit near the basal epidermis and extend branches between keratinocytes.",
+        message: "",
+        duration: 2600
+      },
+      {
+        title: "UV Exposure",
+        text: "UV rays enter from above, pass through the epidermis into the dermis, and strike melanocytes near the basal layer.",
+        message: "UV exposure increases melanocyte activity.",
+        duration: 3300
+      },
+      {
+        title: "Melanocyte Activation",
+        text: "Stimulated melanocytes begin producing more melanin pigment packets.",
+        message: "Melanocytes produce melanin.",
+        duration: 3300
+      },
+      {
+        title: "Melanin Transfer",
+        text: "Melanin granules travel through melanocyte branches and enter nearby keratinocytes.",
+        message: "Melanin is transferred to keratinocytes.",
+        duration: 4100
+      },
+      {
+        title: "Melanin Caps and Darker Skin",
+        text: "Melanin accumulates above keratinocyte nuclei on the sun-facing side, forming protective caps as the epidermis darkens.",
+        message: "Melanin helps shield nuclear DNA from UV.",
+        duration: 3800
+      },
+      {
+        title: "Reduced UV Penetration",
+        text: "After melanin accumulates, fewer UV rays penetrate to deeper layers of the skin or to the melanocytes.",
+        message: "Darker skin reduces UV penetration.",
+        duration: 3300
+      },
+      {
+        title: "Negative Feedback",
+        text: "After tanning, less UV reaches the melanocytes, so melanocyte activity and additional melanin production decreases.",
+        message: "UV no longer reaches melanocytes; activity decreases.",
+        duration: 4400
+      }
+    ];
+
+    const melanocyteData = [
+      {
+        id: "m0",
+        x: 300,
+        y: 438,
+        branches: [
+          [[300, 438], [260, 400], [214, 365], [168, 334]],
+          [[300, 438], [314, 397], [348, 357], [392, 318]],
+          [[300, 438], [292, 397], [289, 356], [290, 315]],
+          [[300, 438], [248, 402], [230, 362], [250, 318]]
+        ]
+      },
+      {
+        id: "m1",
+        x: 560,
+        y: 437,
+        branches: [
+          [[560, 437], [519, 399], [475, 360], [432, 326]],
+          [[560, 437], [579, 398], [621, 365], [680, 337]],
+          [[560, 437], [548, 397], [552, 357], [552, 318]],
+          [[560, 437], [610, 401], [630, 361], [604, 320]]
+        ]
+      }
+    ];
+
+    const targetCaps = [
+      { from: 0, x: 166, y: 344, r: 8 },
+      { from: 0, x: 250, y: 286, r: 8 },
+      { from: 0, x: 335, y: 344, r: 8 },
+      { from: 0, x: 248, y: 403, r: 8 },
+      { from: 0, x: 332, y: 286, r: 8 },
+      { from: 0, x: 414, y: 344, r: 8 },
+      { from: 1, x: 496, y: 286, r: 8 },
+      { from: 1, x: 414, y: 403, r: 8 },
+      { from: 1, x: 500, y: 344, r: 8 },
+      { from: 1, x: 580, y: 286, r: 8 },
+      { from: 1, x: 660, y: 344, r: 8 },
+      { from: 1, x: 580, y: 403, r: 8 }
+    ];
+
+    const uvRayData = [
+      { x: 142, offset: 12, deep: 640, shallow: 226, secondary: false, deepRank: 0.55 },
+      { x: 216, offset: -8, deep: 616, shallow: 244, secondary: true, deepRank: 0.92 },
+      { x: 286, offset: 14, deep: 650, shallow: 286, secondary: false, deepRank: 0.05 },
+      { x: 360, offset: -12, deep: 624, shallow: 306, secondary: true, deepRank: 0.82 },
+      { x: 440, offset: 16, deep: 638, shallow: 250, secondary: false, deepRank: 0.45 },
+      { x: 552, offset: 8, deep: 650, shallow: 300, secondary: false, deepRank: 0.08 },
+      { x: 626, offset: -8, deep: 622, shallow: 264, secondary: true, deepRank: 0.72 },
+      { x: 700, offset: -14, deep: 606, shallow: 236, secondary: true, deepRank: 0.96 }
+    ];
+
+    const state = {
+      stage: 0,
+      progress: 1,
+      uvIntensity: 0.3,
+      elements: {}
+    };
+
+    document.addEventListener("DOMContentLoaded", initializeAnimation);
+
+    function initializeAnimation() {
+      cacheElements();
+      buildKeratinocytes();
+      buildMelanocytes();
+      buildMelaninProductionDots();
+      buildMelaninCaps();
+      buildMovingGranules();
+      buildUvRays();
+      setupControls();
+      setStage(0, 1);
+    }
+
+    function cacheElements() {
+      state.elements.scene = document.getElementById("skinScene");
+      state.elements.keratinocytes = document.getElementById("keratinocytes");
+      state.elements.melanocytes = document.getElementById("melanocytes");
+      state.elements.melaninProduction = document.getElementById("melaninProduction");
+      state.elements.melaninCaps = document.getElementById("melaninCaps");
+      state.elements.movingMelanin = document.getElementById("movingMelanin");
+      state.elements.uvRays = document.getElementById("uvRays");
+      state.elements.uvHits = document.getElementById("uvHits");
+      state.elements.epidermisDarkening = document.getElementById("epidermisDarkening");
+      state.elements.stageCounter = document.getElementById("stageCounter");
+      state.elements.stageTitle = document.getElementById("stageTitle");
+      state.elements.stageText = document.getElementById("stageText");
+      state.elements.stageMessage = document.getElementById("stageMessage");
+      state.elements.stepBackward = document.getElementById("stepBackward");
+      state.elements.stepForward = document.getElementById("stepForward");
+      state.elements.uvIntensity = document.getElementById("uvIntensity");
+      state.elements.uvValue = document.getElementById("uvValue");
+      state.elements.stageDots = Array.from(document.querySelectorAll(".stage-dot"));
+      state.elements.loopItems = Array.from(document.querySelectorAll(".loop-item"));
+      state.elements.uvLabel = document.getElementById("uvLabel");
+      state.elements.uvLabelLine = document.getElementById("uvLabelLine");
+      state.elements.reducedUvLabel = document.getElementById("reducedUvLabel");
+      state.elements.reducedUvLine = document.getElementById("reducedUvLine");
+      state.elements.feedbackArrow = document.getElementById("feedbackArrow");
+      state.elements.negativeFeedbackLabel = document.getElementById("negativeFeedbackLabel");
+      state.elements.negativeFeedbackLabel2 = document.getElementById("negativeFeedbackLabel2");
+    }
+
+    function createSvgElement(tagName, attributes = {}) {
+      const element = document.createElementNS(SVG_NS, tagName);
+      Object.entries(attributes).forEach(([name, value]) => {
+        element.setAttribute(name, value);
+      });
+      return element;
+    }
+
+    function buildKeratinocytes() {
+      const cells = createKeratinocyteData();
+      state.keratinocyteCells = cells;
+
+      cells.forEach((cell) => {
+        const group = createSvgElement("g", { class: "keratinocyte-group" });
+        const body = createSvgElement("rect", {
+          class: "keratinocyte",
+          x: cell.x,
+          y: cell.y,
+          width: cell.width,
+          height: cell.height,
+          rx: 14,
+          fill: BASE_CELL_FILL
+        });
+        const nucleus = createSvgElement("ellipse", {
+          class: "keratinocyte-nucleus",
+          cx: cell.nucleusX,
+          cy: cell.nucleusY,
+          rx: 14,
+          ry: 10
+        });
+        group.append(body, nucleus);
+        state.elements.keratinocytes.appendChild(group);
+      });
+    }
+
+    function createKeratinocyteData() {
+      const rows = [];
+      const width = 76;
+      const height = 48;
+      for (let row = 0; row < 5; row += 1) {
+        const y = 162 + row * 58;
+        const xOffset = row % 2 === 0 ? 126 : 150;
+        for (let col = 0; col < 7; col += 1) {
+          const x = xOffset + col * 82;
+          if (x + width <= 742) {
+            rows.push({
+              row,
+              col,
+              x,
+              y,
+              width,
+              height,
+              nucleusX: x + width / 2,
+              nucleusY: y + 28
+            });
+          }
+        }
+      }
+      return rows;
+    }
+
+    function buildMelanocytes() {
+      melanocyteData.forEach((melanocyte) => {
+        const group = createSvgElement("g", {
+          class: "melanocyte",
+          "data-id": melanocyte.id
+        });
+        const glow = createSvgElement("ellipse", {
+          class: "glow-ring",
+          cx: melanocyte.x,
+          cy: melanocyte.y,
+          rx: 39,
+          ry: 26
+        });
+        group.appendChild(glow);
+
+        melanocyte.branches.forEach((branch) => {
+          const d = makeSmoothPath(branch);
+          group.appendChild(createSvgElement("path", {
+            class: "melanocyte-branch-shadow",
+            d
+          }));
+          group.appendChild(createSvgElement("path", {
+            class: "melanocyte-branch",
+            d
+          }));
+        });
+
+        group.appendChild(createSvgElement("ellipse", {
+          class: "melanocyte-body",
+          cx: melanocyte.x,
+          cy: melanocyte.y,
+          rx: 31,
+          ry: 20
+        }));
+        group.appendChild(createSvgElement("ellipse", {
+          cx: melanocyte.x + 4,
+          cy: melanocyte.y,
+          rx: 10,
+          ry: 7,
+          fill: "#4a3020",
+          opacity: "0.72"
+        }));
+        state.elements.melanocytes.appendChild(group);
+      });
+    }
+
+    function makeSmoothPath(points) {
+      const [start, ...rest] = points;
+      let d = `M ${start[0]} ${start[1]}`;
+      rest.forEach((point) => {
+        d += ` L ${point[0]} ${point[1]}`;
+      });
+      return d;
+    }
+
+    function buildMelaninProductionDots() {
+      const dots = [];
+      melanocyteData.forEach((melanocyte, melanocyteIndex) => {
+        for (let i = 0; i < 9; i += 1) {
+          const angle = (Math.PI * 2 * i) / 9;
+          const radiusX = 7 + (i % 3) * 5;
+          const radiusY = 4 + (i % 2) * 4;
+          const dot = createSvgElement("circle", {
+            class: "melanin-dot",
+            cx: melanocyte.x + Math.cos(angle) * radiusX,
+            cy: melanocyte.y + Math.sin(angle) * radiusY,
+            r: 4 + (i % 2),
+            opacity: 0
+          });
+          dot.dataset.rank = String(i / 9);
+          dots.push(dot);
+          state.elements.melaninProduction.appendChild(dot);
+        }
+
+        melanocyte.branches.forEach((branch, branchIndex) => {
+          const point = branch[Math.min(1, branch.length - 1)];
+          const dot = createSvgElement("circle", {
+            class: "melanin-dot",
+            cx: point[0] + branchIndex * 3,
+            cy: point[1] - 3,
+            r: 3.5,
+            opacity: 0
+          });
+          dot.dataset.rank = String((branchIndex + melanocyteIndex) / 7);
+          dots.push(dot);
+          state.elements.melaninProduction.appendChild(dot);
+        });
+      });
+      state.productionDots = dots;
+    }
+
+    function buildMelaninCaps() {
+      const capGroups = [];
+      targetCaps.forEach((cap, index) => {
+        const group = createSvgElement("g", {
+          class: "melanin-cap",
+          opacity: 0
+        });
+        const crescent = createSvgElement("path", {
+          class: "melanin-cap-crescent",
+          d: `M ${cap.x - 20} ${cap.y + 2} C ${cap.x - 12} ${cap.y - 16}, ${cap.x + 12} ${cap.y - 16}, ${cap.x + 20} ${cap.y + 2} C ${cap.x + 6} ${cap.y - 4}, ${cap.x - 6} ${cap.y - 4}, ${cap.x - 20} ${cap.y + 2} Z`
+        });
+        group.appendChild(crescent);
+        for (let i = 0; i < 5; i += 1) {
+          const dot = createSvgElement("circle", {
+            class: "melanin-cap-dot",
+            cx: cap.x - 12 + i * 6,
+            cy: cap.y - 5 - Math.abs(2 - i) * 2,
+            r: cap.r / 2.4,
+            opacity: 0.95
+          });
+          group.appendChild(dot);
+        }
+        group.dataset.rank = String(index / targetCaps.length);
+        capGroups.push(group);
+        state.elements.melaninCaps.appendChild(group);
+      });
+      state.capGroups = capGroups;
+    }
+
+    function buildMovingGranules() {
+      const granules = [];
+      targetCaps.forEach((target, index) => {
+        const melanocyte = melanocyteData[target.from];
+        const branch = melanocyte.branches[index % melanocyte.branches.length];
+        const pathPoints = [
+          [melanocyte.x, melanocyte.y],
+          branch[1],
+          branch[branch.length - 1],
+          [target.x, target.y - 4]
+        ];
+        const granule = createSvgElement("circle", {
+          class: "moving-granule",
+          cx: melanocyte.x,
+          cy: melanocyte.y,
+          r: 5,
+          opacity: 0
+        });
+        granule.dataset.delay = String((index % 4) * 0.1);
+        granules.push({ element: granule, pathPoints, rank: index / targetCaps.length });
+        state.elements.movingMelanin.appendChild(granule);
+      });
+      state.movingGranules = granules;
+    }
+
+    function buildUvRays() {
+      const rays = [];
+      const hits = [];
+      uvRayData.forEach((ray, index) => {
+        const group = createSvgElement("g", {
+          class: "uv-ray-group",
+          "data-index": index
+        });
+        const segments = [];
+        for (let segmentIndex = 0; segmentIndex < 4; segmentIndex += 1) {
+          const segment = createSvgElement("line", {
+            class: ray.secondary ? "uv-ray secondary" : "uv-ray",
+            opacity: 0
+          });
+          segments.push(segment);
+          group.appendChild(segment);
+        }
+        rays.push({ data: ray, segments });
+        state.elements.uvRays.appendChild(group);
+
+        const hit = createSvgElement("circle", {
+          class: "uv-hit",
+          cx: ray.x + ray.offset,
+          cy: ray.deep,
+          r: 13
+        });
+        hits.push(hit);
+        state.elements.uvHits.appendChild(hit);
+      });
+      const melanocyteHits = melanocyteData.map((melanocyte) => {
+        const hit = createSvgElement("circle", {
+          class: "uv-hit",
+          cx: melanocyte.x,
+          cy: melanocyte.y,
+          r: 24
+        });
+        state.elements.uvHits.appendChild(hit);
+        return hit;
+      });
+      state.uvRays = rays;
+      state.uvHits = hits;
+      state.melanocyteHitRings = melanocyteHits;
+    }
+
+    function setupControls() {
+      state.elements.stepBackward.addEventListener("click", stepBackward);
+      state.elements.stepForward.addEventListener("click", stepForward);
+      state.elements.uvIntensity.addEventListener("input", handleUvIntensityChange);
+    }
+
+    function stepBackward() {
+      const previousStage = Math.max(0, state.stage - 1);
+      setStage(previousStage, 1);
+    }
+
+    function stepForward() {
+      const nextStage = Math.min(stageData.length - 1, state.stage + 1);
+      setStage(nextStage, 1);
+    }
+
+    function handleUvIntensityChange(event) {
+      state.uvIntensity = Number(event.target.value) / 100;
+      state.elements.uvValue.textContent = `${event.target.value}%`;
+      renderScene();
+    }
+
+    function setStage(stage, progress) {
+      state.stage = Math.max(0, Math.min(stageData.length - 1, stage));
+      state.progress = Math.max(0, Math.min(1, progress));
+      updateTextPanel();
+      renderScene();
+    }
+
+    function updateTextPanel() {
+      const stage = stageData[state.stage];
+      state.elements.stageCounter.textContent = `Stage ${state.stage + 1} of ${stageData.length}`;
+      state.elements.stageTitle.textContent = stage.title;
+      state.elements.stageText.textContent = stage.text;
+      state.elements.stageDots.forEach((dot, index) => {
+        dot.classList.toggle("active", index <= state.stage);
+      });
+      state.elements.loopItems.forEach((item) => {
+        const loopIndex = Number(item.dataset.loop);
+        item.classList.toggle("active", state.stage >= loopIndex + 1 || state.stage === 6);
+      });
+    }
+
+    function renderScene() {
+      const variables = calculateSceneVariables();
+      renderKeratinocytes(variables.darkening);
+      renderMelanocytes(variables.stimulation, variables.feedbackStrength);
+      renderProductionDots(variables.production);
+      renderMovingGranules(variables.transfer);
+      renderMelaninCaps(variables.caps, variables.transfer);
+      renderUvRays(variables.uvVisible, variables.uvPenetration, variables.uvOpacity, variables.uvReach, variables.reduction);
+      renderLabels(variables);
+    }
+
+    function calculateSceneVariables() {
+      const stage = state.stage;
+      const progress = easeInOut(state.progress);
+      const intensity = state.uvIntensity;
+      const visualIntensity = scaleUvVisibility(intensity);
+      const penetrationIntensity = scaleUvReach(intensity);
+      const base = {
+        uvVisible: 0,
+        uvPenetration: 1,
+        uvOpacity: 0,
+        uvReach: 0,
+        stimulation: 0,
+        production: 0,
+        transfer: 0,
+        caps: 0,
+        darkening: 0,
+        reduction: 0,
+        feedbackStrength: 0
+      };
+
+      if (stage === 0) {
+        base.uvVisible = visualIntensity;
+        base.uvOpacity = visualIntensity;
+        base.uvReach = penetrationIntensity;
+        base.production = 0;
+        base.caps = 0;
+      }
+
+      if (stage === 1) {
+        base.uvVisible = progress * visualIntensity;
+        base.uvOpacity = visualIntensity;
+        base.uvReach = progress * penetrationIntensity;
+        base.stimulation = progress * intensity * 0.45;
+      }
+
+      if (stage === 2) {
+        base.uvVisible = visualIntensity;
+        base.uvOpacity = visualIntensity;
+        base.uvReach = penetrationIntensity;
+        base.stimulation = intensity * (0.5 + 0.5 * progress);
+        base.production = intensity * progress;
+      }
+
+      if (stage === 3) {
+        base.uvVisible = visualIntensity;
+        base.uvOpacity = visualIntensity;
+        base.uvReach = penetrationIntensity;
+        base.stimulation = intensity;
+        base.production = intensity;
+        base.transfer = progress * intensity;
+        base.reduction = progress * intensity * 0.16;
+        base.uvPenetration = 1 - base.reduction * 0.2;
+      }
+
+      if (stage === 4) {
+        base.uvVisible = visualIntensity;
+        base.uvReach = penetrationIntensity;
+        base.reduction = progress * intensity * 0.48;
+        base.uvPenetration = 1 - base.reduction * 0.56;
+        base.uvOpacity = visualIntensity * (0.92 - base.reduction * 0.34);
+        base.stimulation = intensity * 0.85;
+        base.production = intensity;
+        base.transfer = intensity;
+        base.caps = intensity * (0.12 + progress);
+        base.darkening = progress * intensity;
+      }
+
+      if (stage === 5) {
+        base.uvVisible = visualIntensity;
+        base.uvReach = penetrationIntensity;
+        base.darkening = intensity;
+        base.caps = intensity;
+        base.transfer = intensity;
+        base.reduction = progress * intensity;
+        base.uvPenetration = 1 - base.reduction * 0.93;
+        base.uvOpacity = visualIntensity * (0.92 - base.reduction * 0.7);
+        base.stimulation = intensity * (1 - progress * 0.45);
+        base.production = intensity * (1 - progress * 0.25);
+      }
+
+      if (stage === 6) {
+        base.uvVisible = visualIntensity;
+        base.uvReach = penetrationIntensity;
+        base.darkening = intensity;
+        base.caps = intensity;
+        base.transfer = intensity;
+        base.reduction = intensity;
+        base.uvPenetration = 1 - intensity * 0.93;
+        base.uvOpacity = visualIntensity * (0.92 - intensity * 0.7);
+        base.feedbackStrength = progress;
+        base.stimulation = intensity * (1 - progress * 0.78);
+        base.production = intensity * (1 - progress * 0.72);
+      }
+
+      base.uvPenetration = clamp(base.uvPenetration, 0.12, 1);
+      base.uvOpacity = clamp(base.uvOpacity, 0, 1);
+      base.uvReach = clamp(base.uvReach, 0, 1);
+      return base;
+    }
+
+    function renderKeratinocytes(darkening) {
+      const fill = blendColors(BASE_CELL_FILL, DARK_CELL_FILL, darkening * 0.72);
+      document.querySelectorAll(".keratinocyte").forEach((cell) => {
+        cell.setAttribute("fill", fill);
+      });
+      state.elements.epidermisDarkening.setAttribute("opacity", String(darkening * 0.32));
+    }
+
+    function renderMelanocytes(stimulation, feedbackStrength) {
+      const glowOpacity = clamp(stimulation * (1 - feedbackStrength * 0.72), 0, 1);
+      document.querySelectorAll(".glow-ring").forEach((ring) => {
+        ring.setAttribute("opacity", String(glowOpacity));
+        ring.classList.toggle("is-pulsing", glowOpacity > 0.18);
+      });
+      document.querySelectorAll(".melanocyte-body").forEach((body) => {
+        body.style.filter = glowOpacity > 0.2 ? "url(#softGlow)" : "none";
+      });
+    }
+
+    function renderProductionDots(production) {
+      state.productionDots.forEach((dot, index) => {
+        const rank = Number(dot.dataset.rank);
+        const jitter = 0.12 * Math.sin(Date.now() / 230 + index);
+        const visible = production > rank * 0.88;
+        const opacity = visible ? clamp(production + jitter, 0.12, 1) : 0;
+        dot.setAttribute("opacity", String(opacity));
+      });
+    }
+
+    function renderMovingGranules(transfer) {
+      state.movingGranules.forEach((granule, index) => {
+        const delay = Number(granule.element.dataset.delay);
+        const localProgress = clamp((transfer - delay) / Math.max(0.22, 1 - delay), 0, 1);
+        const position = pointOnPolyline(granule.pathPoints, easeInOut(localProgress));
+        const isTransferStage = state.stage === 3;
+        const isVisible = isTransferStage && transfer > granule.rank * 0.72 && localProgress > 0;
+        granule.element.setAttribute("cx", String(position.x));
+        granule.element.setAttribute("cy", String(position.y));
+        granule.element.setAttribute("r", String(4.5 + (index % 3) * 0.8));
+        granule.element.setAttribute("opacity", isVisible ? "0.96" : "0");
+      });
+    }
+
+    function renderMelaninCaps(caps, transfer) {
+      state.capGroups.forEach((group) => {
+        const rank = Number(group.dataset.rank);
+        const opacity = clamp((caps - rank * 0.48) * 1.6 + transfer * 0.2, 0, 1);
+        group.setAttribute("opacity", String(opacity));
+      });
+    }
+
+    function renderUvRays(visible, penetration, opacity, reach, reduction) {
+      const segmentBounds = [12, 150, 330, 480, 650];
+      let melanocyteUvExposure = 0;
+
+      state.uvRays.forEach((ray, index) => {
+        const data = ray.data;
+        const deepX = data.x + data.offset;
+        const survival = clamp(1 - reduction * (0.34 + data.deepRank * 0.78), 0.12, 1);
+        const uvPower = clamp(Math.max(visible, opacity), 0, 1);
+        const effectivePenetration = clamp(penetration * survival * reach, 0, 1);
+        const yEnd = lerp(data.shallow, data.deep, effectivePenetration);
+        const xAtY = (y) => lerp(data.x, deepX, clamp((y - 12) / (data.deep - 12), 0, 1));
+        const rayOpacity = visible * opacity * (data.secondary ? 0.82 : 1);
+        let deepestVisibleSegment = null;
+
+        ray.segments.forEach((segment, segmentIndex) => {
+          const y1 = segmentBounds[segmentIndex];
+          const y2 = Math.min(segmentBounds[segmentIndex + 1], yEnd);
+          const segmentIsVisible = y2 > y1 + 5 && rayOpacity > 0.005;
+          segment.removeAttribute("marker-end");
+
+          if (!segmentIsVisible) {
+            segment.setAttribute("opacity", "0");
+            return;
+          }
+
+          const depthFactor = segmentIndex / (ray.segments.length - 1);
+          const baseWidth = data.secondary ? 5 : 8;
+          const intensityWidth = 0.25 + uvPower * 1.05;
+          const width = Math.max(
+            1.15,
+            baseWidth *
+              intensityWidth *
+              (1 - depthFactor * (0.18 + reduction * 0.64)) *
+              (1 - reduction * data.deepRank * 0.34)
+          );
+          const paleAmount = clamp(reduction * (0.2 + depthFactor * 0.95 + data.deepRank * 0.22), 0, 0.9);
+          const saturatedColor = blendColors("#fff3a6", "#e8b900", uvPower);
+          const segmentOpacity = rayOpacity *
+            (1 - depthFactor * reduction * 0.62) *
+            (1 - data.deepRank * reduction * 0.28);
+
+          segment.setAttribute("x1", String(xAtY(y1)));
+          segment.setAttribute("y1", String(y1));
+          segment.setAttribute("x2", String(xAtY(y2)));
+          segment.setAttribute("y2", String(y2));
+          segment.setAttribute("stroke-width", String(width));
+          segment.setAttribute("stroke", blendColors(saturatedColor, "#fff0a8", paleAmount));
+          segment.setAttribute("opacity", String(clamp(segmentOpacity, 0, 1)));
+          deepestVisibleSegment = segment;
+        });
+
+        if (deepestVisibleSegment) {
+          deepestVisibleSegment.setAttribute("marker-end", "url(#uvArrow)");
+        }
+
+        const hit = state.uvHits[index];
+        const hitOpacity = visible * opacity * (1 - reduction * 0.8);
+        hit.setAttribute("cx", String(xAtY(yEnd)));
+        hit.setAttribute("cy", String(yEnd));
+        hit.setAttribute("opacity", state.stage >= 1 && state.stage <= 3 ? String(hitOpacity * 0.65) : "0");
+        melanocyteUvExposure = Math.max(melanocyteUvExposure, yEnd >= 420 ? hitOpacity : 0);
+      });
+
+      state.melanocyteHitRings.forEach((hit) => {
+        const showEarlyHit = state.stage >= 1 && state.stage <= 3;
+        hit.setAttribute("opacity", showEarlyHit ? String(clamp(melanocyteUvExposure * 0.9, 0, 0.9)) : "0");
+      });
+    }
+
+    function renderLabels(variables) {
+      state.elements.stageMessage.textContent = stageData[state.stage].message;
+      state.elements.stageMessage.setAttribute("opacity", stageData[state.stage].message ? "1" : "0");
+
+      const uvLabelOpacity = state.stage >= 1 ? clamp(variables.uvVisible + 0.2, 0, 1) : 0;
+      setOpacity([state.elements.uvLabel, state.elements.uvLabelLine], uvLabelOpacity);
+
+      const reducedUvOpacity = state.stage >= 5 ? clamp(variables.reduction + 0.2, 0, 1) : 0;
+      setOpacity([state.elements.reducedUvLabel, state.elements.reducedUvLine], reducedUvOpacity);
+
+      const feedbackOpacity = state.stage === 6 ? variables.feedbackStrength : 0;
+      state.elements.feedbackArrow.setAttribute("opacity", String(feedbackOpacity));
+      setOpacity([
+        state.elements.negativeFeedbackLabel,
+        state.elements.negativeFeedbackLabel2
+      ], feedbackOpacity);
+    }
+
+    function setOpacity(elements, value) {
+      elements.forEach((element) => {
+        element.setAttribute("opacity", String(value));
+      });
+    }
+
+    function pointOnPolyline(points, t) {
+      const segments = [];
+      let totalLength = 0;
+      for (let i = 0; i < points.length - 1; i += 1) {
+        const start = points[i];
+        const end = points[i + 1];
+        const length = Math.hypot(end[0] - start[0], end[1] - start[1]);
+        segments.push({ start, end, length });
+        totalLength += length;
+      }
+
+      let distance = t * totalLength;
+      for (const segment of segments) {
+        if (distance <= segment.length) {
+          const localT = segment.length === 0 ? 0 : distance / segment.length;
+          return {
+            x: lerp(segment.start[0], segment.end[0], localT),
+            y: lerp(segment.start[1], segment.end[1], localT)
+          };
+        }
+        distance -= segment.length;
+      }
+
+      const last = points[points.length - 1];
+      return { x: last[0], y: last[1] };
+    }
+
+    function easeInOut(value) {
+      const t = clamp(value, 0, 1);
+      return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    }
+
+    function scaleUvVisibility(intensity) {
+      return intensity <= 0 ? 0 : clamp(intensity * 2.6, 0, 1);
+    }
+
+    function scaleUvReach(intensity) {
+      return intensity <= 0 ? 0 : clamp(intensity * 2.35, 0, 1);
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function lerp(start, end, amount) {
+      return start + (end - start) * amount;
+    }
+
+    function blendColors(colorA, colorB, amount) {
+      const a = hexToRgb(colorA);
+      const b = hexToRgb(colorB);
+      const t = clamp(amount, 0, 1);
+      const red = Math.round(lerp(a.r, b.r, t));
+      const green = Math.round(lerp(a.g, b.g, t));
+      const blue = Math.round(lerp(a.b, b.b, t));
+      return `rgb(${red}, ${green}, ${blue})`;
+    }
+
+    function hexToRgb(hex) {
+      if (hex.startsWith("rgb")) {
+        const [r, g, b] = hex.match(/\d+(\.\d+)?/g).map(Number);
+        return { r, g, b };
+      }
+      const value = hex.replace("#", "");
+      return {
+        r: parseInt(value.slice(0, 2), 16),
+        g: parseInt(value.slice(2, 4), 16),
+        b: parseInt(value.slice(4, 6), 16)
+      };
+    }
+  </script>
+</body>
+</html>

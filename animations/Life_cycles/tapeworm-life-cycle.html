@@ -1,0 +1,2645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tapeworm Life Cycle</title>
+  <style>
+    :root {
+      --ink: #23323b;
+      --muted: #60717b;
+      --panel: #ffffff;
+      --line: #cbd9dd;
+      --water: #d9eef4;
+      --field: #eef8e7;
+      --control: #0f6478;
+      --control-dark: #09495a;
+      --accent: #d88a22;
+      --egg: #f7ca45;
+      --larva: #ef7c28;
+      --cyst: #bde9f4;
+      --worm: #f4dfb9;
+      --worm-dark: #d6ad79;
+      --organs: #d85d7b;
+      --correct: #2b8a57;
+      --wrong: #b6423a;
+      --shadow: 0 16px 40px rgba(18, 49, 60, 0.14);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, #e8f6f5 0%, #f7fbf3 48%, #f5f0e5 100%);
+    }
+
+    .app {
+      width: min(1480px, 100%);
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin: 4px 0 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 4.1rem);
+      letter-spacing: 0;
+      line-height: 1.05;
+    }
+
+    .attribution {
+      margin: 8px 0 0;
+      font-size: clamp(1rem, 1.6vw, 1.35rem);
+      font-weight: 700;
+      color: #435960;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(118px, auto)) minmax(220px, 1fr) repeat(3, minmax(150px, auto));
+      gap: 10px;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(139, 171, 174, 0.45);
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: var(--shadow);
+    }
+
+    button,
+    select,
+    input[type="range"] {
+      font: inherit;
+    }
+
+    button,
+    .toggle,
+    .selectWrap,
+    .speedWrap {
+      min-height: 44px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 6px;
+      padding: 10px 14px;
+      color: #fff;
+      background: var(--control);
+      cursor: pointer;
+      font-weight: 700;
+      transition: background 160ms ease, transform 160ms ease;
+    }
+
+    button:hover,
+    button:focus-visible {
+      background: var(--control-dark);
+      outline: 3px solid rgba(31, 140, 160, 0.25);
+      outline-offset: 2px;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button.secondary {
+      color: var(--ink);
+      background: #e9f2f3;
+      border: 1px solid #b9cfd4;
+    }
+
+    button.secondary:hover,
+    button.secondary:focus-visible {
+      background: #d8e8eb;
+    }
+
+    button.quizButton {
+      background: #8a4d16;
+    }
+
+    button.quizButton:hover,
+    button.quizButton:focus-visible {
+      background: #67380f;
+    }
+
+    .toggle,
+    .selectWrap,
+    .speedWrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #c4d6da;
+      background: #f9fcfc;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-weight: 700;
+      color: #314851;
+    }
+
+    .toggle input {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--control);
+    }
+
+    select {
+      min-width: 104px;
+      border: 1px solid #a6c0c7;
+      border-radius: 6px;
+      padding: 7px 10px;
+      color: var(--ink);
+      background: #fff;
+      font-weight: 700;
+    }
+
+    .speedWrap {
+      justify-content: space-between;
+    }
+
+    .speedWrap input {
+      width: min(210px, 45vw);
+      accent-color: var(--control);
+    }
+
+    .mainGrid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 270px;
+      gap: 14px;
+      margin-top: 14px;
+      align-items: start;
+    }
+
+    .stageShell {
+      overflow: hidden;
+      background: var(--panel);
+      border: 1px solid rgba(139, 171, 174, 0.45);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .stageTop {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 14px;
+      border-bottom: 1px solid #dbe8ea;
+      background: #f9fdfd;
+    }
+
+    .stageTitle {
+      margin: 0;
+      font-size: clamp(1.18rem, 2vw, 1.7rem);
+      line-height: 1.15;
+    }
+
+    .stageCounter {
+      color: var(--muted);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .canvasWrap {
+      position: relative;
+      height: clamp(440px, 64vh, 760px);
+      min-height: 440px;
+      background: var(--field);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: manipulation;
+    }
+
+    .captionBox {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+      padding: 12px 14px 14px;
+      border-top: 1px solid #dbe8ea;
+      background: #fff;
+    }
+
+    .caption {
+      margin: 0;
+      font-size: clamp(1rem, 1.7vw, 1.35rem);
+      line-height: 1.35;
+      font-weight: 700;
+    }
+
+    .fact {
+      margin: 0;
+      color: #4a6067;
+      font-size: clamp(0.93rem, 1.4vw, 1.08rem);
+      line-height: 1.4;
+    }
+
+    .timeline {
+      margin-top: 14px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(139, 171, 174, 0.45);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 10px;
+    }
+
+    .progressTrack {
+      position: relative;
+      height: 10px;
+      background: #d9e9ec;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .progressFill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #288799, #d88a22);
+      border-radius: inherit;
+      transition: width 260ms ease;
+    }
+
+    .timelineButtons {
+      display: grid;
+      grid-template-columns: repeat(13, minmax(52px, 1fr));
+      gap: 6px;
+    }
+
+    .timelineButtons button {
+      min-height: 42px;
+      padding: 6px;
+      color: #2b3d44;
+      background: #eef6f6;
+      border: 1px solid #c3d6da;
+      font-size: 0.92rem;
+    }
+
+    .timelineButtons button.active {
+      color: #fff;
+      background: var(--control);
+      border-color: var(--control);
+    }
+
+    aside {
+      display: grid;
+      gap: 14px;
+    }
+
+    .sidePanel {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(139, 171, 174, 0.45);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+
+    .sidePanel h2 {
+      margin: 0 0 10px;
+      font-size: 1.1rem;
+    }
+
+    .notesList {
+      margin: 0;
+      padding-left: 18px;
+      color: #41565e;
+      line-height: 1.38;
+      font-size: 0.94rem;
+    }
+
+    .notesList li + li {
+      margin-top: 6px;
+    }
+
+    .quizPanel {
+      display: none;
+      gap: 10px;
+    }
+
+    .quizPanel.active {
+      display: grid;
+    }
+
+    .quizInstructions {
+      margin: 0;
+      color: #40545c;
+      line-height: 1.35;
+      font-size: 0.98rem;
+    }
+
+    .quizLabels {
+      display: grid;
+      gap: 8px;
+    }
+
+    .quizLabels button {
+      min-height: 40px;
+      color: #293b42;
+      background: #f5efe0;
+      border: 1px solid #d8c69a;
+    }
+
+    .quizLabels button.selected {
+      color: #fff;
+      background: #8a4d16;
+      border-color: #8a4d16;
+    }
+
+    .quizLabels button.correct {
+      color: #fff;
+      background: var(--correct);
+      border-color: var(--correct);
+    }
+
+    .quizFeedback {
+      min-height: 26px;
+      margin: 0;
+      font-weight: 800;
+    }
+
+    .quizFeedback.good {
+      color: var(--correct);
+    }
+
+    .quizFeedback.bad {
+      color: var(--wrong);
+    }
+
+    @media (max-width: 1120px) {
+      .toolbar {
+        grid-template-columns: repeat(4, minmax(110px, 1fr));
+      }
+
+      .speedWrap {
+        grid-column: span 2;
+      }
+
+      .mainGrid {
+        grid-template-columns: 1fr;
+      }
+
+      aside {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 760px) {
+      .app {
+        padding: 10px;
+      }
+
+      .toolbar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .speedWrap {
+        grid-column: span 2;
+      }
+
+      .mainGrid {
+        margin-top: 10px;
+      }
+
+      .canvasWrap {
+        height: 58vh;
+        min-height: 390px;
+      }
+
+      .stageTop {
+        grid-template-columns: 1fr;
+      }
+
+      .timelineButtons {
+        grid-template-columns: repeat(7, minmax(42px, 1fr));
+      }
+
+      aside {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 460px) {
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .speedWrap {
+        grid-column: auto;
+      }
+
+      .timelineButtons {
+        grid-template-columns: repeat(4, minmax(42px, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>Tapeworm Life Cycle</h1>
+      <p class="attribution">Animation Prompted by Jerred Seveyka for his biology class.</p>
+    </header>
+
+    <section class="toolbar" aria-label="Animation controls">
+      <button id="playPauseBtn" type="button">Play</button>
+      <button id="restartBtn" class="secondary" type="button">Restart</button>
+      <button id="prevBtn" class="secondary" type="button">Previous Step</button>
+      <button id="nextBtn" class="secondary" type="button">Next Step</button>
+
+      <label class="speedWrap">
+        <span>Speed <strong id="speedValue">1.0x</strong></span>
+        <input id="speedSlider" type="range" min="0.5" max="2" step="0.1" value="1">
+      </label>
+
+      <label class="selectWrap">
+        <span>Pig/Cow host</span>
+        <select id="hostSelect" aria-label="Choose intermediate host">
+          <option value="pig">Pig host</option>
+          <option value="cow">Cow host</option>
+        </select>
+      </label>
+
+      <label class="toggle">
+        <input id="labelsToggle" type="checkbox" checked>
+        <span>Labels</span>
+      </label>
+
+      <label class="toggle">
+        <input id="detailsToggle" type="checkbox" checked>
+        <span>Show details</span>
+      </label>
+
+      <button id="quizBtn" class="quizButton" type="button">Quiz me</button>
+    </section>
+
+    <section class="mainGrid">
+      <section>
+        <div class="stageShell">
+          <div class="stageTop">
+            <h2 id="stageTitle" class="stageTitle">1. Eggs on vegetation</h2>
+            <div id="stageCounter" class="stageCounter">Step 1 of 12</div>
+          </div>
+          <div class="canvasWrap">
+            <canvas id="lifeCanvas" aria-label="Animated tapeworm life cycle diagram"></canvas>
+          </div>
+          <div class="captionBox">
+            <p id="caption" class="caption">Eggs in feces may contaminate nearby vegetation, soil, or water.</p>
+            <p id="fact" class="fact">Tapeworm eggs are the environmental stage that can be swallowed by an intermediate host.</p>
+          </div>
+        </div>
+
+        <div class="timeline" aria-label="Life-cycle timeline">
+          <div class="progressTrack" aria-hidden="true">
+            <div id="progressFill" class="progressFill"></div>
+          </div>
+          <div id="timelineButtons" class="timelineButtons"></div>
+        </div>
+      </section>
+
+      <aside>
+        <section class="sidePanel">
+          <h2>Notes</h2>
+          <ul class="notesList">
+            <li>The pig or cow is the intermediate host.</li>
+            <li>The human is the definitive host because the adult tapeworm reproduces in the human intestine.</li>
+            <li>The cysticercus is the larval stage in muscle.</li>
+            <li>Proglottids are tapeworm body segments.</li>
+            <li>Gravid proglottids contain eggs.</li>
+            <li>Undercooked infected pork or beef can transmit cysticerci to humans.</li>
+          </ul>
+        </section>
+
+        <section id="quizPanel" class="sidePanel quizPanel" aria-label="Quiz mode">
+          <h2>Quiz Mode</h2>
+          <p class="quizInstructions">Choose a label, then click the matching structure in the picture.</p>
+          <div id="quizLabels" class="quizLabels"></div>
+          <p id="quizFeedback" class="quizFeedback" aria-live="polite"></p>
+          <button id="exitQuizBtn" class="secondary" type="button">Exit quiz</button>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const canvas = document.getElementById("lifeCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const ui = {
+      playPauseBtn: document.getElementById("playPauseBtn"),
+      restartBtn: document.getElementById("restartBtn"),
+      prevBtn: document.getElementById("prevBtn"),
+      nextBtn: document.getElementById("nextBtn"),
+      speedSlider: document.getElementById("speedSlider"),
+      speedValue: document.getElementById("speedValue"),
+      hostSelect: document.getElementById("hostSelect"),
+      labelsToggle: document.getElementById("labelsToggle"),
+      detailsToggle: document.getElementById("detailsToggle"),
+      quizBtn: document.getElementById("quizBtn"),
+      exitQuizBtn: document.getElementById("exitQuizBtn"),
+      stageTitle: document.getElementById("stageTitle"),
+      stageCounter: document.getElementById("stageCounter"),
+      caption: document.getElementById("caption"),
+      fact: document.getElementById("fact"),
+      progressFill: document.getElementById("progressFill"),
+      timelineButtons: document.getElementById("timelineButtons"),
+      quizPanel: document.getElementById("quizPanel"),
+      quizLabels: document.getElementById("quizLabels"),
+      quizFeedback: document.getElementById("quizFeedback")
+    };
+
+    const colors = {
+      ink: "#23323b",
+      muted: "#60717b",
+      egg: "#f7ca45",
+      eggEdge: "#d09915",
+      larva: "#ef7c28",
+      cyst: "#bde9f4",
+      cystEdge: "#67b7c9",
+      worm: "#f4dfb9",
+      wormEdge: "#c99d63",
+      wormDark: "#d6ad79",
+      organs: "#d85d7b",
+      intestine: "#f6b4a7",
+      intestineEdge: "#c76f74",
+      muscle: "#e9a7a9",
+      muscleDark: "#c8777e",
+      feces: "#8a5a32",
+      fecesDark: "#624022",
+      plant: "#48a35b",
+      plantDark: "#2f7f45",
+      blood: "#ce4d5c",
+      water: "#d9eef4",
+      soil: "#caa675"
+    };
+
+    const state = {
+      stage: 0,
+      playing: false,
+      speed: 1,
+      host: "pig",
+      showLabels: true,
+      showDetails: true,
+      quizMode: false,
+      selectedQuiz: null,
+      quizAnswers: {},
+      quizFeedback: "",
+      quizFeedbackKind: "",
+      time: 0,
+      lastFrame: 0,
+      transitionTime: 0,
+      fromCamera: null,
+      camera: { x: 0, y: 0, zoom: 1 },
+      renderCamera: { x: 0, y: 0, zoom: 1 },
+      width: 1000,
+      height: 600
+    };
+
+    const baseCamera = { y: 0, zoom: 1 };
+    const stages = [
+      {
+        title: "1. Eggs on vegetation",
+        caption: "Eggs in feces may contaminate nearby vegetation, soil, or water.",
+        fact: "Tapeworm eggs are the environmental stage that can be swallowed by an intermediate host.",
+        camera: { x: 0, ...baseCamera },
+        draw: drawEggStage
+      },
+      {
+        title: "2. Pig or cow eats contaminated vegetation",
+        caption: "A pig or cow ingests tapeworm eggs while feeding.",
+        fact: "The pig or cow is the intermediate host in this simplified Taenia life cycle.",
+        camera: { x: 1050, y: 0, zoom: 0.95 },
+        draw: drawAnimalIngestion
+      },
+      {
+        title: "3. Eggs hatch in the animal intestine",
+        caption: "Inside the animal intestine, eggs hatch into larvae.",
+        fact: "The young larva is called an oncosphere.",
+        camera: { x: 2100, y: 0, zoom: 1.08 },
+        draw: drawAnimalIntestineHatch
+      },
+      {
+        title: "4. Larvae burrow through intestinal wall",
+        caption: "Larvae penetrate the intestinal wall and migrate through the body.",
+        fact: "Larvae leave the gut and travel through blood or body tissues.",
+        camera: { x: 3150, y: 0, zoom: 1.06 },
+        draw: drawLarvalMigration
+      },
+      {
+        title: "5. Cysticercus forms in muscle",
+        caption: "Larvae encyst in muscle as cysticerci.",
+        fact: "The cysticercus is the larval stage in muscle.",
+        camera: { x: 4200, ...baseCamera },
+        draw: drawCysticercusStage
+      },
+      {
+        title: "6. Human eats undercooked infected meat",
+        caption: "Humans become infected by eating undercooked meat containing cysticerci.",
+        fact: "Undercooked infected pork or beef can transmit cysticerci to humans.",
+        camera: { x: 5250, y: 0, zoom: 0.96 },
+        draw: drawHumanIngestion
+      },
+      {
+        title: "7. Larvae mature in human intestine",
+        caption: "In the human intestine, the larva attaches and develops into an adult tapeworm.",
+        fact: "The scolex attaches to the intestinal wall while the tapeworm grows into the intestinal lumen.",
+        camera: { x: 6300, y: 0, zoom: 1.08 },
+        draw: drawHumanIntestine
+      },
+      {
+        title: "8. Adult tapeworm adds proglottids",
+        caption: "The adult tapeworm grows by adding proglottids behind the scolex.",
+        fact: "Proglottids are tapeworm body segments.",
+        camera: { x: 7350, ...baseCamera },
+        draw: drawAdultTapeworm
+      },
+      {
+        title: "9. Proglottids mature",
+        caption: "Mature proglottids contain reproductive organs and can produce fertilized eggs.",
+        fact: "Tapeworm proglottids are hermaphroditic and can self-fertilize or cross-fertilize between proglottids.",
+        camera: { x: 8400, y: 0, zoom: 1.06 },
+        draw: drawProglottidMaturation
+      },
+      {
+        title: "10. Eggs form in gravid proglottids",
+        caption: "Gravid proglottids become packed with eggs.",
+        fact: "Gravid proglottids are posterior segments filled with eggs.",
+        camera: { x: 9450, y: 0, zoom: 1.08 },
+        draw: drawGravidEggs
+      },
+      {
+        title: "11. Gravid proglottids break off and release eggs",
+        caption: "Gravid proglottids detach, pass out in feces, and release eggs.",
+        fact: "Eggs leave the human host in feces and can contaminate the environment.",
+        camera: { x: 10500, ...baseCamera },
+        draw: drawEggRelease
+      },
+      {
+        title: "12. Cycle repeats",
+        caption: "The cycle begins again when another pig or cow ingests the eggs.",
+        fact: "A new intermediate host continues the life cycle after swallowing eggs.",
+        camera: { x: 11550, ...baseCamera },
+        draw: drawCycleRepeats
+      },
+      {
+        title: "Tapeworm life cycle summary",
+        caption: "Tapeworm life cycle summary: 1. Eggs leave the human host in feces. 2. Eggs contaminate vegetation. 3. A pig or cow ingests the eggs. 4. Larvae hatch, penetrate the intestine, and migrate to muscle. 5. Cysticerci form in muscle. 6. A human eats undercooked infected meat. 7. The adult tapeworm develops in the human intestine. 8. Proglottids mature, become gravid, detach, and release eggs.",
+        fact: "Use Quiz me to practice identifying the major structures.",
+        camera: { x: 12600, y: 0, zoom: 1 },
+        draw: drawSummaryScreen
+      }
+    ];
+
+    const stageDuration = 8.5;
+    const transitionDuration = 1.05;
+
+    const quizTargets = [
+      { id: "egg", label: "egg", x: 12060, y: -155, r: 34 },
+      { id: "cysticercus", label: "cysticercus", x: 12385, y: -165, r: 52 },
+      { id: "scolex", label: "scolex", x: 12680, y: -180, r: 44 },
+      { id: "mature", label: "mature proglottid", x: 12480, y: 145, w: 96, h: 92 },
+      { id: "gravid", label: "gravid proglottid", x: 12730, y: 145, w: 108, h: 98 }
+    ];
+
+    const quizLabels = [
+      { id: "egg", label: "egg" },
+      { id: "cysticercus", label: "cysticercus" },
+      { id: "scolex", label: "scolex" },
+      { id: "mature", label: "mature proglottid" },
+      { id: "gravid", label: "gravid proglottid" }
+    ];
+
+    // Initial setup and event wiring.
+    buildTimeline();
+    buildQuizLabels();
+    resizeCanvas();
+    setStage(0, false);
+    requestAnimationFrame(tick);
+
+    window.addEventListener("resize", resizeCanvas);
+
+    ui.playPauseBtn.addEventListener("click", () => {
+      if (state.quizMode) exitQuiz();
+      state.playing = !state.playing;
+      updateUI();
+    });
+
+    ui.restartBtn.addEventListener("click", () => {
+      exitQuiz(false);
+      state.playing = false;
+      setStage(0);
+    });
+
+    ui.prevBtn.addEventListener("click", () => {
+      exitQuiz(false);
+      state.playing = false;
+      setStage(Math.max(0, state.stage - 1));
+    });
+
+    ui.nextBtn.addEventListener("click", () => {
+      exitQuiz(false);
+      state.playing = false;
+      setStage(Math.min(stages.length - 1, state.stage + 1));
+    });
+
+    ui.speedSlider.addEventListener("input", () => {
+      state.speed = Number(ui.speedSlider.value);
+      updateUI();
+    });
+
+    ui.hostSelect.addEventListener("change", () => {
+      state.host = ui.hostSelect.value;
+      updateUI();
+    });
+
+    ui.labelsToggle.addEventListener("change", () => {
+      state.showLabels = ui.labelsToggle.checked;
+      updateUI();
+    });
+
+    ui.detailsToggle.addEventListener("change", () => {
+      state.showDetails = ui.detailsToggle.checked;
+      updateUI();
+    });
+
+    ui.quizBtn.addEventListener("click", () => {
+      enterQuiz();
+    });
+
+    ui.exitQuizBtn.addEventListener("click", () => {
+      exitQuiz();
+    });
+
+    canvas.addEventListener("click", handleCanvasClick);
+
+    function buildTimeline() {
+      ui.timelineButtons.innerHTML = "";
+      stages.forEach((stage, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = index < 12 ? String(index + 1) : "Summary";
+        button.setAttribute("aria-label", stage.title);
+        button.addEventListener("click", () => {
+          exitQuiz(false);
+          state.playing = false;
+          setStage(index);
+        });
+        ui.timelineButtons.appendChild(button);
+      });
+    }
+
+    function buildQuizLabels() {
+      ui.quizLabels.innerHTML = "";
+      quizLabels.forEach((item) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = item.label;
+        button.dataset.quizId = item.id;
+        button.addEventListener("click", () => {
+          if (state.quizAnswers[item.id]) return;
+          state.selectedQuiz = item.id;
+          state.quizFeedback = `Click the ${item.label} in the picture.`;
+          state.quizFeedbackKind = "";
+          updateUI();
+        });
+        ui.quizLabels.appendChild(button);
+      });
+    }
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      state.width = rect.width;
+      state.height = rect.height;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function setStage(index, withTransition = true) {
+      const next = Math.max(0, Math.min(stages.length - 1, index));
+      const previousCamera = currentCamera();
+      state.stage = next;
+      state.time = 0;
+      state.transitionTime = withTransition ? 0 : transitionDuration;
+      state.fromCamera = previousCamera;
+      state.camera = stages[next].camera;
+      updateUI();
+    }
+
+    function enterQuiz() {
+      state.quizMode = true;
+      state.playing = false;
+      state.selectedQuiz = null;
+      state.quizFeedback = "Choose a label, then click its matching structure.";
+      state.quizFeedbackKind = "";
+      state.quizAnswers = {};
+      state.fromCamera = currentCamera();
+      state.camera = { x: 12530, y: 0, zoom: 1 };
+      state.transitionTime = 0;
+      updateUI();
+    }
+
+    function exitQuiz(resetFeedback = true) {
+      if (!state.quizMode) return;
+      state.quizMode = false;
+      state.selectedQuiz = null;
+      if (resetFeedback) {
+        state.quizFeedback = "";
+        state.quizFeedbackKind = "";
+      }
+      state.fromCamera = currentCamera();
+      state.camera = stages[state.stage].camera;
+      state.transitionTime = 0;
+      updateUI();
+    }
+
+    function updateUI() {
+      const stage = stages[state.stage];
+      ui.playPauseBtn.textContent = state.playing ? "Pause" : "Play";
+      ui.speedValue.textContent = `${state.speed.toFixed(1)}x`;
+      ui.hostSelect.value = state.host;
+      ui.labelsToggle.checked = state.showLabels;
+      ui.detailsToggle.checked = state.showDetails;
+      ui.stageTitle.textContent = state.quizMode ? "Quiz mode: identify the structures" : stage.title;
+      ui.stageCounter.textContent = state.quizMode ? "Practice" : (state.stage < 12 ? `Step ${state.stage + 1} of 12` : "Summary");
+      ui.caption.textContent = state.quizMode ? "Quiz mode hides labels. Choose a term and click the matching structure in the diagram." : getHostText(stage.caption);
+      ui.fact.textContent = state.quizMode ? "Quiz labels: egg, cysticercus, scolex, mature proglottid, and gravid proglottid." : getHostText(stage.fact);
+
+      const progress = Math.min(100, (state.stage / (stages.length - 1)) * 100);
+      ui.progressFill.style.width = `${progress}%`;
+
+      [...ui.timelineButtons.children].forEach((button, index) => {
+        button.classList.toggle("active", index === state.stage && !state.quizMode);
+      });
+
+      ui.quizPanel.classList.toggle("active", state.quizMode);
+      [...ui.quizLabels.children].forEach((button) => {
+        const id = button.dataset.quizId;
+        button.classList.toggle("selected", state.selectedQuiz === id);
+        button.classList.toggle("correct", Boolean(state.quizAnswers[id]));
+        button.disabled = Boolean(state.quizAnswers[id]);
+      });
+      ui.quizFeedback.textContent = state.quizFeedback;
+      ui.quizFeedback.className = `quizFeedback ${state.quizFeedbackKind}`;
+    }
+
+    function getHostText(text) {
+      const animal = state.host === "pig" ? "pig" : "cow";
+      const meat = state.host === "pig" ? "pork" : "beef";
+      return text.replace(/pig or cow/g, animal).replace(/Pig or cow/g, animal[0].toUpperCase() + animal.slice(1)).replace(/pork or beef/g, meat);
+    }
+
+    function tick(timestamp) {
+      if (!state.lastFrame) state.lastFrame = timestamp;
+      const delta = Math.min(0.05, (timestamp - state.lastFrame) / 1000);
+      state.lastFrame = timestamp;
+
+      if (state.playing && !state.quizMode) {
+        state.time += delta * state.speed;
+        if (state.time >= stageDuration) {
+          if (state.stage < stages.length - 1) {
+            setStage(state.stage + 1);
+          } else {
+            state.playing = false;
+            state.time = stageDuration;
+            updateUI();
+          }
+        }
+      } else {
+        state.time += delta * Math.max(0.35, state.speed * 0.3);
+      }
+
+      state.transitionTime = Math.min(transitionDuration, state.transitionTime + delta);
+      draw();
+      requestAnimationFrame(tick);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, state.width, state.height);
+      drawCanvasBackground();
+
+      const camera = currentCamera();
+      state.renderCamera = camera;
+
+      ctx.save();
+      applyCamera(camera);
+
+      if (state.quizMode) {
+        drawQuizScreen();
+      } else {
+        drawStageBackdrop(stages[state.stage].camera.x);
+        stages[state.stage].draw(stageProgress());
+      }
+
+      ctx.restore();
+    }
+
+    function currentCamera() {
+      const target = makeResponsiveCamera(state.camera);
+      const start = state.fromCamera || target;
+      const t = easeInOut(Math.min(1, state.transitionTime / transitionDuration));
+      return {
+        x: lerp(start.x, target.x, t),
+        y: lerp(start.y, target.y, t),
+        zoom: lerp(start.zoom, target.zoom, t)
+      };
+    }
+
+    function makeResponsiveCamera(camera) {
+      const narrowBoost = state.width < 720 ? 0.78 : state.width < 1050 ? 0.88 : 1;
+      const shortBoost = state.height < 500 ? 0.86 : 1;
+      return {
+        x: camera.x,
+        y: camera.y,
+        zoom: camera.zoom * narrowBoost * shortBoost
+      };
+    }
+
+    function applyCamera(camera) {
+      ctx.translate(state.width / 2, state.height / 2);
+      ctx.scale(camera.zoom, camera.zoom);
+      ctx.translate(-camera.x, -camera.y);
+    }
+
+    function stageProgress() {
+      return Math.min(1, state.time / stageDuration);
+    }
+
+    function drawCanvasBackground() {
+      const gradient = ctx.createLinearGradient(0, 0, 0, state.height);
+      gradient.addColorStop(0, "#e6f6f8");
+      gradient.addColorStop(0.6, "#f5fbef");
+      gradient.addColorStop(1, "#f0e2ce");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, state.width, state.height);
+    }
+
+    function drawStageBackdrop(cx) {
+      ctx.save();
+      ctx.translate(cx, 0);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.54)";
+      roundRect(-460, -305, 920, 610, 28, true, false);
+      ctx.strokeStyle = "rgba(64, 100, 108, 0.12)";
+      ctx.lineWidth = 2;
+      roundRect(-460, -305, 920, 610, 28, false, true);
+      ctx.restore();
+    }
+
+    // Stage 1: contaminated vegetation.
+    function drawEggStage(p) {
+      const cx = 0;
+      drawGround(cx);
+      drawVegetation(cx - 8, 82, 0.95);
+      drawFecalMatter(cx - 92, 118, 1.02);
+
+      const eggs = [
+        [-150, 88], [-122, 68], [-96, 102], [-70, 76], [-46, 116],
+        [-22, 66], [5, 92], [32, 74], [55, 110], [-4, 132],
+        [-138, 123], [24, 126]
+      ];
+      eggs.forEach((pos, i) => {
+        drawEgg(cx + pos[0], pos[1], 7 + (i % 3));
+      });
+
+      drawLabel("fecal matter", cx - 335, -84, cx - 112, 98);
+      drawLabel("vegetable matter", cx + 250, -82, cx + 8, 64);
+      drawLabel("tapeworm eggs", cx + 190, 150, cx - 32, 88);
+      drawLabel("egg", cx + 292, 48, cx + 32, 74, true);
+      drawMiniCycleBadge(cx + 365, 185, "contaminated vegetable matter");
+    }
+
+    // Stage 2: pig or cow ingestion.
+    function drawAnimalIngestion(p) {
+      const cx = 1050;
+      const foodX = cx - 235;
+      const foodY = 118;
+      const animalScale = 1.36;
+      const animalX = cx + 130;
+      const animalY = 64;
+      const snoutOffsetX = state.host === "cow" ? -160 : -166;
+      const snoutOffsetY = state.host === "cow" ? -4 : -2;
+      const mouthX = animalX + snoutOffsetX * animalScale;
+      const mouthY = animalY + snoutOffsetY * animalScale;
+      const gutX = animalX + 62 * animalScale;
+      const gutY = animalY + 36 * animalScale;
+
+      drawGround(cx);
+      drawVegetation(foodX, foodY - 8, 0.55);
+      drawEggCluster(foodX - 4, foodY - 44, 7, 6);
+      drawHostAnimal(animalX, animalY, state.host, animalScale);
+      drawDigestivePath(mouthX, mouthY, gutX, gutY, p);
+
+      for (let i = 0; i < 5; i += 1) {
+        const t = Math.max(0, Math.min(1, (p * 1.45) - i * 0.09));
+        const startX = foodX - 22 + i * 13;
+        const startY = foodY - 46 + Math.sin(i) * 8;
+        const x = lerp(startX, mouthX, easeInOut(t));
+        const y = lerp(startY, mouthY, easeInOut(t)) - Math.sin(t * Math.PI) * 24;
+        drawContaminatedBite(x, y, 0.34);
+      }
+
+      drawArrow(foodX + 38, foodY - 48, mouthX, mouthY, "#6d7d42", 0.9);
+      drawLabel(`${hostName()} intermediate host`, cx + 255, -170, animalX + 25, animalY - 82);
+      drawLabel("vegetation plus eggs", cx - 338, -72, foodX - 12, foodY - 46);
+      drawLabel("food enters mouth", cx - 20, -128, mouthX, mouthY, true);
+      drawLabel("digestive tract", cx + 320, 150, gutX, gutY, true);
+    }
+
+    // Stage 3: eggs hatch in animal intestine.
+    function drawAnimalIntestineHatch(p) {
+      const cx = 2100;
+      drawIntestineCrossSection(cx, 0, 1.22);
+      const hatch = easeInOut(Math.min(1, p * 1.5));
+
+      const hatchPoints = [
+        { dx: -92, dy: -38, angle: -0.35 },
+        { dx: 36, dy: -52, angle: 0.9 },
+        { dx: -32, dy: 44, angle: 2.35 },
+        { dx: 108, dy: 34, angle: -1.15 }
+      ];
+
+      hatchPoints.forEach((point, i) => {
+        const angle = point.angle;
+        const x = cx + point.dx;
+        const y = point.dy;
+        drawEgg(x, y, 15 - hatch * 6);
+        drawCrack(x, y, hatch, i);
+        const lx = lerp(x, cx + Math.cos(angle + 0.35) * 52, hatch);
+        const ly = lerp(y, Math.sin(angle + 0.35) * 36, hatch);
+        drawLarva(lx, ly, 0.75 + hatch * 0.18, angle, hatch);
+      });
+
+      drawLabel(`${hostName()} intestine`, cx - 300, -180, cx - 96, -86);
+      drawLabel("eggs hatch", cx + 170, -175, cx + 68, -42);
+      drawLabel("larva/oncosphere", cx + 270, 126, cx + 78, 36, true);
+      drawLabel("intestinal lumen", cx - 300, 130, cx - 44, 10, true);
+    }
+
+    // Stage 4: larval migration through intestinal wall.
+    function drawLarvalMigration(p) {
+      const cx = 3150;
+      drawIntestinalWallScene(cx);
+      const laneYs = [-68, 0, 68];
+      laneYs.forEach((laneY, i) => {
+        const t = Math.max(0, Math.min(1, p * 1.45 - i * 0.1));
+        const x = lerp(cx - 230, cx + 245, easeInOut(t));
+        const y = laneY + Math.sin(t * Math.PI * 2 + i) * 8;
+        drawLarva(x, y, 0.74, 0, 1);
+        drawDashedArrow(cx - 210, laneY, cx + 215, laneY + 8, "#b65f2c");
+        drawMotionLines(x - 24, y, 18, 3);
+      });
+      drawBloodVessel(cx + 275, -30, 0.96);
+
+      drawLabel("intestinal wall", cx - 315, -168, cx - 75, -128, true);
+      drawTextBox("burrowing larvae", cx - 315, 154);
+      drawLabel("migration", cx + 250, -164, cx + 194, -55, true);
+      drawLabel("bloodstream / body tissues", cx + 300, 148, cx + 275, -25);
+    }
+
+    // Stage 5: cysticerci in muscle.
+    function drawCysticercusStage(p) {
+      const cx = 4200;
+      drawMuscleTissue(cx, 0, 1.08);
+      const cysts = [
+        { x: cx - 190, y: -75, s: 0.92 },
+        { x: cx - 40, y: 54, s: 1.08 },
+        { x: cx + 125, y: -48, s: 0.98 },
+        { x: cx + 235, y: 95, s: 0.86 }
+      ];
+
+      cysts.forEach((cyst, i) => {
+        const pop = easeOut(Math.max(0, Math.min(1, p * 1.6 - i * 0.15)));
+        drawCysticercus(cyst.x, cyst.y, cyst.s * pop);
+      });
+
+      drawLabel(`${hostName()} muscle tissue`, cx - 320, -180, cx - 205, -115);
+      drawLabel("cysticercus larva", cx + 240, -155, cx + 120, -48);
+      drawLabel("immature scolex inside cyst", cx + 245, 168, cx - 38, 52, true);
+      drawMiniCycleBadge(cx - 330, 214, "larval stage in muscle");
+    }
+
+    // Stage 6: human ingestion of infected meat.
+    function drawHumanIngestion(p) {
+      const cx = 5250;
+      const humanX = cx + 120;
+      const humanY = 30;
+      const humanScale = 1.05;
+      const mouthX = humanX;
+      const mouthY = humanY - 76 * humanScale;
+
+      drawTable(cx, 165);
+      drawHumanFigure(humanX, humanY, humanScale, true);
+      drawPlateWithMeat(cx - 210, 130, meatName(), true);
+
+      for (let i = 0; i < 4; i += 1) {
+        const t = Math.max(0, Math.min(1, p * 1.5 - i * 0.08));
+        const x = lerp(cx - 234 + i * 22, mouthX, easeInOut(t));
+        const y = lerp(104 + Math.sin(i) * 10, mouthY, easeInOut(t)) - Math.sin(t * Math.PI) * 38;
+        drawMeatEggBite(x, y, 0.38);
+      }
+
+      drawArrow(cx - 118, 88, mouthX, mouthY, "#8a4d16", 0.9);
+      drawLabel(`undercooked ${meatName()} with eggs`, cx - 335, -105, cx - 212, 116);
+      drawLabel("human definitive host", cx + 230, -168, humanX, humanY - 68);
+      drawLabel("food enters mouth", cx + 170, 112, mouthX, mouthY, true);
+      drawLabel("cysticerci in meat", cx - 14, 162, cx - 205, 112, true);
+    }
+
+    // Stage 7: scolex attachment and maturation in human intestine.
+    function drawHumanIntestine(p) {
+      const cx = 6300;
+      drawSmallIntestineAttachmentScene(cx);
+
+      const cystMove = easeInOut(Math.min(1, p * 1.65));
+      const attachProgress = easeInOut(Math.max(0, Math.min(1, (p - 0.42) / 0.34)));
+      const growthProgress = easeInOut(Math.max(0, Math.min(1, (p - 0.62) / 0.38)));
+      const attachX = cx - 82;
+      const attachY = -58;
+      const cystX = lerp(cx - 230, attachX - 18, cystMove);
+      const cystY = lerp(38, attachY + 4, cystMove);
+      const cystScale = 0.6 * (1 - attachProgress * 0.82);
+
+      if (cystScale > 0.06) drawCysticercus(cystX, cystY, cystScale);
+
+      if (attachProgress > 0.02) {
+        ctx.save();
+        ctx.globalAlpha = attachProgress;
+        drawScolex(attachX, attachY, 0.42, 0);
+        drawAttachmentFibers(attachX, attachY, 0.42);
+        ctx.restore();
+      }
+
+      const neckX = attachX + 18;
+      const neckY = attachY + 10;
+      const neckLength = 46 * growthProgress;
+      if (growthProgress > 0.02) {
+        drawNeck(neckX, neckY, neckLength);
+      }
+
+      const count = Math.floor(growthProgress * 8);
+      if (count > 0) {
+        const earlySegments = [];
+        for (let i = 0; i < count; i += 1) {
+          earlySegments.push({
+            color: i < 4 ? "#f7e8ca" : "#e8c796",
+            w: 22 + i * 2.2,
+            h: 34 + i * 2.6,
+            organ: i > 5
+          });
+        }
+        drawConnectedProglottidChain(neckX + neckLength - 1, attachY + 18, earlySegments, p, { roundFirst: false });
+      }
+
+      drawArrow(attachX + 70, attachY - 4, attachX + 258, attachY + 8, "#9a6a2c", 0.85);
+      drawLabel("small portion of human intestine", cx - 328, -180, cx - 150, -95);
+      drawLabel("cysticercus moves to wall", cx - 352, 176, cystX, cystY, true);
+      drawLabel("scolex attaches to intestinal wall", cx + 224, -178, attachX, attachY - 18);
+      drawLabel("scolex", cx + 258, -80, attachX, attachY, true);
+      drawLabel("neck region", cx + 270, 20, neckX + Math.max(14, neckLength), neckY, true);
+      drawLabel("intestinal lumen", cx - 102, 114, cx, 24, true);
+      drawLabel("growth continues in the lumen", cx + 218, 138, attachX + 260, attachY + 26);
+    }
+
+    // Stage 8: adult tapeworm segment growth.
+    function drawAdultTapeworm(p) {
+      const cx = 7350;
+      drawCurvedIntestine(cx, 0, 0.95);
+      const count = Math.floor(4 + p * 18);
+      const startX = cx - 300;
+      const y = -22;
+      const neckX = startX + 30;
+      const neckLength = 54;
+
+      drawScolex(startX, y, 0.56, 0);
+      drawAttachmentFibers(startX, y, 0.56);
+      drawNeck(neckX, y, neckLength);
+
+      const segments = [];
+      for (let i = 0; i < count; i += 1) {
+        segments.push({
+          color: i < 4 ? "#f7e8ca" : i < 13 ? "#e8c796" : "#d6ad79",
+          w: 21 + Math.min(i, 12) * 1.6,
+          h: 38 + Math.min(i, 12) * 2.2,
+          organ: i > 10
+        });
+      }
+      const chain = drawConnectedProglottidChain(neckX + neckLength - 1, y, segments, p, { roundFirst: false });
+      const immatureTarget = chain.centers[Math.min(1, chain.centers.length - 1)];
+      const olderTarget = chain.centers[chain.centers.length - 1];
+
+      drawArrow(startX + 70, y - 86, startX + 180, y - 86, "#9a6a2c", 0.8);
+      drawArrow(startX + 180, y - 86, startX + 290, y - 86, "#9a6a2c", 0.8);
+      drawLabel("scolex", cx - 345, -154, startX, y, true);
+      drawLabel("neck region", cx - 190, -164, neckX + 34, y, true);
+      drawLabel("new immature proglottids", cx - 90, 142, immatureTarget.x, y + 8);
+      drawLabel("older, larger proglottids", cx + 260, -160, olderTarget.x, y);
+    }
+
+    // Stage 9: proglottid maturation and fertilization.
+    function drawProglottidMaturation(p) {
+      const cx = 8400;
+      drawZoomBanner(cx, "Proglottids mature from neck to posterior end");
+      const baseX = cx - 390;
+      const y = 10;
+      const segments = [
+        { label: "immature", color: "#f7e8ca", w: 66, h: 86, organ: false },
+        { label: "immature", color: "#f3dfb4", w: 72, h: 92, organ: false },
+        { label: "mature", color: "#e8c796", w: 82, h: 106, organ: true },
+        { label: "mature", color: "#e0bd83", w: 88, h: 112, organ: true },
+        { label: "gravid", color: "#d0a16b", w: 96, h: 124, eggs: true },
+        { label: "gravid", color: "#c99158", w: 104, h: 132, eggs: true }
+      ];
+
+      const chain = drawConnectedProglottidChain(baseX, y, segments, p);
+
+      drawFertilizationArrow(chain.centers[2].x + 18, y - 92, chain.centers[3].x - 18, y - 92, p);
+      drawTextBox("immature proglottid", cx - 360, -168);
+      drawTextBox("mature proglottid", cx - 74, -190);
+      drawTextBox("reproductive organs", cx + 20, 185, true);
+      drawTextBox("gravid proglottid", cx + 300, -175);
+      drawTextBox("self-fertilization or cross-fertilization between proglottids", cx - 20, -235, true, 250);
+    }
+
+    // Stage 10: eggs packed inside gravid proglottids.
+    function drawGravidEggs(p) {
+      const cx = 9450;
+      drawZoomBanner(cx, "Posterior proglottids fill with eggs");
+      const baseX = cx - 300;
+      const y = 4;
+      const segments = [];
+
+      for (let i = 0; i < 4; i += 1) {
+        const fullness = Math.max(0, Math.min(1, p * 1.45 - i * 0.16));
+        segments.push({
+          color: i < 2 ? "#d8ac76" : "#c99158",
+          w: 96 + i * 22,
+          h: 112 + i * 8,
+          organ: true,
+          eggCount: Math.floor(6 + fullness * 26),
+          fullness,
+          bulge: i >= 2
+        });
+      }
+
+      const chain = drawConnectedProglottidChain(baseX, y, segments, p);
+
+      drawLabel("gravid proglottid", cx + 250, -172, chain.centers[3].x, y);
+      drawLabel("eggs forming inside", cx - 250, -162, chain.centers[1].x, y);
+      drawLabel("fertilized eggs", cx + 250, 164, chain.centers[3].x, y + 40, true);
+    }
+
+    // Stage 11: detachment and egg release.
+    function drawEggRelease(p) {
+      const cx = 10500;
+      drawCurvedIntestine(cx - 155, -20, 0.78);
+      drawFecalMatter(cx + 245, 130, 0.95);
+
+      drawScolex(cx - 380, -36, 0.75, 0);
+      drawNeck(cx - 348, -36, 42);
+      for (let i = 0; i < 7; i += 1) {
+        drawProglottidSegment(cx - 285 + i * 42, -36, 38 + i * 3, 58 + i * 4, i < 4 ? "#e8c796" : "#c99158", i >= 2, i >= 5);
+      }
+
+      const move = easeInOut(Math.min(1, p * 1.35));
+      const gx = lerp(cx + 30, cx + 230, move);
+      const gy = lerp(-34, 84, move);
+      drawDetachedGravid(gx, gy, 1, p);
+      drawDashedArrow(cx - 10, -18, cx + 210, 75, "#8a4d16");
+
+      const burst = Math.max(0, Math.min(1, p * 1.7 - 0.45));
+      for (let i = 0; i < 18; i += 1) {
+        const angle = i * 0.72;
+        const spread = burst * (18 + (i % 5) * 11);
+        const x = cx + 248 + Math.cos(angle) * spread;
+        const y = 116 + Math.sin(angle) * spread * 0.55;
+        drawEgg(x, y, 6 + burst * 2);
+      }
+
+      drawLabel("detached gravid proglottid", cx - 25, -178, gx, gy);
+      drawLabel("eggs released in feces", cx + 240, -150, cx + 245, 110);
+      drawLabel("gravid proglottids contain eggs", cx - 350, 154, cx - 58, -26, true);
+    }
+
+    // Stage 12: return to the starting contamination setup.
+    function drawCycleRepeats(p) {
+      const cx = 11550;
+      const foodX = cx - 220;
+      const foodY = 118;
+      const animalScale = 1.28;
+      const animalX = cx + 250;
+      const animalY = 72;
+
+      drawGround(cx);
+      drawVegetation(foodX, foodY - 8, 0.55);
+      drawFecalMatter(foodX - 34, foodY + 22, 0.58);
+      [
+        [-76, -34], [-54, -50], [-32, -26], [-12, -44], [10, -18],
+        [-68, 4], [-36, 14], [-5, 8], [22, -36], [36, -8]
+      ].forEach((pos, i) => {
+        drawEgg(foodX + pos[0], foodY + pos[1], 5.5 + (i % 3));
+      });
+      drawHostAnimal(animalX, animalY, state.host, animalScale);
+
+      drawLargeCircularArrow(cx - 22, 10, 275, p);
+      drawLabel("contaminated vegetation", cx - 328, -168, foodX - 8, foodY - 46);
+      drawLabel("feces and eggs already present", cx - 208, 176, foodX - 34, foodY + 8, true, 220);
+      drawLabel(`large ${hostName()} intermediate host`, cx + 236, -166, animalX + 20, animalY - 78);
+      drawLabel("cycle returns to the starting condition", cx + 48, 206, foodX - 8, foodY - 44);
+    }
+
+    function drawSummaryScreen() {
+      const cx = 12600;
+      drawZoomBanner(cx, "Tapeworm life cycle summary");
+      const left = cx - 390;
+      const top = -205;
+      const lines = [
+        "1. Eggs leave the human host in feces.",
+        "2. Eggs contaminate vegetation.",
+        `3. A ${hostName()} ingests the eggs.`,
+        "4. Larvae hatch, penetrate the intestine, and migrate to muscle.",
+        "5. Cysticerci form in muscle.",
+        `6. A human eats undercooked infected ${meatName()}.`,
+        "7. The adult tapeworm develops in the human intestine.",
+        "8. Proglottids mature, become gravid, detach, and release eggs."
+      ];
+
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,0.92)";
+      ctx.strokeStyle = "#b8cfd3";
+      ctx.lineWidth = 2;
+      roundRect(left, top, 780, 410, 18, true, true);
+      ctx.fillStyle = colors.ink;
+      ctx.font = "700 25px Arial";
+      ctx.fillText("Tapeworm life cycle summary:", left + 32, top + 46);
+      ctx.font = "600 18px Arial";
+      ctx.fillStyle = "#334850";
+      lines.forEach((line, i) => {
+        wrapText(line, left + 36, top + 86 + i * 38, 710, 24);
+      });
+      ctx.restore();
+
+      drawEgg(cx - 315, 246, 18);
+      drawCysticercus(cx - 165, 248, 0.62);
+      drawScolex(cx + 5, 248, 0.8, 0);
+      drawProglottidSegment(cx + 178, 248, 90, 84, "#e0bd83", true, false);
+      drawReproductiveOrgans(cx + 178, 248, 90, 84, 1);
+      drawProglottidSegment(cx + 330, 248, 100, 92, "#c99158", false, true);
+      drawEggsInsideSegment(cx + 330, 248, 100, 92, 18);
+    }
+
+    function drawQuizScreen() {
+      const cx = 12530;
+      drawStageBackdrop(cx);
+      drawZoomBanner(cx, "Quiz: click the matching structure");
+      drawQuizObjects();
+
+      quizTargets.forEach((target) => {
+        const isCorrect = state.quizAnswers[target.id];
+        ctx.save();
+        ctx.strokeStyle = isCorrect ? "#2b8a57" : "rgba(35, 50, 59, 0.45)";
+        ctx.lineWidth = isCorrect ? 5 : 3;
+        ctx.setLineDash(isCorrect ? [] : [7, 7]);
+        if (target.r) {
+          ctx.beginPath();
+          ctx.arc(target.x, target.y, target.r + 12, 0, Math.PI * 2);
+          ctx.stroke();
+        } else {
+          roundRect(target.x - target.w / 2 - 12, target.y - target.h / 2 - 12, target.w + 24, target.h + 24, 12, false, true);
+        }
+        ctx.restore();
+      });
+
+      ctx.save();
+      ctx.font = "700 18px Arial";
+      ctx.fillStyle = "#40545c";
+      ctx.textAlign = "center";
+      wrapText("Choose a label from the quiz panel, then click the matching structure. Labels are hidden here for practice.", cx, 265, 760, 25);
+      ctx.restore();
+    }
+
+    function drawQuizObjects() {
+      drawEgg(12060, -155, 23);
+      drawCysticercus(12385, -165, 1.03);
+      drawScolex(12680, -180, 1.15, 0);
+      drawProglottidSegment(12480, 145, 96, 92, "#e0bd83", true, false);
+      drawReproductiveOrgans(12480, 145, 96, 92, 0.8);
+      drawProglottidSegment(12730, 145, 108, 98, "#c99158", false, true);
+      drawEggsInsideSegment(12730, 145, 108, 98, 22);
+    }
+
+    function handleCanvasClick(event) {
+      if (!state.quizMode || !state.selectedQuiz) return;
+      const point = screenToWorld(event);
+      const target = quizTargets.find((item) => pointHitsTarget(point, item));
+      if (!target) {
+        state.quizFeedback = "Try again.";
+        state.quizFeedbackKind = "bad";
+        updateUI();
+        return;
+      }
+
+      if (target.id === state.selectedQuiz) {
+        state.quizAnswers[target.id] = true;
+        state.quizFeedback = "Correct";
+        state.quizFeedbackKind = "good";
+        state.selectedQuiz = null;
+        if (Object.keys(state.quizAnswers).length === quizLabels.length) {
+          state.quizFeedback = "Correct. You identified all five structures.";
+        }
+      } else {
+        state.quizFeedback = "Try again.";
+        state.quizFeedbackKind = "bad";
+      }
+      updateUI();
+    }
+
+    function screenToWorld(event) {
+      const rect = canvas.getBoundingClientRect();
+      const sx = event.clientX - rect.left;
+      const sy = event.clientY - rect.top;
+      const camera = state.renderCamera;
+      return {
+        x: (sx - state.width / 2) / camera.zoom + camera.x,
+        y: (sy - state.height / 2) / camera.zoom + camera.y
+      };
+    }
+
+    function pointHitsTarget(point, target) {
+      if (target.r) {
+        return distance(point.x, point.y, target.x, target.y) <= target.r + 20;
+      }
+      return point.x >= target.x - target.w / 2 - 18 &&
+        point.x <= target.x + target.w / 2 + 18 &&
+        point.y >= target.y - target.h / 2 - 18 &&
+        point.y <= target.y + target.h / 2 + 18;
+    }
+
+    // Reusable drawing helpers.
+    function drawGround(cx) {
+      ctx.save();
+      ctx.fillStyle = "#d3b286";
+      ctx.beginPath();
+      ctx.ellipse(cx, 162, 420, 66, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(112, 78, 45, 0.28)";
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 10; i += 1) {
+        ctx.beginPath();
+        ctx.moveTo(cx - 360 + i * 74, 152 + Math.sin(i) * 8);
+        ctx.quadraticCurveTo(cx - 330 + i * 74, 139, cx - 298 + i * 74, 154);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawVegetation(x, y, scale = 1) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      ctx.strokeStyle = colors.plantDark;
+      ctx.lineWidth = 5;
+      ctx.lineCap = "round";
+      for (let i = -3; i <= 3; i += 1) {
+        ctx.beginPath();
+        ctx.moveTo(i * 16, 80);
+        ctx.quadraticCurveTo(i * 10, 30, i * 25, -5 - Math.abs(i) * 4);
+        ctx.stroke();
+      }
+
+      for (let i = -4; i <= 4; i += 1) {
+        const lx = i * 22;
+        const ly = 50 - Math.abs(i) * 5;
+        ctx.fillStyle = i % 2 ? "#61b968" : colors.plant;
+        ctx.beginPath();
+        ctx.ellipse(lx, ly, 26, 12, -0.5 + i * 0.18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = colors.plantDark;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = "#7cc66f";
+      ctx.beginPath();
+      ctx.ellipse(0, 72, 95, 38, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = colors.plantDark;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawContaminatedBite(x, y, scale = 1) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      ctx.fillStyle = colors.plant;
+      ctx.strokeStyle = colors.plantDark;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(-12, 4, 28, 12, -0.4, 0, Math.PI * 2);
+      ctx.ellipse(12, -4, 26, 11, 0.45, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      drawEgg(-8, -7, 8);
+      drawEgg(15, 8, 7);
+      ctx.restore();
+    }
+
+    function drawMeatEggBite(x, y, scale = 1) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      ctx.fillStyle = meatName() === "pork" ? "#d07a6a" : "#b86b55";
+      ctx.strokeStyle = "#8f483c";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 34, 22, -0.16, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      drawCysticercus(-8, -2, 0.18);
+      drawEgg(12, 5, 6);
+      ctx.restore();
+    }
+
+    function drawFecalMatter(x, y, scale = 1) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      const blobs = [
+        { x: -62, y: 25, rx: 60, ry: 29 },
+        { x: 0, y: 15, rx: 70, ry: 34 },
+        { x: 60, y: 26, rx: 58, ry: 28 },
+        { x: -20, y: -16, rx: 58, ry: 30 },
+        { x: 34, y: -38, rx: 45, ry: 24 }
+      ];
+      blobs.forEach((blob, i) => {
+        ctx.fillStyle = i % 2 ? colors.feces : "#9c6639";
+        ctx.beginPath();
+        ctx.ellipse(blob.x, blob.y, blob.rx, blob.ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = colors.fecesDark;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      });
+      ctx.strokeStyle = "rgba(255,255,255,0.24)";
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(-36, -24);
+      ctx.quadraticCurveTo(3, -42, 44, -28);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawEgg(x, y, r = 9) {
+      ctx.save();
+      ctx.fillStyle = colors.egg;
+      ctx.strokeStyle = colors.eggEdge;
+      ctx.lineWidth = Math.max(1.5, r * 0.18);
+      ctx.beginPath();
+      ctx.ellipse(x, y, r * 1.05, r * 0.92, 0.15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(117, 76, 8, 0.38)";
+      ctx.lineWidth = Math.max(1, r * 0.12);
+      ctx.beginPath();
+      ctx.ellipse(x + r * 0.05, y, r * 0.55, r * 0.46, 0.1, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(255,255,255,0.42)";
+      ctx.beginPath();
+      ctx.arc(x - r * 0.32, y - r * 0.26, r * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawEggCluster(x, y, count, radius = 8) {
+      for (let i = 0; i < count; i += 1) {
+        const angle = i * 2.17;
+        const spread = 12 + (i % 5) * 11;
+        drawEgg(x + Math.cos(angle) * spread, y + Math.sin(angle) * spread * 0.68, radius);
+      }
+    }
+
+    function eggPositions(cx, cy, count) {
+      const positions = [];
+      for (let i = 0; i < count; i += 1) {
+        const angle = i * 2.399;
+        const spread = 18 + (i % 6) * 12;
+        positions.push({
+          x: cx + Math.cos(angle) * spread,
+          y: cy + Math.sin(angle) * spread * 0.7
+        });
+      }
+      return positions;
+    }
+
+    function drawCrack(x, y, amount, seed) {
+      if (amount <= 0.1) return;
+      ctx.save();
+      ctx.strokeStyle = "#7f5510";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x - 7, y - 4);
+      ctx.lineTo(x - 1 + amount * 4, y + seed % 2 * 3);
+      ctx.lineTo(x + 7, y - 2 + amount * 7);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawLarva(x, y, scale = 1, rotation = 0, hooks = 1) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rotation);
+      ctx.scale(scale, scale);
+      ctx.fillStyle = colors.larva;
+      ctx.strokeStyle = "#a94718";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 24, 11, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#ffb16a";
+      ctx.beginPath();
+      ctx.arc(-7, -2, 4, 0, Math.PI * 2);
+      ctx.fill();
+      if (hooks) {
+        ctx.strokeStyle = "#7a2e12";
+        ctx.lineWidth = 2;
+        for (let i = -1; i <= 1; i += 1) {
+          ctx.beginPath();
+          ctx.moveTo(18, i * 4);
+          ctx.quadraticCurveTo(28, i * 5 - 4, 25, i * 5 - 10);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+
+    function drawCysticercus(x, y, scale = 1) {
+      if (scale <= 0.02) return;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      ctx.fillStyle = colors.cyst;
+      ctx.strokeStyle = colors.cystEdge;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 52, 42, -0.12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "rgba(255,255,255,0.48)";
+      ctx.beginPath();
+      ctx.ellipse(-16, -12, 16, 8, -0.35, 0, Math.PI * 2);
+      ctx.fill();
+      drawLarva(8, 5, 0.55, -0.15, 0);
+      drawScolex(14, 0, 0.32, -0.2);
+      ctx.restore();
+    }
+
+    function drawHostAnimal(x, y, type, scale = 1) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      if (type === "cow") {
+        drawCow();
+      } else {
+        drawPig();
+      }
+      ctx.restore();
+    }
+
+    function drawPig() {
+      ctx.fillStyle = "#eda6a5";
+      ctx.strokeStyle = "#a75e65";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.ellipse(0, 18, 138, 72, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.ellipse(-120, -8, 58, 48, 0.1, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#d97982";
+      ctx.beginPath();
+      ctx.ellipse(-166, -2, 29, 20, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = colors.ink;
+      ctx.beginPath();
+      ctx.arc(-174, -5, 3.5, 0, Math.PI * 2);
+      ctx.arc(-158, -5, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#eda6a5";
+      [
+        { baseA: [-154, -42], tip: [-165, -88], baseB: [-126, -54] },
+        { baseA: [-111, -50], tip: [-96, -94], baseB: [-78, -46] }
+      ].forEach((ear) => {
+        ctx.beginPath();
+        ctx.moveTo(ear.baseA[0], ear.baseA[1]);
+        ctx.lineTo(ear.tip[0], ear.tip[1]);
+        ctx.lineTo(ear.baseB[0], ear.baseB[1]);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      });
+
+      ctx.fillStyle = "#805554";
+      ctx.beginPath();
+      ctx.arc(-118, -20, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = "#7f5154";
+      ctx.lineWidth = 5;
+      [-72, -10, 58, 106].forEach((legX) => {
+        ctx.beginPath();
+        ctx.moveTo(legX, 76);
+        ctx.lineTo(legX - 4, 128);
+        ctx.stroke();
+      });
+      ctx.strokeStyle = "#a75e65";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(140, 4);
+      ctx.bezierCurveTo(180, -28, 178, 30, 145, 20);
+      ctx.stroke();
+    }
+
+    function drawCow() {
+      ctx.fillStyle = "#f2efe5";
+      ctx.strokeStyle = "#5d4f43";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.ellipse(0, 15, 145, 70, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#2f2f2f";
+      [
+        [-48, -8, 38, 24],
+        [28, 36, 34, 18],
+        [80, -2, 30, 26]
+      ].forEach((spot) => {
+        ctx.beginPath();
+        ctx.ellipse(spot[0], spot[1], spot[2], spot[3], 0.4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.fillStyle = "#f2efe5";
+      ctx.beginPath();
+      ctx.ellipse(-124, -10, 56, 42, 0.1, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#d9b2a0";
+      ctx.beginPath();
+      ctx.ellipse(-160, -4, 30, 18, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.strokeStyle = "#8a6a35";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(-145, -44);
+      ctx.quadraticCurveTo(-164, -74, -190, -64);
+      ctx.moveTo(-105, -46);
+      ctx.quadraticCurveTo(-88, -76, -62, -66);
+      ctx.stroke();
+
+      ctx.fillStyle = colors.ink;
+      ctx.beginPath();
+      ctx.arc(-125, -20, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#5d4f43";
+      ctx.lineWidth = 5;
+      [-82, -18, 52, 116].forEach((legX) => {
+        ctx.beginPath();
+        ctx.moveTo(legX, 75);
+        ctx.lineTo(legX - 2, 132);
+        ctx.stroke();
+      });
+      ctx.strokeStyle = "#5d4f43";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(144, 0);
+      ctx.quadraticCurveTo(178, 28, 160, 84);
+      ctx.stroke();
+    }
+
+    function drawDigestivePath(x1, y1, x2, y2, p) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(175, 87, 94, 0.72)";
+      ctx.lineWidth = 9;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.bezierCurveTo(x1 + 55, y1 + 20, x2 - 45, y2 - 45, x2, y2);
+      ctx.stroke();
+      ctx.strokeStyle = "#fff1ef";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawIntestineCrossSection(cx, cy, scale = 1) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(scale, scale);
+      ctx.fillStyle = colors.intestine;
+      ctx.strokeStyle = colors.intestineEdge;
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 210, 138, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#ffe4db";
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 150, 92, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#df8e85";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(160,74,80,0.28)";
+      ctx.lineWidth = 3;
+      for (let i = 0; i < 12; i += 1) {
+        const angle = i * Math.PI / 6;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(angle) * 155, Math.sin(angle) * 96);
+        ctx.lineTo(Math.cos(angle) * 194, Math.sin(angle) * 124);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawIntestinalWallScene(cx) {
+      ctx.save();
+      ctx.translate(cx, 0);
+      ctx.fillStyle = "#ffe4db";
+      roundRect(-320, -135, 250, 270, 18, true, false);
+      ctx.fillStyle = colors.intestine;
+      roundRect(-75, -148, 175, 296, 24, true, false);
+      ctx.fillStyle = "#f08c8f";
+      roundRect(94, -148, 82, 296, 18, true, false);
+      ctx.fillStyle = "#f8d1c4";
+      roundRect(172, -142, 110, 284, 18, true, false);
+
+      ctx.strokeStyle = colors.intestineEdge;
+      ctx.lineWidth = 4;
+      roundRect(-320, -135, 602, 270, 20, false, true);
+      ctx.strokeStyle = "rgba(132,64,71,0.28)";
+      ctx.lineWidth = 2;
+      for (let y = -115; y <= 115; y += 28) {
+        ctx.beginPath();
+        ctx.moveTo(-70, y);
+        ctx.bezierCurveTo(-10, y - 12, 40, y + 16, 96, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawSmallIntestineAttachmentScene(cx) {
+      ctx.save();
+      ctx.translate(cx, 0);
+
+      ctx.fillStyle = "rgba(255,255,255,0.78)";
+      ctx.strokeStyle = "#c4d6da";
+      ctx.lineWidth = 2;
+      roundRect(-365, -160, 730, 320, 24, true, true);
+
+      ctx.fillStyle = colors.intestine;
+      ctx.strokeStyle = colors.intestineEdge;
+      ctx.lineWidth = 4;
+      roundRect(-320, -118, 640, 74, 28, true, true);
+      roundRect(-320, 76, 640, 74, 28, true, true);
+
+      ctx.fillStyle = "#ffe4db";
+      ctx.strokeStyle = "rgba(199, 111, 116, 0.5)";
+      roundRect(-320, -48, 640, 130, 24, true, true);
+
+      ctx.strokeStyle = "rgba(132,64,71,0.28)";
+      ctx.lineWidth = 2;
+      for (let x = -275; x <= 285; x += 70) {
+        ctx.beginPath();
+        ctx.moveTo(x, -102);
+        ctx.bezierCurveTo(x + 24, -82, x - 20, -62, x + 8, -46);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x + 18, 82);
+        ctx.bezierCurveTo(x - 12, 100, x + 34, 118, x + 2, 140);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = "rgba(255,255,255,0.52)";
+      roundRect(-286, -18, 572, 62, 16, true, false);
+      ctx.restore();
+    }
+
+    function drawBloodVessel(x, y, scale = 1) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      ctx.strokeStyle = colors.blood;
+      ctx.lineWidth = 34;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(-36, -120);
+      ctx.bezierCurveTo(30, -58, -22, 28, 40, 112);
+      ctx.stroke();
+      ctx.strokeStyle = "#f4a5af";
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.moveTo(-36, -120);
+      ctx.bezierCurveTo(30, -58, -22, 28, 40, 112);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawMuscleTissue(cx, cy, scale = 1) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(scale, scale);
+      ctx.fillStyle = colors.muscle;
+      ctx.strokeStyle = colors.muscleDark;
+      ctx.lineWidth = 4;
+      roundRect(-340, -170, 680, 340, 34, true, true);
+      ctx.strokeStyle = "rgba(142,58,70,0.35)";
+      ctx.lineWidth = 3;
+      for (let y = -125; y <= 130; y += 34) {
+        ctx.beginPath();
+        ctx.moveTo(-305, y);
+        ctx.bezierCurveTo(-160, y - 30, -25, y + 30, 120, y);
+        ctx.bezierCurveTo(190, y - 12, 250, y + 18, 308, y - 8);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawHumanFigure(x, y, scale = 1, eating = false) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      ctx.strokeStyle = colors.ink;
+      ctx.lineWidth = 4;
+      ctx.fillStyle = "#f2c7a1";
+      ctx.beginPath();
+      ctx.arc(0, -88, 48, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#704e38";
+      ctx.beginPath();
+      ctx.arc(-8, -112, 44, Math.PI, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = colors.ink;
+      ctx.beginPath();
+      ctx.arc(-16, -92, 4, 0, Math.PI * 2);
+      ctx.arc(16, -92, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#934a42";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, -76, 11, 0, Math.PI);
+      ctx.stroke();
+      ctx.fillStyle = "#6fb3c5";
+      ctx.strokeStyle = "#346070";
+      ctx.lineWidth = 4;
+      roundRect(-52, -38, 104, 138, 26, true, true);
+      ctx.strokeStyle = "#346070";
+      ctx.lineWidth = 8;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(-48, 0);
+      ctx.lineTo(-100, 62);
+      ctx.moveTo(48, 0);
+      ctx.lineTo(112, eating ? -40 : 58);
+      ctx.stroke();
+      ctx.strokeStyle = "#394e56";
+      ctx.beginPath();
+      ctx.moveTo(-28, 100);
+      ctx.lineTo(-52, 168);
+      ctx.moveTo(28, 100);
+      ctx.lineTo(58, 168);
+      ctx.stroke();
+      if (eating) {
+        ctx.strokeStyle = "#777";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(94, -30);
+        ctx.lineTo(4, -74);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawTable(cx, y) {
+      ctx.save();
+      ctx.fillStyle = "#b77e45";
+      ctx.strokeStyle = "#7a502b";
+      ctx.lineWidth = 3;
+      roundRect(cx - 360, y, 340, 34, 8, true, true);
+      ctx.fillRect(cx - 330, y + 26, 18, 100);
+      ctx.fillRect(cx - 68, y + 26, 18, 100);
+      ctx.restore();
+    }
+
+    function drawPlateWithMeat(x, y, meat, infected) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.fillStyle = "#f4f7f8";
+      ctx.strokeStyle = "#9fb4bb";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(0, 25, 105, 34, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = meat === "pork" ? "#d07a6a" : "#b86b55";
+      ctx.strokeStyle = "#8f483c";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(-4, 5, 76, 40, -0.12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,0.38)";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(-52, -2);
+      ctx.quadraticCurveTo(0, -22, 54, -6);
+      ctx.stroke();
+      if (infected) {
+        drawCysticercus(-38, 3, 0.26);
+        drawCysticercus(2, -11, 0.25);
+        drawCysticercus(34, 16, 0.23);
+        drawEgg(-18, 18, 6);
+        drawEgg(22, -4, 5.5);
+      }
+      ctx.fillStyle = colors.ink;
+      ctx.font = "700 16px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText(meat, 0, 74);
+      ctx.restore();
+    }
+
+    function drawCurvedIntestine(cx, cy, scale = 1) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(scale, scale);
+      ctx.strokeStyle = colors.intestineEdge;
+      ctx.lineWidth = 58;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      ctx.moveTo(-330, -95);
+      ctx.bezierCurveTo(-215, -170, -85, -120, -162, -20);
+      ctx.bezierCurveTo(-260, 105, -55, 135, 8, 44);
+      ctx.bezierCurveTo(90, -78, 230, -20, 156, 92);
+      ctx.bezierCurveTo(95, 186, 272, 198, 330, 92);
+      ctx.stroke();
+      ctx.strokeStyle = colors.intestine;
+      ctx.lineWidth = 46;
+      ctx.beginPath();
+      ctx.moveTo(-330, -95);
+      ctx.bezierCurveTo(-215, -170, -85, -120, -162, -20);
+      ctx.bezierCurveTo(-260, 105, -55, 135, 8, 44);
+      ctx.bezierCurveTo(90, -78, 230, -20, 156, 92);
+      ctx.bezierCurveTo(95, 186, 272, 198, 330, 92);
+      ctx.stroke();
+      ctx.strokeStyle = "#ffe4db";
+      ctx.lineWidth = 19;
+      ctx.beginPath();
+      ctx.moveTo(-330, -95);
+      ctx.bezierCurveTo(-215, -170, -85, -120, -162, -20);
+      ctx.bezierCurveTo(-260, 105, -55, 135, 8, 44);
+      ctx.bezierCurveTo(90, -78, 230, -20, 156, 92);
+      ctx.bezierCurveTo(95, 186, 272, 198, 330, 92);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawEvaginatingScolex(x, y, t) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(0.4 + t * 0.7, 0.4 + t * 0.7);
+      ctx.rotate(-0.12);
+      drawScolex(0, 0, 1, 0);
+      ctx.restore();
+    }
+
+    function drawSmallTapewormStart(x, y, t) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(t, t);
+      drawNeck(0, 0, 48);
+      for (let i = 0; i < 4; i += 1) {
+        drawProglottidSegment(58 + i * 28, 0, 24 + i * 4, 36 + i * 6, "#f7e8ca", false, false);
+      }
+      ctx.restore();
+    }
+
+    function drawScolex(x, y, scale = 1, rotation = 0) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      ctx.rotate(rotation);
+      const hooked = state.host === "pig";
+
+      ctx.fillStyle = colors.worm;
+      ctx.strokeStyle = colors.wormEdge;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 36, 31, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "rgba(255,255,255,0.28)";
+      ctx.beginPath();
+      ctx.ellipse(-10, -10, 12, 7, -0.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#f8ebcf";
+      ctx.strokeStyle = "#b9874e";
+      ctx.lineWidth = 2.5;
+      [[0, -15], [15, 0], [0, 15], [-15, 0]].forEach((spot) => {
+        ctx.beginPath();
+        ctx.ellipse(spot[0], spot[1], 8.5, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      });
+
+      ctx.fillStyle = hooked ? "#dfbd82" : "#ecd5aa";
+      ctx.strokeStyle = "#9a6a2c";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, hooked ? 9 : 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      if (hooked) {
+        ctx.strokeStyle = "#7f551d";
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 10; i += 1) {
+          const a = i * Math.PI * 2 / 10;
+          const innerX = Math.cos(a) * 8;
+          const innerY = Math.sin(a) * 8;
+          const outerX = Math.cos(a) * 17;
+          const outerY = Math.sin(a) * 15;
+          ctx.beginPath();
+          ctx.moveTo(innerX, innerY);
+          ctx.quadraticCurveTo(outerX, outerY, Math.cos(a + 0.32) * 13, Math.sin(a + 0.32) * 13);
+          ctx.stroke();
+        }
+      } else {
+        ctx.strokeStyle = "rgba(154, 106, 44, 0.5)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, 10, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawAttachmentFibers(x, y, scale = 1) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      ctx.strokeStyle = "rgba(154, 106, 44, 0.6)";
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      [-16, 0, 16].forEach((dx) => {
+        ctx.beginPath();
+        ctx.moveTo(dx, -28);
+        ctx.lineTo(dx * 0.75, -44);
+        ctx.stroke();
+      });
+      ctx.restore();
+    }
+
+    function drawNeck(x, y, length) {
+      ctx.save();
+      ctx.fillStyle = "#f7e8ca";
+      ctx.strokeStyle = colors.wormEdge;
+      ctx.lineWidth = 3;
+      roundRect(x, y - 15, length, 30, 12, true, true);
+      ctx.restore();
+    }
+
+    function drawProglottidSegment(x, y, w, h, fill, hasOrgans, hasEggs) {
+      ctx.save();
+      ctx.fillStyle = fill || colors.worm;
+      ctx.strokeStyle = colors.wormEdge;
+      ctx.lineWidth = 3;
+      roundRect(x - w / 2, y - h / 2, w, h, 7, true, true);
+      ctx.strokeStyle = "rgba(135, 91, 44, 0.25)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x - w / 2 + 8, y);
+      ctx.lineTo(x + w / 2 - 8, y);
+      ctx.stroke();
+      if (hasOrgans) drawReproductiveOrgans(x, y, w, h, 0);
+      if (hasEggs) drawEggsInsideSegment(x, y, w, h, 13);
+      ctx.restore();
+    }
+
+    function drawConnectedProglottidChain(startX, y, segments, phase = 0, options = {}) {
+      let cursor = startX;
+      const centers = [];
+
+      segments.forEach((seg, i) => {
+        const centerX = cursor + seg.w / 2;
+        const isFirst = i === 0 && options.roundFirst !== false;
+        const isLast = i === segments.length - 1;
+        drawConnectedProglottidSegment(cursor, y, seg.w, seg.h, seg.color, isFirst, isLast);
+
+        if (seg.organ) drawReproductiveOrgans(centerX, y, seg.w, seg.h, phase + i);
+        if (seg.eggCount) drawEggsInsideSegment(centerX, y, seg.w, seg.h, seg.eggCount);
+        else if (seg.eggs) drawEggsInsideSegment(centerX, y, seg.w, seg.h, 14);
+        if (seg.bulge) drawBulgeLines(centerX, y, seg.w, seg.h, seg.fullness || 1);
+
+        centers.push({ x: centerX, y, w: seg.w, h: seg.h });
+        cursor += seg.w - 1;
+      });
+
+      return { centers, endX: cursor };
+    }
+
+    function drawConnectedProglottidSegment(x, y, w, h, fill, roundLeft, roundRight) {
+      const r = 8;
+      const top = y - h / 2;
+      const bottom = y + h / 2;
+      const right = x + w;
+
+      ctx.save();
+      ctx.fillStyle = fill || colors.worm;
+      ctx.strokeStyle = colors.wormEdge;
+      ctx.lineWidth = 3;
+
+      ctx.beginPath();
+      ctx.moveTo(x + (roundLeft ? r : 0), top);
+      ctx.lineTo(right - (roundRight ? r : 0), top);
+      if (roundRight) ctx.quadraticCurveTo(right, top, right, top + r);
+      else ctx.lineTo(right, top);
+      ctx.lineTo(right, bottom - (roundRight ? r : 0));
+      if (roundRight) ctx.quadraticCurveTo(right, bottom, right - r, bottom);
+      else ctx.lineTo(right, bottom);
+      ctx.lineTo(x + (roundLeft ? r : 0), bottom);
+      if (roundLeft) ctx.quadraticCurveTo(x, bottom, x, bottom - r);
+      else ctx.lineTo(x, bottom);
+      ctx.lineTo(x, top + (roundLeft ? r : 0));
+      if (roundLeft) ctx.quadraticCurveTo(x, top, x + r, top);
+      else ctx.lineTo(x, top);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.strokeStyle = "rgba(135, 91, 44, 0.28)";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(x + 8, y);
+      ctx.lineTo(right - 8, y);
+      ctx.stroke();
+
+      if (!roundLeft) {
+        ctx.strokeStyle = "rgba(135, 91, 44, 0.55)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x, top + 7);
+        ctx.lineTo(x, bottom - 7);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawReproductiveOrgans(x, y, w, h, phase = 0) {
+      ctx.save();
+      ctx.strokeStyle = colors.organs;
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+      const pulseSize = 1 + Math.sin((state.time + phase) * 4) * 0.03;
+      ctx.translate(x, y);
+      ctx.scale(pulseSize, pulseSize);
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.25, -h * 0.2);
+      ctx.bezierCurveTo(-w * 0.05, -h * 0.35, w * 0.18, -h * 0.18, w * 0.08, 0);
+      ctx.bezierCurveTo(-w * 0.08, h * 0.22, w * 0.22, h * 0.26, w * 0.25, h * 0.04);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(-w * 0.18, h * 0.16, 7, 0, Math.PI * 2);
+      ctx.arc(w * 0.18, -h * 0.14, 7, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawEggsInsideSegment(x, y, w, h, count) {
+      const cols = Math.max(3, Math.floor(w / 22));
+      for (let i = 0; i < count; i += 1) {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const px = x - w * 0.32 + col * (w * 0.64 / Math.max(1, cols - 1)) + Math.sin(i * 1.7) * 3;
+        const py = y - h * 0.3 + row * 17 + Math.cos(i * 1.2) * 3;
+        if (py < y + h * 0.36) drawEgg(px, py, 5.2);
+      }
+    }
+
+    function drawBulgeLines(x, y, w, h, fullness) {
+      ctx.save();
+      ctx.strokeStyle = `rgba(120, 74, 27, ${0.25 + fullness * 0.3})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x - w / 2 + 8, y, 18 + fullness * 16, -Math.PI / 2, Math.PI / 2);
+      ctx.arc(x + w / 2 - 8, y, 18 + fullness * 16, Math.PI / 2, Math.PI * 1.5);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawDetachedGravid(x, y, scale, p) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(Math.sin(p * Math.PI * 2) * 0.1);
+      drawProglottidSegment(0, 0, 84 * scale, 92 * scale, "#c99158", false, true);
+      drawEggsInsideSegment(0, 0, 84 * scale, 92 * scale, 19);
+      ctx.restore();
+    }
+
+    function drawArrow(x1, y1, x2, y2, color = colors.ink, alpha = 1) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 4;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.quadraticCurveTo((x1 + x2) / 2, (y1 + y2) / 2 - 35, x2, y2);
+      ctx.stroke();
+      drawArrowHead(x1, y1, x2, y2, color);
+      ctx.restore();
+    }
+
+    function drawDashedArrow(x1, y1, x2, y2, color = colors.ink) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 3;
+      ctx.setLineDash([8, 7]);
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      drawArrowHead(x1, y1, x2, y2, color);
+      ctx.restore();
+    }
+
+    function drawArrowHead(x1, y1, x2, y2, color) {
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      ctx.save();
+      ctx.translate(x2, y2);
+      ctx.rotate(angle);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-15, -8);
+      ctx.lineTo(-15, 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawLargeCircularArrow(x, y, r, p) {
+      ctx.save();
+      ctx.strokeStyle = "#0f6478";
+      ctx.fillStyle = "#0f6478";
+      ctx.lineWidth = 6;
+      ctx.lineCap = "round";
+      const start = -Math.PI * 0.25;
+      const end = start + Math.PI * 1.7 * Math.max(0.2, p);
+      ctx.beginPath();
+      ctx.arc(x, y, r, start, end);
+      ctx.stroke();
+      const hx = x + Math.cos(end) * r;
+      const hy = y + Math.sin(end) * r;
+      drawArrowHead(x + Math.cos(end - 0.05) * r, y + Math.sin(end - 0.05) * r, hx, hy, "#0f6478");
+      ctx.restore();
+    }
+
+    function drawFertilizationArrow(x1, y1, x2, y2, p) {
+      ctx.save();
+      ctx.strokeStyle = colors.organs;
+      ctx.fillStyle = colors.organs;
+      ctx.lineWidth = 4;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.bezierCurveTo(x1 + 38, y1 - 45, x2 - 38, y2 - 45, x2, y2);
+      ctx.stroke();
+      drawArrowHead(x1, y1, x2, y2, colors.organs);
+      const beadT = (state.time * 0.7 + p) % 1;
+      const bx = lerp(x1, x2, beadT);
+      const by = y1 - Math.sin(beadT * Math.PI) * 38;
+      ctx.fillStyle = "#f49ab0";
+      ctx.beginPath();
+      ctx.arc(bx, by, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawMotionLines(x, y, len, count) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(150, 75, 26, 0.55)";
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      for (let i = 0; i < count; i += 1) {
+        ctx.beginPath();
+        ctx.moveTo(x - i * 8, y - 12 + i * 12);
+        ctx.lineTo(x - len - i * 8, y - 7 + i * 10);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawTextBox(text, x, y, detail = false, maxWidth = 170) {
+      if (!state.showLabels || state.quizMode) return;
+      if (detail && !state.showDetails) return;
+
+      const label = getHostText(text);
+      ctx.save();
+      ctx.font = detail ? "700 15px Arial" : "800 17px Arial";
+      const lines = measureWrappedLines(label, maxWidth);
+      const lineHeight = detail ? 19 : 22;
+      const width = Math.min(maxWidth, Math.max(...lines.map((line) => ctx.measureText(line).width)) + 22);
+      const height = lines.length * lineHeight + 16;
+
+      ctx.fillStyle = detail ? "rgba(255, 253, 244, 0.9)" : "rgba(255,255,255,0.95)";
+      ctx.strokeStyle = detail ? "#d6c89b" : "#99b8bf";
+      ctx.lineWidth = 1.5;
+      roundRect(x - width / 2, y - height / 2, width, height, 8, true, true);
+
+      ctx.fillStyle = detail ? "#5b4c1c" : colors.ink;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      lines.forEach((line, index) => {
+        ctx.fillText(line, x, y - ((lines.length - 1) * lineHeight) / 2 + index * lineHeight);
+      });
+      ctx.restore();
+    }
+
+    function drawLabel(text, labelX, labelY, targetX, targetY, detail = false, maxWidth = 170) {
+      if (!state.showLabels || state.quizMode) return;
+      if (detail && !state.showDetails) return;
+
+      const label = getHostText(text);
+      ctx.save();
+      ctx.font = detail ? "700 15px Arial" : "800 17px Arial";
+      const lines = measureWrappedLines(label, maxWidth);
+      const lineHeight = detail ? 19 : 22;
+      const width = Math.min(maxWidth, Math.max(...lines.map((line) => ctx.measureText(line).width)) + 22);
+      const height = lines.length * lineHeight + 16;
+
+      ctx.strokeStyle = detail ? "rgba(72, 93, 101, 0.62)" : "rgba(35, 50, 59, 0.72)";
+      ctx.fillStyle = ctx.strokeStyle;
+      ctx.lineWidth = detail ? 1.8 : 2.4;
+      ctx.beginPath();
+      ctx.moveTo(targetX, targetY);
+      ctx.lineTo(labelX, labelY);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(targetX, targetY, detail ? 4 : 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = detail ? "rgba(255, 253, 244, 0.9)" : "rgba(255,255,255,0.95)";
+      ctx.strokeStyle = detail ? "#d6c89b" : "#99b8bf";
+      ctx.lineWidth = 1.5;
+      roundRect(labelX - width / 2, labelY - height / 2, width, height, 8, true, true);
+
+      ctx.fillStyle = detail ? "#5b4c1c" : colors.ink;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      lines.forEach((line, index) => {
+        ctx.fillText(line, labelX, labelY - ((lines.length - 1) * lineHeight) / 2 + index * lineHeight);
+      });
+      ctx.restore();
+    }
+
+    function drawMiniCycleBadge(x, y, text) {
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,0.86)";
+      ctx.strokeStyle = "#c4d6da";
+      ctx.lineWidth = 2;
+      roundRect(x - 145, y - 25, 290, 50, 10, true, true);
+      ctx.fillStyle = "#40545c";
+      ctx.font = "700 15px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, x, y);
+      ctx.restore();
+    }
+
+    function drawZoomBanner(cx, text) {
+      ctx.save();
+      ctx.fillStyle = "#fffaf0";
+      ctx.strokeStyle = "#d8c69a";
+      ctx.lineWidth = 2;
+      roundRect(cx - 390, -285, 780, 58, 14, true, true);
+      ctx.fillStyle = colors.ink;
+      ctx.font = "800 24px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, cx, -256);
+      ctx.restore();
+    }
+
+    function roundRect(x, y, w, h, r, fill, stroke) {
+      const radius = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + w - radius, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+      ctx.lineTo(x + w, y + h - radius);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+      ctx.lineTo(x + radius, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+      if (fill) ctx.fill();
+      if (stroke) ctx.stroke();
+    }
+
+    function wrapText(text, x, y, maxWidth, lineHeight) {
+      const words = text.split(" ");
+      let line = "";
+      let lineIndex = 0;
+      for (let n = 0; n < words.length; n += 1) {
+        const testLine = line + words[n] + " ";
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && n > 0) {
+          ctx.fillText(line, x, y + lineIndex * lineHeight);
+          line = words[n] + " ";
+          lineIndex += 1;
+        } else {
+          line = testLine;
+        }
+      }
+      ctx.fillText(line, x, y + lineIndex * lineHeight);
+    }
+
+    function measureWrappedLines(text, maxWidth) {
+      const words = text.split(" ");
+      const lines = [];
+      let line = "";
+      words.forEach((word) => {
+        const testLine = line ? `${line} ${word}` : word;
+        if (ctx.measureText(testLine).width > maxWidth && line) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = testLine;
+        }
+      });
+      if (line) lines.push(line);
+      return lines;
+    }
+
+    function hostName() {
+      return state.host === "pig" ? "pig" : "cow";
+    }
+
+    function meatName() {
+      return state.host === "pig" ? "pork" : "beef";
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function easeInOut(t) {
+      return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    }
+
+    function easeOut(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    function distance(x1, y1, x2, y2) {
+      return Math.hypot(x2 - x1, y2 - y1);
+    }
+
+    function cubic(a, b, c, t) {
+      const m1 = lerp(a, b, t);
+      const m2 = lerp(b, c, t);
+      return lerp(m1, m2, t);
+    }
+  </script>
+</body>
+</html>

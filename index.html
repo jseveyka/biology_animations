@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Biology Animation Library</title>
+  <script src="animations.js"></script>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --accent: #1d4ed8;
+      --accent-soft: #dbeafe;
+      --border: #d1d5db;
+      --shadow: 0 8px 22px rgba(17, 24, 39, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      background: linear-gradient(135deg, #0f172a, #1d4ed8);
+      color: white;
+      padding: 2.5rem 1.25rem 2rem;
+    }
+    .wrap { max-width: 1150px; margin: 0 auto; }
+    h1 { margin: 0 0 .5rem; font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1.05; }
+    .subtitle { max-width: 780px; margin: 0; color: #e0e7ff; font-size: 1.05rem; }
+    .attribution { margin-top: 1rem; font-weight: 700; color: #fef3c7; }
+    main { padding: 1.25rem; }
+    .controls {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(246, 247, 251, 0.94);
+      backdrop-filter: blur(6px);
+      padding: 1rem 0;
+      border-bottom: 1px solid rgba(209, 213, 219, 0.75);
+    }
+    .control-row { display: flex; gap: .75rem; flex-wrap: wrap; align-items: center; }
+    input[type="search"] {
+      flex: 1 1 280px;
+      font-size: 1rem;
+      padding: .8rem 1rem;
+      border-radius: .8rem;
+      border: 1px solid var(--border);
+      background: white;
+    }
+    .cat-buttons { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .75rem; }
+    button, .top-link {
+      border: 1px solid var(--border);
+      background: white;
+      color: var(--text);
+      border-radius: 999px;
+      padding: .55rem .85rem;
+      cursor: pointer;
+      font-weight: 650;
+      text-decoration: none;
+    }
+    button.active { background: var(--accent); color: white; border-color: var(--accent); }
+    #summary { color: var(--muted); font-weight: 650; white-space: nowrap; }
+    .category-section { margin: 2rem 0 2.5rem; scroll-margin-top: 8rem; }
+    .category-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: .35rem;
+      margin-bottom: 1rem;
+    }
+    h2 { margin: 0; font-size: clamp(1.35rem, 3vw, 2rem); }
+    .count { color: var(--muted); font-weight: 700; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+      gap: 1rem;
+    }
+    .card {
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1rem;
+      box-shadow: var(--shadow);
+      min-height: 150px;
+    }
+    .card h3 { margin: 0; font-size: 1.1rem; }
+    .filename { color: var(--muted); font-size: .86rem; word-break: break-word; margin: 0; }
+    .open-link {
+      margin-top: auto;
+      display: inline-block;
+      align-self: flex-start;
+      background: var(--accent-soft);
+      color: #1e3a8a;
+      text-decoration: none;
+      border-radius: .7rem;
+      padding: .6rem .8rem;
+      font-weight: 800;
+    }
+    .open-link:hover, .top-link:hover, button:hover { filter: brightness(.97); }
+    .hidden { display: none !important; }
+    footer { padding: 2rem 1.25rem 3rem; color: var(--muted); text-align: center; }
+    @media (max-width: 680px) {
+      .controls { position: static; }
+      #summary { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>Biology Animation Library</h1>
+      <p class="subtitle">Interactive animations organized by topic. Use the search box or category buttons to find an animation.</p>
+      <p class="attribution">Animation Prompted by Jerred Seveyka for his biology class.</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <section class="controls" aria-label="Search and filter controls">
+        <div class="control-row">
+          <input id="search" type="search" placeholder="Search animations or categories..." aria-label="Search animations" />
+          <span id="summary"></span>
+        </div>
+        <div id="categoryButtons" class="cat-buttons" aria-label="Category filters"></div>
+      </section>
+      <div id="library"></div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap">Upload this folder to GitHub Pages with <code>index.html</code>, <code>animations.js</code>, and the <code>animations/</code> folder at the repository root.</div>
+  </footer>
+
+  <script>
+    const animations = Array.isArray(window.ANIMATIONS) ? window.ANIMATIONS : [];
+    const library = document.getElementById('library');
+    const search = document.getElementById('search');
+    const buttons = document.getElementById('categoryButtons');
+    const summary = document.getElementById('summary');
+    let activeCategory = 'All';
+
+    function slugify(text) {
+      return String(text).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
+
+    const categories = [...new Map(animations.map(a => [a.category, a.categoryLabel || a.category])).entries()]
+      .sort((a, b) => a[1].localeCompare(b[1]));
+
+    function makeButton(label, value) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = label;
+      btn.dataset.category = value;
+      btn.addEventListener('click', () => {
+        activeCategory = value;
+        document.querySelectorAll('#categoryButtons button').forEach(b => b.classList.toggle('active', b.dataset.category === activeCategory));
+        render();
+      });
+      return btn;
+    }
+
+    buttons.appendChild(makeButton('All', 'All'));
+    categories.forEach(([value, label]) => buttons.appendChild(makeButton(label, value)));
+    buttons.querySelector('button').classList.add('active');
+
+    function groupByCategory(items) {
+      const map = new Map();
+      for (const item of items) {
+        const key = item.category;
+        if (!map.has(key)) map.set(key, { label: item.categoryLabel || item.category, items: [] });
+        map.get(key).items.push(item);
+      }
+      return [...map.entries()].sort((a, b) => a[1].label.localeCompare(b[1].label));
+    }
+
+    function render() {
+      const q = search.value.trim().toLowerCase();
+      const filtered = animations.filter(a => {
+        const matchesCategory = activeCategory === 'All' || a.category === activeCategory;
+        const haystack = `${a.title} ${a.categoryLabel} ${a.file} ${a.url}`.toLowerCase();
+        const matchesSearch = !q || haystack.includes(q);
+        return matchesCategory && matchesSearch;
+      });
+
+      library.innerHTML = '';
+      const grouped = groupByCategory(filtered);
+      summary.textContent = `${filtered.length} animation${filtered.length === 1 ? '' : 's'}`;
+
+      if (!filtered.length) {
+        const empty = document.createElement('p');
+        empty.textContent = 'No animations match that search.';
+        library.appendChild(empty);
+        return;
+      }
+
+      for (const [category, group] of grouped) {
+        const section = document.createElement('section');
+        section.className = 'category-section';
+        section.id = slugify(group.label);
+
+        const heading = document.createElement('div');
+        heading.className = 'category-heading';
+        const h2 = document.createElement('h2');
+        h2.textContent = group.label;
+        const count = document.createElement('span');
+        count.className = 'count';
+        count.textContent = `${group.items.length} animation${group.items.length === 1 ? '' : 's'}`;
+        heading.append(h2, count);
+        section.appendChild(heading);
+
+        const grid = document.createElement('div');
+        grid.className = 'grid';
+        group.items.sort((a, b) => a.title.localeCompare(b.title)).forEach(item => {
+          const card = document.createElement('article');
+          card.className = 'card';
+          const title = document.createElement('h3');
+          title.textContent = item.title;
+          const file = document.createElement('p');
+          file.className = 'filename';
+          file.textContent = item.file;
+          const link = document.createElement('a');
+          link.className = 'open-link';
+          link.href = item.url;
+          link.textContent = 'Open animation';
+          card.append(title, file, link);
+          grid.appendChild(card);
+        });
+        section.appendChild(grid);
+        library.appendChild(section);
+      }
+    }
+
+    search.addEventListener('input', render);
+    render();
+  </script>
+</body>
+</html>

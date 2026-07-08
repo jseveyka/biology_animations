@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Basic Epithelial Tissue Types</title>
+  <style>
+    :root {
+      --ink: #17313b;
+      --muted: #57707a;
+      --page: #f6faf9;
+      --panel: #ffffff;
+      --line: #2f5966;
+      --accent: #2f7d8b;
+      --accent-soft: #d9eff1;
+      --warm: #f8d7b0;
+      --cell: #ffe2c7;
+      --cell-alt: #ffd2d7;
+      --cell-cool: #d7eaf8;
+      --cell-green: #dff1cd;
+      --nucleus: #5b5b9f;
+      --membrane: #795640;
+      --keratin: #e6c47d;
+      --shadow: 0 12px 30px rgba(23, 49, 59, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, rgba(217, 239, 241, 0.55), rgba(246, 250, 249, 0.25) 280px),
+        var(--page);
+    }
+
+    .app {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 20px 0 24px;
+    }
+
+    header {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 32px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .instruction {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .attribution {
+      margin: 0;
+      color: #6b7f86;
+      font-size: 13px;
+    }
+
+    .selector-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(118px, 1fr));
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .tissue-button {
+      min-height: 64px;
+      padding: 9px 8px;
+      border: 2px solid #bed4d8;
+      border-radius: 8px;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.88);
+      font: inherit;
+      font-size: 13px;
+      line-height: 1.15;
+      cursor: pointer;
+      box-shadow: 0 3px 12px rgba(23, 49, 59, 0.06);
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+    }
+
+    .tissue-button:hover {
+      transform: translateY(-1px);
+      border-color: #6baab3;
+      background: #ffffff;
+    }
+
+    .tissue-button:focus-visible,
+    .info-toggle:focus-visible {
+      outline: 3px solid rgba(47, 125, 139, 0.35);
+      outline-offset: 2px;
+    }
+
+    .tissue-button.is-selected {
+      color: #12323a;
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      box-shadow: 0 6px 16px rgba(47, 125, 139, 0.18);
+    }
+
+    .main-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.8fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .diagram-panel,
+    .info-panel {
+      border: 2px solid #c4d7da;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: var(--shadow);
+    }
+
+    .diagram-panel {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 468px;
+      overflow: hidden;
+    }
+
+    .diagram-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px 16px 8px;
+    }
+
+    .diagram-heading h2 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .diagram-subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: right;
+    }
+
+    .svg-wrap {
+      min-height: 0;
+      padding: 0 14px 14px;
+    }
+
+    svg {
+      width: 100%;
+      height: 405px;
+      display: block;
+      border-radius: 8px;
+      background: #f9fcfb;
+      border: 1px solid #d5e4e7;
+    }
+
+    .fade-in {
+      animation: fadeIn 260ms ease both;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .info-panel {
+      padding: 14px;
+      display: grid;
+      align-content: start;
+      gap: 10px;
+    }
+
+    .info-box {
+      border: 2px solid #c6d9d3;
+      border-radius: 8px;
+      background: #fbfefe;
+      overflow: hidden;
+    }
+
+    .info-toggle {
+      width: 100%;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border: 0;
+      padding: 12px 14px;
+      color: var(--ink);
+      background: #eef7f4;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .toggle-icon {
+      width: 24px;
+      height: 24px;
+      flex: 0 0 24px;
+      display: grid;
+      place-items: center;
+      border-radius: 6px;
+      color: #12323a;
+      background: #ffffff;
+      border: 1px solid #b8d2d8;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .info-body {
+      display: none;
+      padding: 12px 15px 14px;
+      color: #213f49;
+      font-size: 15px;
+      line-height: 1.45;
+      border-top: 1px solid #d8e7e2;
+    }
+
+    .info-box.is-open .info-body {
+      display: block;
+    }
+
+    .info-body p {
+      margin: 0;
+    }
+
+    .info-body ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .info-body li + li {
+      margin-top: 4px;
+    }
+
+    .micro-note {
+      margin: 4px 2px 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .label {
+      font-size: 16px;
+      font-weight: 700;
+      fill: var(--ink);
+    }
+
+    .small-label {
+      font-size: 13px;
+      font-weight: 650;
+      fill: var(--muted);
+    }
+
+    .callout {
+      stroke: var(--line);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .cell-shape {
+      stroke: var(--line);
+      stroke-width: 2.4;
+      stroke-linejoin: round;
+    }
+
+    .nucleus {
+      fill: var(--nucleus);
+      stroke: #353372;
+      stroke-width: 1.5;
+    }
+
+    .basement {
+      stroke: var(--membrane);
+      stroke-width: 8;
+      stroke-linecap: round;
+    }
+
+    .basement-highlight {
+      stroke: #c4946e;
+      stroke-width: 3;
+      stroke-linecap: round;
+    }
+
+    .lumen-band {
+      fill: #eaf7fb;
+      stroke: #c7e5ee;
+      stroke-width: 1;
+    }
+
+    .cilia {
+      stroke: #2f7d8b;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+    }
+
+    .goblet {
+      fill: #dff1cd;
+      stroke: #527b4b;
+      stroke-width: 2.4;
+    }
+
+    .keratin {
+      fill: var(--keratin);
+      stroke: #8a6730;
+      stroke-width: 2.2;
+    }
+
+    @media (max-width: 980px) {
+      .selector-grid {
+        grid-template-columns: repeat(4, minmax(130px, 1fr));
+      }
+
+      .main-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .diagram-panel {
+        min-height: 430px;
+      }
+
+      svg {
+        height: 360px;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .app {
+        width: min(100% - 20px, 1180px);
+        padding-top: 14px;
+      }
+
+      h1 {
+        font-size: 26px;
+      }
+
+      .selector-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .tissue-button {
+        min-height: 58px;
+        font-size: 12px;
+      }
+
+      .diagram-heading {
+        display: grid;
+      }
+
+      .diagram-subtitle {
+        text-align: left;
+      }
+
+      svg {
+        height: 330px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>Basic Epithelial Tissue Types</h1>
+      <p class="instruction">Select a tissue type, then expand Function or Common Locations.</p>
+      <p class="attribution">Animation Prompted by Jerred Seveyka for his biology class.</p>
+    </header>
+
+    <nav class="selector-grid" id="tissueSelector" aria-label="Tissue type selector"></nav>
+
+    <section class="main-panel" aria-live="polite">
+      <article class="diagram-panel">
+        <div class="diagram-heading">
+          <h2 id="tissueTitle"></h2>
+          <p class="diagram-subtitle" id="tissueClue"></p>
+        </div>
+        <div class="svg-wrap" id="diagramMount"></div>
+      </article>
+
+      <aside class="info-panel" aria-label="Tissue facts">
+        <section class="info-box" id="functionBox">
+          <button class="info-toggle" type="button" aria-expanded="false" aria-controls="functionBody">
+            <span>Function</span>
+            <span class="toggle-icon" aria-hidden="true">+</span>
+          </button>
+          <div class="info-body" id="functionBody"></div>
+        </section>
+
+        <section class="info-box" id="locationsBox">
+          <button class="info-toggle" type="button" aria-expanded="false" aria-controls="locationsBody">
+            <span>Common Locations</span>
+            <span class="toggle-icon" aria-hidden="true">+</span>
+          </button>
+          <div class="info-body" id="locationsBody"></div>
+        </section>
+
+        <p class="micro-note" id="diagramNote"></p>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    // Tissue content and diagram instructions live in one data structure.
+    const tissues = [
+      {
+        id: "simple-squamous",
+        name: "Simple squamous epithelium",
+        clue: "One thin layer of flat cells",
+        functionText: "Rapid diffusion, filtration, and reducing friction.",
+        locations: [
+          "Alveoli of lungs",
+          "Lining of blood vessels/endothelium",
+          "Bowman's capsule",
+          "Serous membranes"
+        ],
+        note: "Look for a single, very thin cell layer with flattened nuclei.",
+        diagram: { type: "simpleSquamous" }
+      },
+      {
+        id: "simple-cuboidal",
+        name: "Simple cuboidal epithelium",
+        clue: "One layer of cube-shaped cells",
+        functionText: "Secretion and absorption.",
+        locations: [
+          "Kidney tubules",
+          "Small ducts of glands",
+          "Thyroid follicles",
+          "Ovary surface"
+        ],
+        note: "The round nuclei sit near the center of each cube-shaped cell.",
+        diagram: { type: "simpleCuboidal" }
+      },
+      {
+        id: "simple-columnar",
+        name: "Simple columnar epithelium",
+        clue: "Tall cells, basal nuclei, goblet cells",
+        functionText: "Absorption and secretion, especially mucus and digestive products.",
+        locations: [
+          "Lining of stomach",
+          "Intestines",
+          "Gallbladder",
+          "Uterine tubes if ciliated"
+        ],
+        note: "Goblet cells are shown as pale green mucus-secreting cells.",
+        diagram: { type: "simpleColumnar" }
+      },
+      {
+        id: "pseudostratified-columnar",
+        name: "Pseudostratified columnar epithelium",
+        clue: "Looks layered; every cell touches the basement membrane",
+        functionText: "Secretes and moves mucus.",
+        locations: [
+          "Trachea",
+          "Bronchi",
+          "Nasal cavity",
+          "Upper respiratory tract"
+        ],
+        note: "Different nucleus heights make it look layered, but all cells touch the basement membrane.",
+        diagram: { type: "pseudostratified" }
+      },
+      {
+        id: "transitional",
+        name: "Transitional epithelium",
+        clue: "Many rounded layers that can stretch",
+        functionText: "Stretches and recoils while forming a protective barrier against urine.",
+        locations: [
+          "Urinary bladder",
+          "Ureters",
+          "Renal pelvis",
+          "Part of urethra"
+        ],
+        note: "The dome-shaped surface cells flatten when the tissue is stretched.",
+        diagram: { type: "transitional" }
+      },
+      {
+        id: "keratinized-stratified",
+        name: "Keratinized stratified squamous epithelium",
+        clue: "Many layers plus a dry keratin surface",
+        functionText: "Protects against abrasion, water loss, and pathogens.",
+        locations: [
+          "Epidermis of skin",
+          "Especially palms and soles"
+        ],
+        note: "The top keratin layer has no nuclei and acts as a dry protective layer.",
+        diagram: { type: "keratinized" }
+      },
+      {
+        id: "nonkeratinized-stratified",
+        name: "Non-keratinized stratified squamous epithelium",
+        clue: "Many moist layers; surface cells keep nuclei",
+        functionText: "Protects against abrasion in moist areas.",
+        locations: [
+          "Oral cavity",
+          "Esophagus",
+          "Vagina",
+          "Anal canal"
+        ],
+        note: "There is no keratin layer, so the flattened surface cells still have nuclei.",
+        diagram: { type: "nonkeratinized" }
+      }
+    ];
+
+    const selector = document.getElementById("tissueSelector");
+    const titleEl = document.getElementById("tissueTitle");
+    const clueEl = document.getElementById("tissueClue");
+    const noteEl = document.getElementById("diagramNote");
+    const mount = document.getElementById("diagramMount");
+    const functionBox = document.getElementById("functionBox");
+    const locationsBox = document.getElementById("locationsBox");
+    const functionBody = document.getElementById("functionBody");
+    const locationsBody = document.getElementById("locationsBody");
+
+    let activeTissueId = tissues[0].id;
+
+    // Small SVG helper functions keep each tissue drawing readable and consistent.
+    const svgNS = "http://www.w3.org/2000/svg";
+
+    function makeSvg(tag, attrs = {}, parent) {
+      const el = document.createElementNS(svgNS, tag);
+      Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+      if (parent) parent.appendChild(el);
+      return el;
+    }
+
+    function makeCell(parent, attrs, fill = "var(--cell)") {
+      return makeSvg("path", {
+        ...attrs,
+        class: "cell-shape",
+        fill
+      }, parent);
+    }
+
+    function makeRectCell(parent, x, y, width, height, fill = "var(--cell)", radius = 4) {
+      makeSvg("rect", {
+        x,
+        y,
+        width,
+        height,
+        rx: radius,
+        ry: radius,
+        class: "cell-shape",
+        fill
+      }, parent);
+    }
+
+    function makeNucleus(parent, cx, cy, rx, ry, rotation = 0) {
+      makeSvg("ellipse", {
+        cx,
+        cy,
+        rx,
+        ry,
+        transform: `rotate(${rotation} ${cx} ${cy})`,
+        class: "nucleus"
+      }, parent);
+    }
+
+    function makeLine(parent, x1, y1, x2, y2, className = "callout") {
+      makeSvg("line", { x1, y1, x2, y2, class: className }, parent);
+    }
+
+    function makeText(parent, x, y, text, className = "label", anchor = "middle") {
+      const el = makeSvg("text", { x, y, class: className, "text-anchor": anchor }, parent);
+      el.textContent = text;
+      return el;
+    }
+
+    function drawCommonFrame(svg, group) {
+      makeSvg("rect", { x: 16, y: 16, width: 868, height: 78, rx: 8, class: "lumen-band" }, group);
+      makeText(group, 450, 45, "free surface / lumen", "label");
+      makeLine(group, 450, 58, 450, 93);
+      makeSvg("path", {
+        d: "M94 328 C250 336 380 320 536 329 C660 337 748 324 806 330",
+        class: "basement"
+      }, group);
+      makeSvg("path", {
+        d: "M94 318 C250 326 380 310 536 319 C660 327 748 314 806 320",
+        class: "basement-highlight"
+      }, group);
+      makeText(group, 712, 365, "basement membrane", "label");
+      makeLine(group, 690, 345, 656, 323);
+    }
+
+    function drawBaseLabels(svg, group, nucleusPoint, cellPoint) {
+      makeText(group, 114, 166, "cell", "label", "start");
+      makeLine(group, 154, 160, cellPoint.x, cellPoint.y);
+      makeText(group, 110, 216, "nucleus", "label", "start");
+      makeLine(group, 172, 210, nucleusPoint.x, nucleusPoint.y);
+    }
+
+    function drawSimpleSquamous(svg, group) {
+      drawCommonFrame(svg, group);
+      const starts = [130, 234, 338, 442, 546, 650];
+      starts.forEach((x, index) => {
+        const top = 276;
+        const bottom = 318;
+        makeCell(group, {
+          d: `M${x} ${top} C${x + 32} ${top - 12}, ${x + 72} ${top - 10}, ${x + 104} ${top}
+              L${x + 104} ${bottom} C${x + 76} ${bottom + 8}, ${x + 31} ${bottom + 8}, ${x} ${bottom} Z`
+        }, index % 2 ? "var(--cell-cool)" : "var(--cell)");
+        makeNucleus(group, x + 52, top + 21, 23, 6, -3);
+      });
+      drawBaseLabels(svg, group, { x: 294, y: 294 }, { x: 262, y: 278 });
+    }
+
+    function drawSimpleCuboidal(svg, group) {
+      drawCommonFrame(svg, group);
+      const width = 86;
+      const x0 = 126;
+      for (let i = 0; i < 7; i++) {
+        const x = x0 + i * width;
+        makeRectCell(group, x, 216, width, 104, i % 2 ? "var(--cell-cool)" : "var(--cell)", 0);
+        makeNucleus(group, x + width / 2, 268, 21, 21);
+      }
+      drawBaseLabels(svg, group, { x: 298, y: 268 }, { x: 300, y: 226 });
+    }
+
+    function drawSimpleColumnar(svg, group) {
+      drawCommonFrame(svg, group);
+      const cells = [
+        { x: 136, w: 70, fill: "var(--cell)" },
+        { x: 206, w: 62, fill: "var(--cell-cool)" },
+        { x: 268, w: 74, fill: "var(--cell)" },
+        { x: 342, w: 70, fill: "goblet" },
+        { x: 412, w: 70, fill: "var(--cell-cool)" },
+        { x: 482, w: 74, fill: "var(--cell)" },
+        { x: 556, w: 70, fill: "goblet" },
+        { x: 626, w: 78, fill: "var(--cell)" },
+        { x: 704, w: 60, fill: "var(--cell-cool)" }
+      ];
+      cells.forEach((cell, index) => {
+        if (cell.fill === "goblet") {
+          makeSvg("path", {
+            d: `M${cell.x} 142 L${cell.x + cell.w} 142 L${cell.x + cell.w} 320 L${cell.x} 320 Z`,
+            class: "goblet"
+          }, group);
+          makeSvg("ellipse", {
+            cx: cell.x + cell.w / 2,
+            cy: 172,
+            rx: 22,
+            ry: 29,
+            fill: "#f2fbeb",
+            stroke: "#527b4b",
+            "stroke-width": 1.5
+          }, group);
+        } else {
+          makeRectCell(group, cell.x, 142, cell.w, 178, cell.fill, 0);
+        }
+        makeNucleus(group, cell.x + cell.w / 2, index % 3 === 0 ? 276 : 286, 14, 23, -4);
+      });
+      drawBaseLabels(svg, group, { x: 303, y: 286 }, { x: 301, y: 178 });
+      makeText(group, 612, 136, "goblet cell", "small-label");
+      makeLine(group, 612, 142, 590, 172);
+    }
+
+    function drawPseudostratified(svg, group) {
+      drawCommonFrame(svg, group);
+      const boundaries = [
+        { top: 142, midA: 136, midB: 150, base: 142 },
+        { top: 198, midA: 184, midB: 212, base: 186 },
+        { top: 252, midA: 270, midB: 238, base: 252 },
+        { top: 320, midA: 306, midB: 336, base: 312 },
+        { top: 365, midA: 382, midB: 350, base: 374 },
+        { top: 432, midA: 414, midB: 450, base: 420 },
+        { top: 480, midA: 496, midB: 462, base: 492 },
+        { top: 546, midA: 532, midB: 562, base: 538 },
+        { top: 606, midA: 622, midB: 590, base: 608 },
+        { top: 656, midA: 640, midB: 676, base: 668 },
+        { top: 716, midA: 736, midB: 698, base: 716 },
+        { top: 764, midA: 756, midB: 772, base: 764 }
+      ];
+      const cells = [
+        { fill: "var(--cell)", nucleus: { x: 166, y: 206, rx: 13, ry: 20, rotation: -6 } },
+        { fill: "var(--cell-cool)", nucleus: { x: 226, y: 278, rx: 13, ry: 20, rotation: 5 } },
+        { fill: "goblet", nucleus: { x: 286, y: 230, rx: 13, ry: 20, rotation: -4 }, mucus: { x: 286, y: 160 } },
+        { fill: "var(--cell-alt)", nucleus: { x: 342, y: 292, rx: 13, ry: 20, rotation: 5 } },
+        { fill: "var(--cell)", nucleus: { x: 400, y: 218, rx: 13, ry: 20, rotation: -5 } },
+        { fill: "var(--cell-cool)", nucleus: { x: 454, y: 282, rx: 13, ry: 20, rotation: 5 } },
+        { fill: "var(--cell)", nucleus: { x: 514, y: 204, rx: 13, ry: 20, rotation: -5 } },
+        { fill: "goblet", nucleus: { x: 572, y: 188, rx: 13, ry: 20, rotation: 4 }, mucus: { x: 574, y: 160 } },
+        { fill: "var(--cell-alt)", nucleus: { x: 634, y: 276, rx: 13, ry: 20, rotation: -5 } },
+        { fill: "var(--cell)", nucleus: { x: 690, y: 232, rx: 13, ry: 20, rotation: 5 } },
+        { fill: "var(--cell-cool)", nucleus: { x: 738, y: 292, rx: 13, ry: 20, rotation: -4 } }
+      ];
+      function boundaryDown(boundary) {
+        return `C${boundary.midA} 190, ${boundary.midB} 262, ${boundary.base} 320`;
+      }
+
+      function boundaryUp(boundary) {
+        return `C${boundary.midB} 262, ${boundary.midA} 190, ${boundary.top} 132`;
+      }
+
+      cells.forEach((cell, index) => {
+        const left = boundaries[index];
+        const right = boundaries[index + 1];
+        const cellPath = `M${left.top} 132 L${right.top} 132 ${boundaryDown(right)}
+            L${left.base} 320 ${boundaryUp(left)} Z`;
+        if (cell.fill === "goblet") {
+          makeSvg("path", {
+            d: cellPath,
+            class: "goblet"
+          }, group);
+          makeSvg("ellipse", {
+            cx: cell.mucus.x,
+            cy: cell.mucus.y,
+            rx: 19,
+            ry: 27,
+            fill: "#f2fbeb",
+            stroke: "#527b4b",
+            "stroke-width": 1.5
+          }, group);
+        } else {
+          makeSvg("path", {
+            d: cellPath,
+            class: "cell-shape",
+            fill: cell.fill
+          }, group);
+        }
+        makeNucleus(group, cell.nucleus.x, cell.nucleus.y, cell.nucleus.rx, cell.nucleus.ry, cell.nucleus.rotation);
+        const baseCenter = (left.base + right.base) / 2;
+        makeLine(group, baseCenter, 320, baseCenter, 331, "callout");
+      });
+      makeLine(group, 142, 132, 764, 132, "callout");
+      for (let x = 146; x <= 760; x += 18) {
+        makeSvg("path", {
+          d: `M${x} 132 C${x - 8} 114, ${x + 8} 114, ${x} 132`,
+          class: "cilia"
+        }, group);
+      }
+      drawBaseLabels(svg, group, { x: 394, y: 224 }, { x: 390, y: 160 });
+      makeText(group, 742, 142, "cilia", "small-label");
+      makeLine(group, 726, 137, 714, 115);
+      makeText(group, 656, 382, "all cells touch the basement membrane", "small-label");
+    }
+
+    function drawTransitional(svg, group) {
+      drawCommonFrame(svg, group);
+      const layers = [
+        { y: 272, h: 48, count: 8, fill: "var(--cell)", surface: false },
+        { y: 224, h: 48, count: 7, fill: "var(--cell-cool)", surface: false },
+        { y: 176, h: 48, count: 6, fill: "var(--cell-alt)", surface: false },
+        { y: 128, h: 48, count: 5, fill: "var(--cell-green)", surface: true }
+      ];
+      layers.forEach(layer => {
+        const w = 626 / layer.count;
+        for (let i = 0; i < layer.count; i++) {
+          const x = 136 + i * w;
+          makeSvg("path", {
+            d: layer.surface
+              ? `M${x} ${layer.y + layer.h}
+                 L${x} ${layer.y + 14}
+                 C${x + 10} ${layer.y}, ${x + w - 10} ${layer.y}, ${x + w} ${layer.y + 14}
+                 L${x + w} ${layer.y + layer.h} Z`
+              : `M${x} ${layer.y} L${x + w} ${layer.y} L${x + w} ${layer.y + layer.h} L${x} ${layer.y + layer.h} Z`,
+            class: "cell-shape",
+            fill: layer.fill
+          }, group);
+          makeNucleus(group, x + w / 2, layer.y + layer.h * 0.58, 12, 15);
+        }
+      });
+      drawBaseLabels(svg, group, { x: 316, y: 296 }, { x: 292, y: 238 });
+      makeText(group, 706, 150, "dome-shaped surface cells", "small-label");
+      makeLine(group, 684, 157, 622, 134);
+      makeSvg("path", {
+        d: "M650 200 C704 188, 744 188, 798 200",
+        stroke: "#c05b5b",
+        "stroke-width": 3,
+        fill: "none",
+        "stroke-linecap": "round"
+      }, group);
+      makeSvg("path", {
+        d: "M786 193 L800 200 L786 207",
+        stroke: "#c05b5b",
+        "stroke-width": 3,
+        fill: "none",
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round"
+      }, group);
+      makeText(group, 724, 222, "flattens when stretched", "small-label");
+    }
+
+    function drawStratified(svg, group, hasKeratin) {
+      drawCommonFrame(svg, group);
+      const palette = ["var(--cell)", "var(--cell-cool)", "var(--cell-alt)", "var(--cell-green)"];
+      const rows = [
+        { y: 274, h: 46, count: 8, shape: "cuboidal" },
+        { y: 230, h: 44, count: 7, shape: "polyhedral" },
+        { y: 188, h: 42, count: 8, shape: "polyhedral" },
+        { y: 152, h: 36, count: 8, shape: "upper" },
+        { y: 124, h: 28, count: 9, shape: "surface" }
+      ];
+      rows.forEach((row, rowIndex) => {
+        const isSurface = row.shape === "surface";
+        const w = 626 / row.count;
+        for (let i = 0; i < row.count; i++) {
+          const x = 136 + i * w;
+          const mid = x + w / 2;
+          makeSvg("path", {
+            d: isSurface
+              ? `M${x} ${row.y}
+                 L${x + w} ${row.y}
+                 L${x + w} ${row.y + row.h}
+                 L${x} ${row.y + row.h} Z`
+              : `M${x} ${row.y}
+                 L${x + w} ${row.y}
+                 L${x + w} ${row.y + row.h}
+                 L${x} ${row.y + row.h} Z`,
+            class: "cell-shape",
+            fill: palette[(i + rowIndex) % palette.length]
+          }, group);
+          const nucleusY = isSurface ? row.y + row.h - 8 : row.y + row.h * 0.56;
+          const nrx = isSurface ? 13 : 12;
+          const nry = isSurface ? 5 : 12;
+          makeNucleus(group, x + w / 2, nucleusY, nrx, nry, isSurface ? -3 : 0);
+        }
+      });
+
+      if (hasKeratin) {
+        makeSvg("rect", {
+          x: 136,
+          y: 96,
+          width: 626,
+          height: 28,
+          rx: 2,
+          ry: 2,
+          class: "keratin"
+        }, group);
+        makeText(group, 206, 92, "keratin layer", "small-label", "start");
+        makeLine(group, 306, 92, 354, 110);
+      }
+
+      drawBaseLabels(svg, group, { x: 293, y: 296 }, { x: 304, y: 230 });
+      makeText(group, 700, 134, hasKeratin ? "dry surface, no nuclei" : "surface cells keep nuclei", "small-label");
+      makeLine(group, 672, 141, 620, hasKeratin ? 108 : 146);
+    }
+
+    const drawers = {
+      simpleSquamous: drawSimpleSquamous,
+      simpleCuboidal: drawSimpleCuboidal,
+      simpleColumnar: drawSimpleColumnar,
+      pseudostratified: drawPseudostratified,
+      transitional: drawTransitional,
+      keratinized: (svg, group) => drawStratified(svg, group, true),
+      nonkeratinized: (svg, group) => drawStratified(svg, group, false)
+    };
+
+    // Render a crisp SVG diagram for the selected tissue.
+    function renderDiagram(tissue) {
+      const svg = makeSvg("svg", {
+        viewBox: "0 0 900 405",
+        role: "img",
+        "aria-labelledby": "svgTitle svgDesc"
+      });
+      makeSvg("title", { id: "svgTitle" }, svg).textContent = tissue.name;
+      makeSvg("desc", { id: "svgDesc" }, svg).textContent = tissue.note;
+      const group = makeSvg("g", { class: "fade-in" }, svg);
+      drawers[tissue.diagram.type](svg, group);
+      mount.replaceChildren(svg);
+    }
+
+    // Selection uses one update path for all seven tissue buttons.
+    function updateTissue(tissueId) {
+      activeTissueId = tissueId;
+      const tissue = tissues.find(item => item.id === tissueId);
+      titleEl.textContent = tissue.name;
+      clueEl.textContent = tissue.clue;
+      noteEl.textContent = tissue.note;
+      functionBody.innerHTML = `<p>${tissue.functionText}</p>`;
+      locationsBody.innerHTML = `<ul>${tissue.locations.map(location => `<li>${location}</li>`).join("")}</ul>`;
+
+      document.querySelectorAll(".tissue-button").forEach(button => {
+        const selected = button.dataset.tissueId === tissueId;
+        button.classList.toggle("is-selected", selected);
+        button.setAttribute("aria-pressed", String(selected));
+      });
+
+      setInfoOpen(functionBox, false);
+      setInfoOpen(locationsBox, false);
+      renderDiagram(tissue);
+    }
+
+    function setInfoOpen(box, open) {
+      const button = box.querySelector(".info-toggle");
+      const icon = box.querySelector(".toggle-icon");
+      box.classList.toggle("is-open", open);
+      button.setAttribute("aria-expanded", String(open));
+      icon.textContent = open ? "-" : "+";
+    }
+
+    function toggleInfoBox(box) {
+      setInfoOpen(box, !box.classList.contains("is-open"));
+    }
+
+    // Build accessible controls from the tissue data.
+    tissues.forEach(tissue => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "tissue-button";
+      button.dataset.tissueId = tissue.id;
+      button.setAttribute("aria-pressed", "false");
+      button.textContent = tissue.name;
+      button.addEventListener("click", () => updateTissue(tissue.id));
+      selector.appendChild(button);
+    });
+
+    functionBox.querySelector(".info-toggle").addEventListener("click", () => toggleInfoBox(functionBox));
+    locationsBox.querySelector(".info-toggle").addEventListener("click", () => toggleInfoBox(locationsBox));
+
+    updateTissue(activeTissueId);
+  </script>
+</body>
+</html>

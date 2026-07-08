@@ -1,0 +1,870 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Regulation of Osteoclast Activity</title>
+  <style>
+    :root {
+      --ink: #17324d;
+      --muted: #5d7388;
+      --paper: #f7fbff;
+      --card: #ffffff;
+      --line: #cfe0ed;
+      --rankl: #e4583e;
+      --rankl-dark: #a62e21;
+      --opg: #2878b5;
+      --opg-dark: #15517f;
+      --mcsf: #248b6b;
+      --mcsf-dark: #126047;
+      --chloride: #2f9b57;
+      --chloride-dark: #176236;
+      --estrogen: #a84d98;
+      --pth: #d78916;
+      --cell: #8bc6e8;
+      --cell-dark: #367da8;
+      --osteoclast: #c36a84;
+      --osteoclast-dark: #873b55;
+      --shadow: 0 18px 50px rgba(24, 66, 96, .12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 12% 8%, rgba(139, 198, 232, .26), transparent 30rem),
+        radial-gradient(circle at 88% 2%, rgba(168, 77, 152, .13), transparent 28rem),
+        var(--paper);
+    }
+
+    .page {
+      width: min(1440px, 100%);
+      margin: 0 auto;
+      padding: 18px clamp(12px, 3vw, 36px) 30px;
+    }
+
+    .attribution {
+      margin: 0 0 14px;
+      text-align: center;
+      color: var(--muted);
+      font-size: clamp(.76rem, 1.6vw, .92rem);
+      font-weight: 900;
+      letter-spacing: .015em;
+    }
+
+    header { text-align: center; }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.75rem, 4vw, 3rem);
+      line-height: 1.08;
+      letter-spacing: -.035em;
+    }
+
+    .subtitle {
+      max-width: 760px;
+      margin: 9px auto 18px;
+      color: var(--muted);
+      font-size: clamp(.92rem, 2vw, 1.08rem);
+      line-height: 1.5;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    button {
+      border: 1px solid #bbcedc;
+      border-radius: 999px;
+      padding: 10px 16px;
+      color: var(--ink);
+      background: rgba(255, 255, 255, .9);
+      font: inherit;
+      font-size: .9rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 3px 8px rgba(20, 58, 85, .07);
+      transition: transform .18s ease, color .18s ease, border-color .18s ease, background .18s ease;
+    }
+
+    button:hover { transform: translateY(-1px); border-color: #708fa5; }
+    button:focus-visible { outline: 3px solid rgba(45, 117, 168, .28); outline-offset: 2px; }
+    button[aria-pressed="true"] { color: white; border-color: var(--ink); background: var(--ink); }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(230px, 310px);
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .summary, .meter-card {
+      min-height: 90px;
+      padding: 15px 18px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, .92);
+      box-shadow: 0 8px 25px rgba(24, 66, 96, .07);
+    }
+
+    .eyebrow {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: .7rem;
+      font-weight: 900;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+
+    #condition-title { margin: 0 0 3px; font-size: 1.05rem; }
+    #summary-text { margin: 0; color: #3b556b; line-height: 1.45; }
+
+    .meter-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+    .meter-row strong { font-size: .95rem; }
+    #activity-word { color: var(--osteoclast-dark); font-size: .82rem; font-weight: 900; }
+
+    .meter {
+      height: 13px;
+      margin-top: 10px;
+      overflow: hidden;
+      border-radius: 99px;
+      background: #e9eff4;
+      box-shadow: inset 0 1px 3px rgba(18, 52, 77, .13);
+    }
+
+    #meter-fill {
+      height: 100%;
+      width: 50%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #67b9c7, #d65b72);
+      transition: width .65s cubic-bezier(.2, .8, .2, 1);
+    }
+
+    .stage-card {
+      position: relative;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: rgba(255, 255, 255, .94);
+      box-shadow: var(--shadow);
+    }
+
+    .stage-hint { display: none; }
+
+    svg {
+      display: block;
+      width: 100%;
+      min-width: 900px;
+      height: auto;
+      font-family: inherit;
+    }
+
+    .zone-title { fill: #61798c; font-size: 16px; font-weight: 900; letter-spacing: .12em; }
+    .cell-label { fill: var(--ink); font-size: 21px; font-weight: 900; }
+    .minor-label { fill: #4f687b; font-size: 14px; font-weight: 800; }
+    .tiny-label { fill: #50687a; font-size: 12px; font-weight: 800; }
+    .signal-note { fill: #365166; font-size: 13px; font-weight: 800; }
+
+    .hormone-card { transition: opacity .45s ease, filter .45s ease, transform .45s ease; transform-origin: center; }
+    .hormone-card.dim { opacity: .42; }
+    .hormone-card.hot { filter: drop-shadow(0 0 10px rgba(215, 137, 22, .42)); transform: scale(1.035); }
+
+    .reg-arrow { fill: none; stroke-linecap: round; stroke-width: 3; stroke-dasharray: 8 7; }
+    .flow-arrow { fill: none; stroke: #7292a7; stroke-width: 2.3; stroke-linecap: round; marker-end: url(#arrow); }
+
+    #osteoblast-main, #stromal-body { filter: drop-shadow(0 10px 15px rgba(54, 125, 168, .16)); }
+    #osteoblast-survival, #new-osteoblasts, #formation-label, #brief-pth-note { transition: opacity .65s ease; }
+    .progenitor-arrow { fill: none; stroke: #4d9bc2; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 7 7; marker-end: url(#arrow); }
+    .receptor { fill: #7553a6; stroke: #513479; stroke-width: 2; }
+    .receptor-cfms { fill: var(--mcsf); stroke: var(--mcsf-dark); stroke-width: 2; }
+    .receptor-pulse { animation: receptorPulse .65s ease; }
+    #precursor-cluster { transition: opacity .7s ease; }
+    .precursor-mini { opacity: .96; }
+
+    #mature-cell {
+      transform-box: fill-box;
+      transform-origin: center;
+      transition: transform .7s cubic-bezier(.2, .8, .2, 1), filter .7s ease;
+    }
+
+    #activity-aura { transition: opacity .7s ease; }
+    .ruffle { fill: none; stroke: #f6b4c5; stroke-width: 5; stroke-linecap: round; opacity: .9; }
+    .bone-texture { stroke: #d0b88d; stroke-width: 3; stroke-linecap: round; opacity: .7; }
+    #resorption-lacuna { transition: opacity .7s ease; }
+    #resorption-detail { transition: opacity .7s ease; }
+    .chem-label { fill: white; font-size: 13px; font-weight: 950; paint-order: stroke; stroke: rgba(85, 36, 54, .48); stroke-width: 2.4px; }
+    .enzyme-pill { fill: #fff3c8; stroke: #cc9a25; stroke-width: 1.4; }
+    .enzyme-text { fill: #764b08; font-size: 10.5px; font-weight: 950; }
+    .chem-arrow { fill: none; stroke: #ffe2a2; stroke-width: 2; stroke-linecap: round; marker-end: url(#chem-arrowhead); }
+    .acid-flow { fill: none; stroke: #e34e42; stroke-width: 3; stroke-linecap: round; marker-end: url(#acid-arrowhead); transition: stroke-width .7s ease, opacity .7s ease; }
+    .chloride-flow { fill: none; stroke: var(--chloride); stroke-width: 2.8; stroke-linecap: round; marker-end: url(#chloride-arrowhead); transition: stroke-width .7s ease, opacity .7s ease; }
+    .exchange-flow { fill: none; stroke: #ffe2a2; stroke-width: 2.3; stroke-linecap: round; marker-end: url(#chem-arrowhead); }
+    .membrane-transporter rect { fill: #fff7dc; stroke: #a96d12; stroke-width: 2.4; }
+    .membrane-transporter path { stroke-width: 2.4; stroke-linecap: round; }
+    .exchanger-dot { fill: #2f9b57; stroke: #e9f7ee; stroke-width: 3; }
+    .antiporter-label, .lacuna-label { fill: #365166; font-size: 11px; font-weight: 900; }
+    .secretion-label { fill: #fff7fb; font-size: 11px; font-weight: 950; letter-spacing: .04em; paint-order: stroke; stroke: rgba(85, 36, 54, .55); stroke-width: 2px; }
+    .ion-particle { pointer-events: none; }
+    .ion-particle circle { stroke-width: 2; }
+    .ion-particle text { fill: white; font-size: 11px; font-weight: 950; text-anchor: middle; dominant-baseline: middle; }
+    .ion-acid circle { fill: #e34e42; stroke: #9f2d26; }
+    .ion-chloride circle { fill: var(--chloride); stroke: var(--chloride-dark); }
+
+    .particle { pointer-events: none; }
+    .particle text { fill: white; font-size: 10px; font-weight: 950; text-anchor: middle; dominant-baseline: middle; }
+    .particle-rankl rect { fill: var(--rankl); stroke: var(--rankl-dark); stroke-width: 2; }
+    .particle-opg path { fill: var(--opg); stroke: var(--opg-dark); stroke-width: 2; }
+    .particle-mcsf polygon { fill: var(--mcsf); stroke: var(--mcsf-dark); stroke-width: 2; }
+    .blocked-halo { fill: none; stroke: #7694aa; stroke-width: 2; stroke-dasharray: 4 4; }
+
+    .signals-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .signal-card {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, .82);
+    }
+
+    .signal-icon { width: 13px; height: 13px; border-radius: 4px; }
+    .signal-name { font-size: .88rem; font-weight: 900; }
+    .signal-role { color: var(--muted); font-size: .73rem; }
+    .signal-level { padding: 4px 7px; border-radius: 7px; color: white; font-size: .68rem; font-weight: 900; text-transform: uppercase; }
+
+    .biology-note {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin: 13px 0 0;
+      color: #526b7e;
+      font-size: .77rem;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .biology-note span::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 7px; border-radius: 50%; background: #83a6bb; vertical-align: 1px; }
+
+    @keyframes receptorPulse {
+      0%, 100% { filter: none; }
+      45% { filter: drop-shadow(0 0 8px #ffb49f); }
+    }
+
+    @keyframes auraPulse {
+      0%, 100% { transform: scale(1); opacity: .18; }
+      50% { transform: scale(1.05); opacity: .35; }
+    }
+
+    @media (max-width: 720px) {
+      .page { padding-inline: 10px; }
+      .dashboard { grid-template-columns: 1fr; }
+      .summary, .meter-card { min-height: auto; }
+      .stage-hint { display: block; position: sticky; left: 0; z-index: 3; width: 100%; padding: 6px 10px; color: #61798c; background: #eef7fc; font-size: .7rem; font-weight: 800; text-align: center; }
+      .signals-strip { grid-template-columns: 1fr; }
+      button { flex: 1 1 42%; padding-inline: 10px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <p class="attribution"><strong>Animation Prompted by Jerred Seveyka for his biology class.</strong></p>
+    <header>
+      <h1>Regulation of Bone Remodeling Cells</h1>
+      <p class="subtitle">Estrogen and PTH act on stromal cells and osteoblast-lineage cells, which then regulate osteoclast formation and activity.</p>
+    </header>
+
+    <nav class="controls" aria-label="Choose a hormone condition">
+      <button type="button" data-state="baseline" aria-pressed="true">Baseline</button>
+      <button type="button" data-state="highEstrogen" aria-pressed="false">High Estrogen</button>
+      <button type="button" data-state="lowEstrogen" aria-pressed="false">Low Estrogen</button>
+      <button type="button" data-state="highPTH" aria-pressed="false">High PTH</button>
+      <button type="button" data-state="briefPTH" aria-pressed="false">Brief PTH burst</button>
+    </nav>
+
+    <section class="dashboard" aria-live="polite">
+      <div class="summary">
+        <span class="eyebrow">Current condition</span>
+        <h2 id="condition-title">Baseline</h2>
+        <p id="summary-text">Balanced RANKL and OPG keeps bone remodeling controlled at a normal level.</p>
+      </div>
+      <div class="meter-card">
+        <span class="eyebrow">Response</span>
+        <div class="meter-row"><strong>Osteoclast activity</strong><span id="activity-word">Moderate</span></div>
+        <div class="meter" role="meter" aria-label="Osteoclast activity" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
+          <div id="meter-fill"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="stage-card" aria-label="Animated cell signaling diagram">
+      <div class="stage-hint">Swipe sideways to explore the full cell pathway</div>
+      <svg id="scene" viewBox="0 0 1200 800" role="img" aria-labelledby="scene-title scene-desc">
+        <title id="scene-title">Stromal and osteoblast regulation of osteoclast activity</title>
+        <desc id="scene-desc">Estrogen and PTH signal to stromal cells and osteoblast-lineage cells. These cells release RANKL, OPG, and M-CSF. OPG traps RANKL while free RANKL binds RANK and M-CSF binds c-Fms on an osteoclast precursor. The mature osteoclast uses carbonic anhydrase to generate acid, then secretes H+ and Cl&#8722; onto the bone-facing resorption lacuna.</desc>
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#7292a7"/>
+          </marker>
+          <marker id="estrogen-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#a84d98"/>
+          </marker>
+          <marker id="pth-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#d78916"/>
+          </marker>
+          <marker id="chem-arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#ffe2a2"/>
+          </marker>
+          <marker id="acid-arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#e34e42"/>
+          </marker>
+          <marker id="chloride-arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#2f9b57"/>
+          </marker>
+          <filter id="soft-glow" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="9"/>
+          </filter>
+        </defs>
+
+        <rect x="22" y="20" width="425" height="758" rx="24" fill="#f0f8fd"/>
+        <rect x="463" y="20" width="286" height="758" rx="24" fill="#f8fafc"/>
+        <rect x="765" y="20" width="413" height="758" rx="24" fill="#fff6f8"/>
+        <text x="45" y="50" class="zone-title">STROMAL + OSTEOBLAST</text>
+        <text x="486" y="50" class="zone-title">EXTRACELLULAR SPACE</text>
+        <text x="788" y="50" class="zone-title">OSTEOCLAST LINEAGE</text>
+
+        <g id="estrogen-card" class="hormone-card">
+          <rect x="75" y="76" width="143" height="60" rx="16" fill="#f7eaf5" stroke="#d7a3ce" stroke-width="2"/>
+          <circle cx="102" cy="106" r="13" fill="#a84d98"/>
+          <text x="123" y="103" font-size="15" font-weight="900" fill="#74326a">Estrogen</text>
+          <text id="estrogen-level" x="123" y="120" font-size="11" font-weight="800" fill="#8b5b83">normal level</text>
+        </g>
+        <path id="estrogen-path" class="reg-arrow" d="M 148 138 C 145 174, 169 193, 188 217" stroke="#a84d98" marker-end="url(#estrogen-arrow)"/>
+        <path id="estrogen-osteoblast-path" class="reg-arrow" d="M 132 138 C 105 250, 122 420, 196 498" stroke="#a84d98" marker-end="url(#estrogen-arrow)"/>
+        <text id="estrogen-effect" x="56" y="175" font-size="14" font-weight="900" fill="#864279">&#8593; OPG + osteoblast lifespan</text>
+
+        <g id="pth-card" class="hormone-card">
+          <rect x="255" y="76" width="143" height="60" rx="16" fill="#fff3da" stroke="#e6bc6c" stroke-width="2"/>
+          <circle cx="282" cy="106" r="13" fill="#d78916"/>
+          <text x="303" y="103" font-size="15" font-weight="900" fill="#8d5708">PTH</text>
+          <text id="pth-level" x="303" y="120" font-size="11" font-weight="800" fill="#946e35">normal level</text>
+        </g>
+        <path id="pth-path" class="reg-arrow" d="M 326 138 C 328 172, 290 194, 238 219" stroke="#d78916" marker-end="url(#pth-arrow)"/>
+        <path id="pth-osteoblast-path" class="reg-arrow" d="M 341 138 C 393 252, 380 414, 306 498" stroke="#d78916" marker-end="url(#pth-arrow)"/>
+        <text id="pth-effect" x="276" y="175" font-size="14" font-weight="900" fill="#98610e">High PTH: &#8593; RANKL + M-CSF</text>
+
+        <g id="stromal-body" transform="translate(210 246) scale(.72)">
+          <path d="M -67 -19 C -40 -38, 33 -38, 67 -17 C 59 8, 33 23, -6 24 C -43 25, -62 10, -67 -19 Z" fill="#d7edf6" stroke="#367da8" stroke-width="3"/>
+          <ellipse cx="-2" cy="-3" rx="28" ry="15" fill="#edf8fc" stroke="#6ba7c8" stroke-width="2"/>
+          <circle cx="-2" cy="-3" r="4.5" fill="#7ab4d4"/>
+        </g>
+        <text x="210" y="300" text-anchor="middle" class="cell-label">Stromal cell</text>
+
+        <path class="progenitor-arrow" d="M 214 313 C 194 380, 202 446, 233 494"/>
+        <g id="new-osteoblasts" opacity=".25">
+          <g transform="translate(198 356) scale(.34)">
+            <path d="M -67 -19 C -40 -38, 33 -38, 67 -17 C 59 8, 33 23, -6 24 C -43 25, -62 10, -67 -19 Z" fill="#d7edf6" stroke="#367da8" stroke-width="3"/>
+            <ellipse cx="-2" cy="-3" rx="28" ry="15" fill="#edf8fc" stroke="#6ba7c8" stroke-width="2"/>
+          </g>
+          <g transform="translate(208 413) scale(.42)">
+            <path d="M -67 -19 C -40 -38, 33 -38, 67 -17 C 59 8, 33 23, -6 24 C -43 25, -62 10, -67 -19 Z" fill="#d7edf6" stroke="#367da8" stroke-width="3"/>
+            <ellipse cx="-2" cy="-3" rx="28" ry="15" fill="#edf8fc" stroke="#6ba7c8" stroke-width="2"/>
+          </g>
+          <g transform="translate(229 468) scale(.5)">
+            <path d="M -67 -19 C -40 -38, 33 -38, 67 -17 C 59 8, 33 23, -6 24 C -43 25, -62 10, -67 -19 Z" fill="#d7edf6" stroke="#367da8" stroke-width="3"/>
+            <ellipse cx="-2" cy="-3" rx="28" ry="15" fill="#edf8fc" stroke="#6ba7c8" stroke-width="2"/>
+          </g>
+        </g>
+        <text id="formation-label" x="170" y="344" text-anchor="middle" class="tiny-label">Stromal progenitors form osteoblasts</text>
+        <text id="brief-pth-note" x="235" y="382" text-anchor="middle" font-size="18" font-weight="950" fill="#98610e" opacity="0">Brief PTH &#8594; More osteoblast formation</text>
+
+        <g id="osteoblast-survival" opacity=".55">
+          <ellipse cx="258" cy="565" rx="112" ry="83" fill="#a84d98" opacity=".09"/>
+          <text id="lifespan-label" x="258" y="442" text-anchor="middle" class="tiny-label" fill="#864279">Osteoblast lifespan: normal</text>
+        </g>
+        <g id="osteoblast-main" transform="translate(258 562) scale(.78)">
+          <path d="M -112 -44 C -88 -95, -22 -112, 50 -92 C 124 -72, 156 -10, 128 47 C 101 101, 9 116, -72 84 C -143 57, -154 2, -112 -44 Z" fill="#bce1f4" stroke="#367da8" stroke-width="4"/>
+          <ellipse cx="2" cy="-4" rx="46" ry="31" fill="#d8effa" stroke="#6ba7c8" stroke-width="3"/>
+          <circle cx="2" cy="-4" r="7" fill="#7ab4d4"/>
+          <path d="M -82 -46 Q -111 -70 -126 -52 M 112 -48 Q 145 -72 156 -49 M -91 70 Q -121 98 -142 83" fill="none" stroke="#367da8" stroke-width="4" stroke-linecap="round"/>
+        </g>
+        <text x="258" y="672" text-anchor="middle" class="cell-label">Osteoblast</text>
+        <text x="258" y="694" text-anchor="middle" class="minor-label">Releases RANKL, OPG, and M-CSF</text>
+
+        <g aria-label="Outputs released by the osteoblast">
+          <path class="flow-arrow" d="M 340 515 C 381 486, 406 458, 455 435"/>
+          <path class="flow-arrow" d="M 354 558 C 395 543, 423 522, 455 502"/>
+          <path class="flow-arrow" d="M 334 605 C 382 603, 418 585, 455 569"/>
+          <g transform="translate(369 420)">
+            <rect width="72" height="31" rx="12" fill="#fff0ec" stroke="#e4583e"/>
+            <text x="36" y="20" text-anchor="middle" font-size="13" font-weight="950" fill="#a62e21">RANKL</text>
+          </g>
+          <g transform="translate(378 488)">
+            <rect width="63" height="31" rx="12" fill="#eaf4fb" stroke="#2878b5"/>
+            <text x="31" y="20" text-anchor="middle" font-size="13" font-weight="950" fill="#15517f">OPG</text>
+          </g>
+          <g transform="translate(369 556)">
+            <rect width="72" height="31" rx="12" fill="#e8f6f1" stroke="#248b6b"/>
+            <text x="36" y="20" text-anchor="middle" font-size="13" font-weight="950" fill="#126047">M-CSF</text>
+          </g>
+        </g>
+
+        <g id="block-zone">
+          <rect x="484" y="72" width="238" height="108" rx="18" fill="#edf5fa" stroke="#b7cfdd" stroke-dasharray="6 5"/>
+          <text x="603" y="96" text-anchor="middle" font-size="13" font-weight="950" fill="#365166">OPG DECOY ZONE</text>
+          <g transform="translate(512 112)">
+            <path d="M 0 0 C 20 -16, 40 -12, 48 6 C 39 18, 34 30, 24 45 C 11 30, 5 19, 0 0 Z" fill="#2878b5"/>
+            <text x="24" y="13" text-anchor="middle" font-size="10" font-weight="950" fill="white">OPG</text>
+          </g>
+          <text x="568" y="127" font-size="25" font-weight="900" fill="#7a91a2">+</text>
+          <g transform="translate(590 117)">
+            <rect width="61" height="26" rx="9" fill="#e4583e"/>
+            <text x="30" y="17" text-anchor="middle" font-size="10" font-weight="950" fill="white">RANKL</text>
+          </g>
+          <text x="659" y="137" font-size="24" font-weight="900" fill="#7a91a2">&#10005;</text>
+          <text x="603" y="164" text-anchor="middle" class="tiny-label">Blocked: cannot reach RANK</text>
+        </g>
+
+        <path d="M 490 435 C 585 330, 705 225, 824 200" fill="none" stroke="#e8b2a8" stroke-width="2" stroke-dasharray="6 7"/>
+        <text x="638" y="290" text-anchor="middle" class="tiny-label" fill="#9b493b">Free RANKL route</text>
+        <path d="M 491 570 C 610 454, 735 331, 842 267" fill="none" stroke="#a5d5c5" stroke-width="2" stroke-dasharray="6 7"/>
+        <text x="640" y="446" text-anchor="middle" class="tiny-label" fill="#2e755e">M-CSF differentiation route</text>
+        <g id="particle-layer"></g>
+
+        <g id="precursor-cluster" aria-label="Multiple stimulated osteoclast precursors fuse into one mature osteoclast">
+          <g class="precursor-mini" transform="translate(807 135) scale(.48)">
+            <circle cx="0" cy="0" r="58" fill="#f4c9d5" stroke="#873b55" stroke-width="4"/>
+            <circle cx="4" cy="1" r="24" fill="#df9cb0" stroke="#a95570" stroke-width="3"/>
+            <circle cx="4" cy="1" r="6" fill="#b9627e"/>
+            <path class="receptor" d="M -45 -13 l -13 -9 v -12 h 7 v 9 l 6 4 l 7 -4 v -9 h 7 v 12 Z"/>
+            <path class="receptor-cfms" d="M -42 29 l -12 8 l -11 -6 l 3 -6 l 8 4 l 7 -5 l -1 -10 l 7 -1 Z"/>
+          </g>
+          <g class="precursor-mini" transform="translate(964 174) scale(.48)">
+            <circle cx="0" cy="0" r="58" fill="#f4c9d5" stroke="#873b55" stroke-width="4"/>
+            <circle cx="4" cy="1" r="24" fill="#df9cb0" stroke="#a95570" stroke-width="3"/>
+            <circle cx="4" cy="1" r="6" fill="#b9627e"/>
+            <path class="receptor" d="M -45 -13 l -13 -9 v -12 h 7 v 9 l 6 4 l 7 -4 v -9 h 7 v 12 Z"/>
+            <path class="receptor-cfms" d="M -42 29 l -12 8 l -11 -6 l 3 -6 l 8 4 l 7 -5 l -1 -10 l 7 -1 Z"/>
+          </g>
+          <text x="1010" y="296" text-anchor="middle" class="tiny-label" fill="#873b55">stimulated precursors fuse</text>
+        </g>
+
+        <g id="precursor" transform="translate(222 -14) scale(.75)">
+          <circle cx="890" cy="305" r="92" fill="#f4c9d5" stroke="#873b55" stroke-width="4"/>
+          <circle cx="903" cy="306" r="42" fill="#df9cb0" stroke="#a95570" stroke-width="3"/>
+          <circle cx="903" cy="306" r="9" fill="#b9627e"/>
+          <g id="rank-receptors">
+            <path id="rank-1" class="receptor" d="M 810 260 l -18 -12 v -17 h 9 v 12 l 9 5 l 9 -5 v -12 h 9 v 17 Z"/>
+            <path id="rank-2" class="receptor" d="M 800 300 l -18 -12 v -17 h 9 v 12 l 9 5 l 9 -5 v -12 h 9 v 17 Z"/>
+            <path id="rank-3" class="receptor" d="M 808 342 l -18 -12 v -17 h 9 v 12 l 9 5 l 9 -5 v -12 h 9 v 17 Z"/>
+          </g>
+          <path id="cfms-receptor" class="receptor-cfms" d="M 829 374 l -17 11 l -15 -8 l 4 -8 l 11 6 l 10 -7 l -1 -14 l 9 -1 Z"/>
+        </g>
+        <rect x="792" y="146" width="72" height="28" rx="9" fill="#eee9f6" stroke="#7553a6"/>
+        <text x="828" y="165" text-anchor="middle" font-size="13" font-weight="950" fill="#513479">RANK</text>
+        <path class="flow-arrow" d="M 828 176 L 822 192"/>
+        <text x="890" y="337" text-anchor="middle" class="cell-label">Osteoclast precursors</text>
+        <text x="890" y="359" text-anchor="middle" class="minor-label">RANKL &#8594; RANK causes osteoclast formation.</text>
+        <text x="890" y="379" text-anchor="middle" class="minor-label">M-CSF helps precursor differentiation.</text>
+
+        <path class="flow-arrow" d="M 956 278 C 1118 312, 1195 396, 1138 494"/>
+        <text x="1132" y="350" text-anchor="middle" class="tiny-label">fusion into mature osteoclast</text>
+
+        <g id="activity-aura" opacity=".25">
+          <ellipse cx="1032" cy="584" rx="180" ry="126" fill="#ed8ba4" filter="url(#soft-glow)"/>
+        </g>
+        <path id="resorption-lacuna" d="M 850 680 C 920 650, 1112 649, 1184 681 L 1190 708 H 840 Z" fill="#ffe0cf" opacity=".42"/>
+        <g id="mature-cell">
+          <path d="M 870 520 C 896 444, 968 405, 1044 421 C 1128 394, 1184 455, 1168 536 C 1195 607, 1130 666, 1057 650 C 997 696, 908 657, 896 601 C 848 584, 835 541, 870 520 Z" fill="#c36a84" stroke="#873b55" stroke-width="5"/>
+          <circle cx="943" cy="558" r="25" fill="#8f4059"/>
+          <circle cx="1018" cy="505" r="23" fill="#8f4059"/>
+          <circle cx="1092" cy="553" r="25" fill="#8f4059"/>
+          <circle cx="1038" cy="612" r="22" fill="#8f4059"/>
+          <path id="ruffled-border" class="ruffle" d="M 882 651 Q 905 632 928 655 T 974 655 T 1020 655 T 1066 655"/>
+          <path class="ruffle" d="M 1124 654 Q 1140 650 1157 650"/>
+          <g id="resorption-detail">
+            <text x="916" y="485" class="chem-label">CO2 + H2O</text>
+            <path class="chem-arrow" d="M 978 490 C 993 492, 1008 500, 1019 513"/>
+            <g transform="translate(1032 522)">
+              <rect class="enzyme-pill" x="-66" y="-14" width="132" height="27" rx="11"/>
+              <text class="enzyme-text" x="0" y="4" text-anchor="middle">carbonic anhydrase</text>
+            </g>
+            <path class="chem-arrow" d="M 1037 538 C 1043 548, 1049 555, 1055 565"/>
+            <text x="1048" y="581" class="chem-label">H2CO3</text>
+            <path class="chem-arrow" d="M 1047 589 C 1026 595, 1008 603, 990 615"/>
+            <path class="chem-arrow" d="M 1067 591 C 1081 598, 1093 605, 1107 617"/>
+            <text x="974" y="628" class="chem-label">H+</text>
+            <text x="1100" y="631" class="chem-label">HCO3&#8722;</text>
+            <path id="acid-path" class="acid-flow" d="M 986 633 C 982 652, 995 670, 1016 688"/>
+            <path id="bicarb-path" class="exchange-flow" d="M 1101 621 L 1134 438 L 1096 410"/>
+            <path id="chloride-in-path" class="chloride-flow" d="M 1178 408 L 1134 438 L 1110 518"/>
+            <path id="chloride-out-path" class="chloride-flow" d="M 1110 518 C 1108 570, 1106 620, 1103 652 C 1102 668, 1100 683, 1097 694"/>
+            <circle id="antiporter" class="exchanger-dot" cx="1134" cy="438" r="13"/>
+            <text x="1068" y="414" class="antiporter-label">HCO3&#8722;</text>
+            <text x="1170" y="414" class="antiporter-label" fill="#2f9b57">Cl&#8722;</text>
+            <g id="chloride-channel">
+              <path d="M 1092 643 L 1092 666 M 1112 643 L 1112 666" stroke="#2f9b57" stroke-width="3" stroke-linecap="round"/>
+            </g>
+            <text x="1120" y="672" class="antiporter-label">Cl&#8722; channel</text>
+          </g>
+        </g>
+        <g id="resorption-particle-layer"></g>
+        <path d="M 842 708 H 1190" stroke="#c7ad7e" stroke-width="16" stroke-linecap="round"/>
+        <path class="bone-texture" d="M 860 703 l 10 7 M 910 703 l 12 8 M 966 703 l 11 8 M 1042 703 l 12 8 M 1116 703 l 12 8 M 1168 703 l 10 7"/>
+        <text x="872" y="713" text-anchor="middle" font-size="13" font-weight="950" fill="#6f5532">Bone</text>
+        <text x="1018" y="733" text-anchor="middle" class="lacuna-label">HCl (hydrochloric acid) dissolves bone matrix in resorption</text>
+        <text x="1018" y="765" text-anchor="middle" class="cell-label">Mature osteoclast</text>
+        <text id="mature-status" x="1018" y="787" text-anchor="middle" class="minor-label">Controlled bone resorption</text>
+      </svg>
+    </section>
+
+    <section class="signals-strip" aria-label="Current osteoblast output levels">
+      <div class="signal-card">
+        <span class="signal-icon" style="background:var(--rankl);border-radius:5px"></span>
+        <div><div class="signal-name">RANKL</div><div class="signal-role">activates RANK</div></div>
+        <span id="rankl-level" class="signal-level" style="background:var(--rankl)">moderate</span>
+      </div>
+      <div class="signal-card">
+        <span class="signal-icon" style="background:var(--opg);border-radius:50% 50% 50% 8px"></span>
+        <div><div class="signal-name">Osteoprotegerin / OPG</div><div class="signal-role">traps RANKL as a decoy receptor</div></div>
+        <span id="opg-level" class="signal-level" style="background:var(--opg)">moderate</span>
+      </div>
+      <div class="signal-card">
+        <span class="signal-icon" style="background:var(--mcsf);transform:rotate(45deg)"></span>
+        <div><div class="signal-name">M-CSF</div><div class="signal-role">helps precursor differentiation</div></div>
+        <span id="mcsf-level" class="signal-level" style="background:var(--mcsf)">moderate</span>
+      </div>
+    </section>
+
+    <p class="biology-note">
+      <span>OPG binds RANKL, not the osteoclast</span>
+      <span>Free RANKL binds only RANK</span>
+      <span>Hormones act upstream on osteoblast-lineage cells</span>
+    </p>
+  </main>
+
+  <script>
+    (() => {
+      const NS = "http://www.w3.org/2000/svg";
+      const states = {
+        baseline: {
+          title: "Baseline",
+          summary: "Balanced RANKL and OPG keeps bone remodeling controlled at a normal level.",
+          activity: 50, activityWord: "Moderate", status: "Controlled bone resorption",
+          rankl: 1, opg: .52, mcsf: 1, scale: .95,
+          ranklLabel: "moderate", opgLabel: "moderate", mcsfLabel: "moderate",
+          estrogen: "normal level", pth: "normal level",
+          survivalOpacity: .55, formationOpacity: .25, lifeText: "Osteoblast lifespan: normal",
+          pthEffect: "High PTH: \u2191 RANKL + M-CSF"
+        },
+        highEstrogen: {
+          title: "High Estrogen",
+          summary: "Estrogen increases OPG, so more RANKL is trapped before it can activate RANK. Estrogen also helps osteoblasts survive longer.",
+          activity: 24, activityWord: "Low", status: "Reduced bone resorption",
+          rankl: .72, opg: .82, mcsf: .8, scale: .86,
+          ranklLabel: "lower", opgLabel: "high", mcsfLabel: "moderate",
+          estrogen: "HIGH level", pth: "normal level",
+          survivalOpacity: .95, formationOpacity: .25, lifeText: "Osteoblast lifespan: longer",
+          pthEffect: "High PTH: \u2191 RANKL + M-CSF"
+        },
+        lowEstrogen: {
+          title: "Low Estrogen",
+          summary: "Low estrogen reduces OPG protection, so more RANKL activates osteoclasts.",
+          activity: 79, activityWord: "High", status: "Increased bone resorption",
+          rankl: 1.25, opg: .18, mcsf: 1, scale: 1.02,
+          ranklLabel: "more free", opgLabel: "low", mcsfLabel: "moderate",
+          estrogen: "LOW level", pth: "normal level",
+          survivalOpacity: .22, formationOpacity: .12, lifeText: "Osteoblast lifespan: shorter",
+          pthEffect: "High PTH: \u2191 RANKL + M-CSF"
+        },
+        highPTH: {
+          title: "High PTH",
+          summary: "PTH increases RANKL and M-CSF from osteoblast-lineage cells and increases osteoblast formation from stromal cells, increasing osteoclast formation and activity.",
+          activity: 91, activityWord: "Very high", status: "Strong bone resorption",
+          rankl: 1.65, opg: .22, mcsf: 1.65, scale: 1.06,
+          ranklLabel: "high", opgLabel: "low relative", mcsfLabel: "high",
+          estrogen: "normal level", pth: "HIGH level",
+          survivalOpacity: .6, formationOpacity: 1, lifeText: "PTH spike: more osteoblast formation",
+          pthEffect: "\u2191 RANKL + M-CSF + osteoblasts"
+        },
+        briefPTH: {
+          title: "Brief PTH burst",
+          summary: "A brief PTH burst favors osteoblast formation, so more osteoblasts appear, without changing OPG, M-CSF, or RANKL levels in this simplified model.",
+          activity: 50, activityWord: "Moderate", status: "Controlled bone resorption",
+          rankl: 1, opg: .52, mcsf: 1, scale: .95,
+          ranklLabel: "moderate", opgLabel: "moderate", mcsfLabel: "moderate",
+          estrogen: "normal level", pth: "normal level",
+          survivalOpacity: .58, formationOpacity: .75, lifeText: "Osteoblast formation favored",
+          pthEffect: "Brief burst: more osteoblasts only"
+        }
+      };
+
+      const layer = document.querySelector("#particle-layer");
+      const resorptionLayer = document.querySelector("#resorption-particle-layer");
+      const meter = document.querySelector("[role=meter]");
+      const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      let currentKey = "baseline";
+      let current = states[currentKey];
+      let particles = [];
+      let ionParticles = [];
+      let last = performance.now();
+      let ranklClock = 0;
+      let mcsfClock = 0;
+      let acidClock = 0;
+      let chlorideClock = 900;
+      let idCounter = 0;
+
+      const el = (tag, attrs = {}) => {
+        const node = document.createElementNS(NS, tag);
+        Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+        return node;
+      };
+
+      function makeRankl() {
+        const group = el("g", { class: "particle particle-rankl" });
+        const body = el("rect", { x: -27, y: -12, width: 54, height: 24, rx: 8 });
+        const label = el("text", { x: 0, y: 1 });
+        label.textContent = "RANKL";
+        group.append(body, label);
+        return group;
+      }
+
+      function makeOpg() {
+        const group = el("g", { class: "particle particle-opg" });
+        const body = el("path", { d: "M -18 -16 C 0 -25, 20 -15, 20 1 C 13 12, 7 20, 0 27 C -10 16, -15 6, -18 -16 Z" });
+        const label = el("text", { x: 1, y: -1 });
+        label.textContent = "OPG";
+        group.append(body, label);
+        return group;
+      }
+
+      function makeMcsf() {
+        const group = el("g", { class: "particle particle-mcsf" });
+        const body = el("polygon", { points: "0,-25 31,0 0,25 -31,0" });
+        const label = el("text", { x: 0, y: 1 });
+        label.textContent = "M-CSF";
+        group.append(body, label);
+        return group;
+      }
+
+      function makeIon(label, className) {
+        const group = el("g", { class: `ion-particle ${className}` });
+        const body = el("circle", { r: 14 });
+        const text = el("text", { x: 0, y: 1 });
+        text.textContent = label;
+        group.append(body, text);
+        return group;
+      }
+
+      function spawnRankl() {
+        const blocked = Math.random() < current.opg;
+        const node = makeRankl();
+        const opgNode = blocked ? makeOpg() : null;
+        layer.append(node);
+        if (opgNode) layer.append(opgNode);
+        particles.push({ id: ++idCounter, kind: "rankl", blocked, node, opgNode, age: 0, duration: 7600 + Math.random() * 900, joined: false });
+      }
+
+      function spawnMcsf() {
+        const node = makeMcsf();
+        layer.append(node);
+        particles.push({ id: ++idCounter, kind: "mcsf", node, age: 0, duration: 7200 + Math.random() * 800 });
+      }
+
+      function spawnIon(kind) {
+        const isAcid = kind === "acid";
+        const node = makeIon(isAcid ? "H+" : "Cl\u2212", isAcid ? "ion-acid" : "ion-chloride");
+        resorptionLayer.append(node);
+        ionParticles.push({ kind, node, age: 0, duration: (isAcid ? 3300 : 3900) + Math.random() * 600 });
+      }
+
+      function ease(t) { return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+      function curve(a, b, c, t) {
+        const u = 1 - t;
+        return { x: u * u * a.x + 2 * u * t * b.x + t * t * c.x, y: u * u * a.y + 2 * u * t * b.y + t * t * c.y };
+      }
+      function place(node, p, opacity = 1, scale = 1) {
+        node.setAttribute("transform", `translate(${p.x.toFixed(1)} ${p.y.toFixed(1)}) scale(${scale})`);
+        node.setAttribute("opacity", opacity.toFixed(2));
+      }
+
+      function pulseReceptor(id) {
+        const receptor = document.querySelector(id);
+        receptor.classList.remove("receptor-pulse");
+        void receptor.getBBox();
+        receptor.classList.add("receptor-pulse");
+      }
+
+      function updateParticle(p, dt) {
+        p.age += dt;
+        const t = Math.min(1, p.age / p.duration);
+        if (p.kind === "mcsf") {
+          const pt = curve({ x: 477, y: 570 }, { x: 620, y: 440 }, { x: 842, y: 267 }, ease(t));
+          place(p.node, pt, t > .88 ? (1 - t) / .12 : 1, .77);
+          if (t >= .88 && !p.hit) { p.hit = true; pulseReceptor("#cfms-receptor"); }
+          return t >= 1;
+        }
+
+        if (!p.blocked) {
+          const pt = curve({ x: 477, y: 435 }, { x: 626, y: 304 }, { x: 824, y: 204 }, ease(t));
+          place(p.node, pt, t > .9 ? (1 - t) / .1 : 1, .82);
+          if (t >= .9 && !p.hit) { p.hit = true; pulseReceptor(`#rank-${1 + Math.floor(Math.random() * 3)}`); }
+          return t >= 1;
+        }
+
+        const joinT = .56;
+        if (t < joinT) {
+          const rt = t / joinT;
+          const ranklPt = curve({ x: 477, y: 435 }, { x: 526, y: 282 }, { x: 596, y: 141 }, ease(rt));
+          const opgPt = curve({ x: 477, y: 502 }, { x: 532, y: 304 }, { x: 568, y: 145 }, ease(rt));
+          place(p.node, ranklPt, 1, .76);
+          place(p.opgNode, opgPt, 1, .7);
+        } else {
+          if (!p.joined) {
+            p.joined = true;
+            const halo = el("circle", { class: "blocked-halo", cx: 0, cy: 0, r: 39 });
+            p.node.insertBefore(halo, p.node.firstChild);
+          }
+          const drift = (t - joinT) / (1 - joinT);
+          const pt = { x: 596 + drift * 54, y: 141 - drift * 62 };
+          const opacity = 1 - drift;
+          place(p.node, pt, opacity, .76);
+          place(p.opgNode, { x: pt.x - 25, y: pt.y + 4 }, opacity, .7);
+        }
+        return t >= 1;
+      }
+
+      function updateIonParticle(p, dt) {
+        p.age += dt;
+        const t = Math.min(1, p.age / p.duration);
+        const opacity = t < .14 ? t / .14 : t > .86 ? (1 - t) / .14 : 1;
+        const pt = p.kind === "acid"
+          ? curve({ x: 986, y: 633 }, { x: 985, y: 667 }, { x: 1016, y: 688 }, ease(t))
+          : curve({ x: 1162, y: 421 }, { x: 1110, y: 560 }, { x: 1097, y: 694 }, ease(t));
+        place(p.node, pt, opacity, .7);
+        return t >= 1;
+      }
+
+      function animate(now) {
+        const dt = Math.min(60, now - last);
+        last = now;
+        if (!reduceMotion) {
+          ranklClock += dt;
+          mcsfClock += dt;
+          acidClock += dt;
+          chlorideClock += dt;
+          const ranklInterval = 3400 / current.rankl;
+          const mcsfInterval = 5200 / current.mcsf;
+          const activityFactor = Math.max(.35, current.activity / 50);
+          const acidInterval = 2600 / activityFactor;
+          const chlorideInterval = 3400 / activityFactor;
+          if (ranklClock > ranklInterval) { ranklClock = 0; spawnRankl(); }
+          if (mcsfClock > mcsfInterval) { mcsfClock = 0; spawnMcsf(); }
+          if (acidClock > acidInterval) { acidClock = 0; spawnIon("acid"); }
+          if (chlorideClock > chlorideInterval) { chlorideClock = 0; spawnIon("chloride"); }
+          particles = particles.filter(p => {
+            const done = updateParticle(p, dt);
+            if (done) { p.node.remove(); if (p.opgNode) p.opgNode.remove(); }
+            return !done;
+          });
+          ionParticles = ionParticles.filter(p => {
+            const done = updateIonParticle(p, dt);
+            if (done) p.node.remove();
+            return !done;
+          });
+        }
+        requestAnimationFrame(animate);
+      }
+
+      function clearParticles() {
+        particles.forEach(p => { p.node.remove(); if (p.opgNode) p.opgNode.remove(); });
+        particles = [];
+        ionParticles.forEach(p => p.node.remove());
+        ionParticles = [];
+        ranklClock = 2500;
+        mcsfClock = 3600;
+        acidClock = 1500;
+        chlorideClock = 2300;
+      }
+
+      function setText(id, value) { document.querySelector(id).textContent = value; }
+
+      function applyState(key) {
+        currentKey = key;
+        current = states[key];
+        document.querySelectorAll("button[data-state]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.state === key)));
+        setText("#condition-title", current.title);
+        setText("#summary-text", current.summary);
+        setText("#activity-word", current.activityWord);
+        setText("#mature-status", current.status);
+        setText("#rankl-level", current.ranklLabel);
+        setText("#opg-level", current.opgLabel);
+        setText("#mcsf-level", current.mcsfLabel);
+        setText("#estrogen-level", current.estrogen);
+        setText("#pth-level", current.pth);
+        setText("#lifespan-label", current.lifeText);
+        setText("#pth-effect", current.pthEffect);
+        document.querySelector("#meter-fill").style.width = `${current.activity}%`;
+        meter.setAttribute("aria-valuenow", current.activity);
+        const mature = document.querySelector("#mature-cell");
+        mature.style.transform = `scale(${current.scale})`;
+        mature.style.filter = `saturate(${.75 + current.activity / 100}) drop-shadow(0 7px 8px rgba(135,59,85,.18))`;
+        const aura = document.querySelector("#activity-aura");
+        aura.style.opacity = String(.08 + current.activity / 180);
+        aura.style.animation = current.activity > 65 ? "auraPulse 2.2s ease-in-out infinite" : "none";
+        document.querySelector("#resorption-detail").style.opacity = String(.56 + current.activity / 190);
+        document.querySelector("#resorption-lacuna").style.opacity = String(.18 + current.activity / 170);
+        document.querySelector("#ruffled-border").style.strokeWidth = String(3.6 + current.activity / 24);
+        document.querySelector("#acid-path").style.strokeWidth = String(2.2 + current.activity / 38);
+        document.querySelector("#chloride-out-path").style.strokeWidth = String(2 + current.activity / 44);
+        document.querySelector("#osteoblast-survival").style.opacity = String(current.survivalOpacity);
+        document.querySelector("#new-osteoblasts").style.opacity = String(current.formationOpacity);
+        document.querySelector("#precursor-cluster").style.opacity = String(.45 + current.activity / 130);
+        document.querySelector("#formation-label").style.opacity = key === "highPTH" || key === "briefPTH" ? 1 : .65;
+        document.querySelector("#brief-pth-note").style.opacity = key === "briefPTH" ? 1 : 0;
+        document.querySelector("#estrogen-card").classList.toggle("dim", key === "lowEstrogen");
+        document.querySelector("#estrogen-card").classList.toggle("hot", key === "highEstrogen");
+        document.querySelector("#pth-card").classList.toggle("dim", key === "highEstrogen");
+        document.querySelector("#pth-card").classList.toggle("hot", key === "highPTH");
+        document.querySelector("#estrogen-path").style.opacity = key === "lowEstrogen" ? .3 : 1;
+        document.querySelector("#estrogen-osteoblast-path").style.opacity = key === "lowEstrogen" ? .3 : 1;
+        document.querySelector("#pth-path").style.strokeWidth = key === "highPTH" ? 5 : 3;
+        document.querySelector("#pth-osteoblast-path").style.strokeWidth = key === "highPTH" ? 5 : 3;
+        document.querySelector("#estrogen-effect").style.opacity = key === "lowEstrogen" ? .42 : 1;
+        clearParticles();
+        if (!reduceMotion) {
+          spawnRankl();
+          setTimeout(() => { if (currentKey === key) spawnMcsf(); }, 650);
+          setTimeout(() => { if (currentKey === key) spawnIon("acid"); }, 950);
+          setTimeout(() => { if (currentKey === key) spawnIon("chloride"); }, 1500);
+        }
+      }
+
+      document.querySelectorAll("button[data-state]").forEach(button => button.addEventListener("click", () => applyState(button.dataset.state)));
+      applyState("baseline");
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ABC(E) Floral Pattern Genes and Flower Whorls</title>
+  <style>
+    :root {
+      --bg: #f5f7f3;
+      --panel: #ffffff;
+      --ink: #21302f;
+      --muted: #66736e;
+      --line: #d7e0dc;
+      --accent: #316f75;
+      --sepal: #4ea667;
+      --sepal-dark: #237346;
+      --petal: #cf67c8;
+      --petal-dark: #8b3b93;
+      --stamen: #f2b43f;
+      --stamen-dark: #c47417;
+      --carpel: #54c4ad;
+      --carpel-dark: #187f79;
+      --leaflike: #8c9f72;
+      --leaflike-dark: #5e6f44;
+      --unknown: #98a784;
+      --shadow: 0 18px 42px rgba(35, 55, 50, 0.12);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0)),
+        var(--bg);
+      color: var(--ink);
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .page {
+      width: min(1440px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 34px;
+    }
+
+    header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.55rem, 3vw, 2.55rem);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 620px;
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.45;
+    }
+
+    .attribution {
+      margin: 8px 0 0;
+      color: #47615c;
+      font-size: clamp(0.86rem, 1.45vw, 1rem);
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .status-pill {
+      flex: 0 0 auto;
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.74);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 0.92rem;
+      white-space: nowrap;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(360px, 1fr) minmax(320px, 430px);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .diagram-panel,
+    .control-panel,
+    .table-panel {
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(215, 224, 220, 0.95);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .diagram-panel {
+      padding: 14px;
+    }
+
+    .flower-stage {
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--radius);
+      background:
+        radial-gradient(circle at 39% 50%, rgba(255, 255, 255, 0.96) 0 37%, rgba(242, 247, 244, 0.9) 38% 100%),
+        repeating-linear-gradient(45deg, rgba(49, 111, 117, 0.04) 0 2px, transparent 2px 16px);
+      border: 1px solid #dbe4df;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 420px;
+    }
+
+    .ring-guide {
+      fill: none;
+      stroke: #bfcac5;
+      stroke-width: 1.3;
+      stroke-dasharray: 4 8;
+      opacity: 0.7;
+    }
+
+    .organ {
+      opacity: 0;
+      animation: organFade 520ms ease forwards;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+
+    .organ:nth-child(2n) {
+      animation-delay: 35ms;
+    }
+
+    .organ:nth-child(3n) {
+      animation-delay: 70ms;
+    }
+
+    @keyframes organFade {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .sepal-shape {
+      fill: var(--sepal);
+      stroke: var(--sepal-dark);
+      stroke-width: 2.3;
+    }
+
+    .petal-shape {
+      fill: var(--petal);
+      stroke: var(--petal-dark);
+      stroke-width: 2.1;
+    }
+
+    .stamen-filament {
+      fill: none;
+      stroke: var(--stamen-dark);
+      stroke-width: 6.5;
+      stroke-linecap: round;
+    }
+
+    .stamen-anther {
+      fill: var(--stamen);
+      stroke: var(--stamen-dark);
+      stroke-width: 2;
+    }
+
+    .carpel-shape {
+      fill: var(--carpel);
+      stroke: var(--carpel-dark);
+      stroke-width: 2.2;
+    }
+
+    .leaflike-shape,
+    .unknown-shape {
+      fill: var(--leaflike);
+      stroke: var(--leaflike-dark);
+      stroke-width: 2.1;
+    }
+
+    .vein {
+      stroke: rgba(255, 255, 255, 0.64);
+      stroke-width: 2;
+      stroke-linecap: round;
+      fill: none;
+    }
+
+    .label-leader {
+      fill: none;
+      stroke: rgba(49, 111, 117, 0.56);
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-dasharray: 3 6;
+    }
+
+    .svg-label rect {
+      fill: rgba(255, 255, 255, 0.93);
+      stroke: #cfdbd6;
+      stroke-width: 1.2;
+      rx: 8;
+    }
+
+    .svg-label .whorl-name {
+      fill: var(--ink);
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .svg-label .organ-name {
+      fill: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .control-panel {
+      padding: 18px;
+    }
+
+    .panel-section + .panel-section {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 1rem;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .toggle-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .toggle {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      align-items: center;
+      min-height: 44px;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fbfdfc;
+      cursor: pointer;
+      user-select: none;
+      transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+    }
+
+    .toggle:hover {
+      border-color: #aebdb7;
+      background: #ffffff;
+    }
+
+    .toggle:has(input:checked) {
+      border-color: #d37942;
+      background: #fff7ef;
+    }
+
+    .toggle input {
+      width: 20px;
+      height: 20px;
+      accent-color: #d37942;
+      cursor: pointer;
+    }
+
+    .toggle input:disabled,
+    .toggle input:disabled + span {
+      cursor: wait;
+      opacity: 0.62;
+    }
+
+    .toggle span {
+      font-weight: 700;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    button {
+      min-height: 42px;
+      border: 0;
+      border-radius: var(--radius);
+      background: var(--accent);
+      color: white;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 150ms ease, background 150ms ease, box-shadow 150ms ease;
+    }
+
+    button:hover {
+      background: #255f64;
+      box-shadow: 0 8px 18px rgba(37, 95, 100, 0.18);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button.secondary {
+      color: var(--accent);
+      background: #e7f1ef;
+      border: 1px solid #cfe0dc;
+    }
+
+    button.secondary:hover {
+      background: #dcebe8;
+    }
+
+    button:disabled {
+      opacity: 0.62;
+      cursor: wait;
+      box-shadow: none;
+    }
+
+    .explanation {
+      margin: 0;
+      min-height: 92px;
+      padding: 14px;
+      border-radius: var(--radius);
+      background: #eef6f2;
+      border: 1px solid #d0e2da;
+      color: #27443f;
+      line-height: 1.48;
+      font-weight: 650;
+    }
+
+    .expression-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .expression-row {
+      display: grid;
+      grid-template-columns: 78px 1fr;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+      transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+    }
+
+    .expression-row.active-build {
+      border-color: #e19a35;
+      box-shadow: 0 0 0 3px rgba(242, 180, 63, 0.24);
+      transform: translateY(-1px);
+    }
+
+    .expression-row strong {
+      font-size: 0.94rem;
+    }
+
+    .formula {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .gene-badge {
+      display: inline-grid;
+      place-items: center;
+      min-width: 28px;
+      height: 28px;
+      padding: 0 7px;
+      border-radius: 999px;
+      background: #edf3f1;
+      border: 1px solid #cad8d3;
+      color: var(--ink);
+      font-weight: 900;
+      font-size: 0.86rem;
+    }
+
+    .gene-A {
+      background: #dbf0de;
+      border-color: #a3d4af;
+    }
+
+    .gene-B {
+      background: #f6ddf4;
+      border-color: #dda6dc;
+    }
+
+    .gene-C {
+      background: #dcf4ef;
+      border-color: #a7dbd1;
+    }
+
+    .gene-E {
+      background: #fff1cf;
+      border-color: #e7c87b;
+    }
+
+    .legend-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+    }
+
+    .legend-item {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 9px;
+      align-items: center;
+      min-height: 34px;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 0.92rem;
+    }
+
+    .legend-icon {
+      width: 28px;
+      height: 28px;
+      border: 2px solid rgba(33, 48, 47, 0.2);
+    }
+
+    .legend-sepal {
+      background: var(--sepal);
+      border-radius: 60% 60% 60% 8%;
+      transform: rotate(45deg);
+    }
+
+    .legend-petal {
+      background: var(--petal);
+      border-radius: 50%;
+    }
+
+    .legend-stamen {
+      width: 11px;
+      height: 31px;
+      margin-left: 8px;
+      border-radius: 999px;
+      background: linear-gradient(var(--stamen) 0 32%, var(--stamen-dark) 33% 100%);
+    }
+
+    .legend-carpel {
+      background: var(--carpel);
+      border-radius: 48% 48% 55% 55%;
+    }
+
+    .legend-leaf {
+      background: var(--leaflike);
+      border-radius: 65% 8% 65% 8%;
+      transform: rotate(45deg);
+    }
+
+    .table-panel {
+      margin-top: 18px;
+      padding: 16px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: white;
+    }
+
+    table {
+      width: 100%;
+      min-width: 680px;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 13px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+    }
+
+    th {
+      background: #edf3f1;
+      color: #2a403d;
+      font-size: 0.88rem;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    td:first-child {
+      font-weight: 900;
+      color: var(--accent);
+    }
+
+    .organ-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 900;
+    }
+
+    .organ-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid rgba(33, 48, 47, 0.18);
+    }
+
+    .empty-genes {
+      color: var(--muted);
+      font-style: italic;
+      font-weight: 650;
+    }
+
+    @media (max-width: 1020px) {
+      header {
+        display: block;
+      }
+
+      .status-pill {
+        display: inline-block;
+        margin-top: 12px;
+      }
+
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .page {
+        width: min(100% - 20px, 1440px);
+        padding-top: 14px;
+      }
+
+      .diagram-panel,
+      .control-panel,
+      .table-panel {
+        padding: 10px;
+      }
+
+      svg {
+        min-height: 330px;
+      }
+
+      .button-row,
+      .legend-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .expression-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div>
+        <h1>ABC(E) Floral Pattern Genes and Flower Whorls</h1>
+        <p class="attribution">Animation Prompted by Jerred Seveyka for his biology class</p>
+        <p class="subtitle">Toggle gene knockouts to see how floral identity genes combine across four concentric whorls.</p>
+      </div>
+      <div class="status-pill" id="statusPill">Wild type</div>
+    </header>
+
+    <main class="main-grid">
+      <section class="diagram-panel" aria-labelledby="diagramTitle">
+        <h2 id="diagramTitle">Interactive Flower Diagram</h2>
+        <div class="flower-stage">
+          <svg id="flowerSvg" viewBox="0 0 880 720" role="img" aria-labelledby="svgTitle svgDescription">
+            <title id="svgTitle">Top-view flower whorls controlled by ABC(E) genes</title>
+            <desc id="svgDescription">Four concentric whorls update as gene knockouts are toggled.</desc>
+            <g id="guideLayer"></g>
+            <g id="flowerLayer"></g>
+            <g id="labelLayer"></g>
+          </svg>
+        </div>
+      </section>
+
+      <aside class="control-panel">
+        <section class="panel-section" aria-labelledby="controlsTitle">
+          <h2 id="controlsTitle">Gene Knockouts</h2>
+          <div class="toggle-grid">
+            <label class="toggle"><input type="checkbox" id="koA" data-gene="A" /><span>Knock out A gene</span></label>
+            <label class="toggle"><input type="checkbox" id="koB" data-gene="B" /><span>Knock out B gene</span></label>
+            <label class="toggle"><input type="checkbox" id="koC" data-gene="C" /><span>Knock out C gene</span></label>
+            <label class="toggle"><input type="checkbox" id="koE" data-gene="E" /><span>Knock out E gene</span></label>
+          </div>
+          <div class="button-row">
+            <button type="button" class="secondary" id="resetButton">Reset to wild type</button>
+            <button type="button" id="buildButton">Play wild-type build</button>
+          </div>
+        </section>
+
+        <section class="panel-section" aria-labelledby="explanationTitle">
+          <h2 id="explanationTitle">What Changed?</h2>
+          <p class="explanation" id="explanationBox"></p>
+        </section>
+
+        <section class="panel-section" aria-labelledby="expressionTitle">
+          <h2 id="expressionTitle">Gene Expression by Whorl</h2>
+          <div class="expression-list" id="expressionPanel"></div>
+        </section>
+
+        <section class="panel-section" aria-labelledby="legendTitle">
+          <h2 id="legendTitle">Legend</h2>
+          <div class="legend-grid">
+            <div class="legend-item"><span class="legend-icon legend-sepal"></span><span>Sepals</span></div>
+            <div class="legend-item"><span class="legend-icon legend-petal"></span><span>Petals</span></div>
+            <div class="legend-item"><span class="legend-icon legend-stamen"></span><span>Stamens</span></div>
+            <div class="legend-item"><span class="legend-icon legend-carpel"></span><span>Carpels</span></div>
+            <div class="legend-item"><span class="legend-icon legend-leaf"></span><span>Leaf-like organs</span></div>
+          </div>
+        </section>
+      </aside>
+    </main>
+
+    <section class="table-panel" aria-labelledby="tableTitle">
+      <h2 id="tableTitle">Whorl-by-Whorl Outcome</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Whorl number</th>
+              <th>Active genes</th>
+              <th>Resulting organ</th>
+            </tr>
+          </thead>
+          <tbody id="whorlTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const SVG_NS = "http://www.w3.org/2000/svg";
+    const genes = ["A", "B", "C", "E"];
+    const svgWidth = 690;
+    const svgHeight = 720;
+    const cx = svgWidth / 2;
+    const cy = svgHeight / 2;
+    const center = { x: cx, y: cy };
+    const whorlConfigs = [
+      { whorl: 1, radius: 252, count: 8, scale: 1.15, labelY: 96 },
+      { whorl: 2, radius: 184, count: 8, scale: 1.03, labelY: 174 },
+      { whorl: 3, radius: 116, count: 8, scale: 0.9, labelY: 252 },
+      { whorl: 4, radius: 48, count: 5, scale: 0.78, labelY: 330 }
+    ];
+    const organStyles = {
+      sepal: { label: "Sepals", singular: "sepal", color: "var(--sepal)" },
+      petal: { label: "Petals", singular: "petal", color: "var(--petal)" },
+      stamen: { label: "Stamens", singular: "stamen", color: "var(--stamen)" },
+      carpel: { label: "Carpels", singular: "carpel", color: "var(--carpel)" },
+      leaflike: { label: "leaf-like organ", singular: "leaf-like organ", color: "var(--leaflike)" },
+      unknown: { label: "undetermined / leaf-like", singular: "undetermined / leaf-like", color: "var(--unknown)" }
+    };
+
+    let knockoutState = { A: false, B: false, C: false, E: false };
+    let currentWhorls = [];
+    let buildMode = false;
+    let buildStage = 4;
+    let buildTimerIds = [];
+
+    const flowerLayer = document.getElementById("flowerLayer");
+    const guideLayer = document.getElementById("guideLayer");
+    const labelLayer = document.getElementById("labelLayer");
+    const expressionPanel = document.getElementById("expressionPanel");
+    const tableBody = document.getElementById("whorlTableBody");
+    const explanationBox = document.getElementById("explanationBox");
+    const statusPill = document.getElementById("statusPill");
+    const buildButton = document.getElementById("buildButton");
+    const resetButton = document.getElementById("resetButton");
+    const knockoutInputs = [...document.querySelectorAll("input[data-gene]")];
+
+    function createSvgElement(tag, attributes = {}) {
+      const element = document.createElementNS(SVG_NS, tag);
+      Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
+      return element;
+    }
+
+    function setChildren(parent, children) {
+      parent.replaceChildren(...children);
+    }
+
+    function formatGeneList(geneSet) {
+      return genes.filter(gene => geneSet.has(gene));
+    }
+
+    function geneBadges(geneList) {
+      if (geneList.length === 0) {
+        return '<span class="empty-genes">none</span>';
+      }
+      return geneList.map(gene => `<span class="gene-badge gene-${gene}">${gene}</span>`).join("");
+    }
+
+    function formulaHtml(geneList, identity) {
+      const badges = geneBadges(geneList);
+      return `${badges}<span aria-hidden="true">&rarr;</span><span>${identity.label}</span>`;
+    }
+
+    function calculateWhorlGenes() {
+      // Gene domains start with wild-type expression. A/C expansion is applied
+      // before removing knocked-out genes, matching the ABC(E) mutation rules.
+      const domains = [
+        new Set(["A", "E"]),
+        new Set(["A", "B", "E"]),
+        new Set(["B", "C", "E"]),
+        new Set(["C", "E"])
+      ];
+
+      if (knockoutState.A && !knockoutState.C) {
+        domains[0].add("C");
+        domains[1].add("C");
+      }
+
+      if (knockoutState.C && !knockoutState.A) {
+        domains[2].add("A");
+        domains[3].add("A");
+      }
+
+      return domains.map((domain, index) => {
+        genes.forEach(gene => {
+          if (knockoutState[gene]) domain.delete(gene);
+        });
+
+        const geneList = formatGeneList(domain);
+        const identity = identifyOrgan(domain);
+        return {
+          whorl: index + 1,
+          genes: geneList,
+          geneSet: domain,
+          identity
+        };
+      });
+    }
+
+    function identifyOrgan(geneSet) {
+      // E genes are required for normal floral organ identity. Without E,
+      // the flower drawing and table always show leaf-like organs.
+      if (!geneSet.has("E")) return { key: "leaflike", ...organStyles.leaflike };
+
+      const hasA = geneSet.has("A");
+      const hasB = geneSet.has("B");
+      const hasC = geneSet.has("C");
+      const hasE = geneSet.has("E");
+
+      if (hasA && !hasB && !hasC && hasE) return { key: "sepal", ...organStyles.sepal };
+      if (hasA && hasB && !hasC && hasE) return { key: "petal", ...organStyles.petal };
+      if (!hasA && hasB && hasC && hasE) return { key: "stamen", ...organStyles.stamen };
+      if (!hasA && !hasB && hasC && hasE) return { key: "carpel", ...organStyles.carpel };
+
+      return { key: "unknown", ...organStyles.unknown };
+    }
+
+    function drawGuides() {
+      const guides = whorlConfigs.map(config =>
+        createSvgElement("circle", {
+          class: "ring-guide",
+          cx: center.x,
+          cy: center.y,
+          r: config.radius
+        })
+      );
+      setChildren(guideLayer, guides);
+    }
+
+    function drawFlower() {
+      const visibleWhorls = buildMode ? buildStage : 4;
+      const groups = [];
+
+      currentWhorls.forEach(whorlData => {
+        if (whorlData.whorl > visibleWhorls) return;
+        const config = whorlConfigs[whorlData.whorl - 1];
+        const group = createSvgElement("g", {
+          "data-whorl": whorlData.whorl,
+          "aria-label": `Whorl ${whorlData.whorl}: ${whorlData.identity.label}`
+        });
+
+        for (let i = 0; i < config.count; i++) {
+          const angle = (360 / config.count) * i + (whorlData.whorl % 2 ? 0 : 22.5);
+          group.appendChild(drawOrgan(whorlData.identity.key, config, angle, i));
+        }
+
+        groups.push(group);
+      });
+
+      setChildren(flowerLayer, groups);
+      drawLabels(visibleWhorls);
+    }
+
+    function drawOrgan(identityKey, config, angle, index) {
+      const radians = angle * Math.PI / 180;
+      const x = cx + Math.cos(radians) * config.radius;
+      const y = cy + Math.sin(radians) * config.radius;
+      const organ = createSvgElement("g", {
+        class: `organ-position organ-${identityKey}`,
+        transform: `translate(${x} ${y}) rotate(${angle + 90})`
+      });
+      const sizeGroup = createSvgElement("g", { transform: `scale(${config.scale})` });
+      const shapeGroup = createSvgElement("g", {
+        class: "organ",
+        style: `animation-delay: ${index * 28}ms`
+      });
+
+      sizeGroup.appendChild(shapeGroup);
+      organ.appendChild(sizeGroup);
+
+      if (identityKey === "sepal") {
+        shapeGroup.appendChild(createSvgElement("path", {
+          class: "sepal-shape",
+          d: "M0,-66 C30,-46 30,20 0,58 C-30,20 -30,-46 0,-66 Z"
+        }));
+        shapeGroup.appendChild(createSvgElement("path", { class: "vein", d: "M0,-46 L0,39" }));
+      } else if (identityKey === "petal") {
+        shapeGroup.appendChild(createSvgElement("path", {
+          class: "petal-shape",
+          d: "M0,-72 C45,-66 62,-22 48,18 C33,60 -33,60 -48,18 C-62,-22 -45,-66 0,-72 Z"
+        }));
+        shapeGroup.appendChild(createSvgElement("path", { class: "vein", d: "M0,-46 C8,-18 8,12 0,42" }));
+      } else if (identityKey === "stamen") {
+        shapeGroup.appendChild(createSvgElement("path", { class: "stamen-filament", d: "M0,46 C-7,10 8,-18 0,-48" }));
+        shapeGroup.appendChild(createSvgElement("ellipse", { class: "stamen-anther", cx: 0, cy: -58, rx: 18, ry: 12 }));
+      } else if (identityKey === "carpel") {
+        shapeGroup.appendChild(createSvgElement("path", {
+          class: "carpel-shape",
+          d: "M0,-66 C31,-42 30,23 0,62 C-30,23 -31,-42 0,-66 Z"
+        }));
+        shapeGroup.appendChild(createSvgElement("circle", { class: "carpel-shape", cx: 0, cy: -69, r: 8 }));
+        shapeGroup.appendChild(createSvgElement("path", { class: "vein", d: "M0,-48 C-6,-16 -6,22 0,48" }));
+      } else {
+        shapeGroup.appendChild(createSvgElement("path", {
+          class: identityKey === "unknown" ? "unknown-shape" : "leaflike-shape",
+          d: "M0,-63 C34,-40 26,25 0,58 C-26,25 -34,-40 0,-63 Z"
+        }));
+        shapeGroup.appendChild(createSvgElement("path", { class: "vein", d: "M0,-42 L0,40 M0,-5 C-13,-15 -22,-24 -27,-36 M0,14 C13,4 22,-7 27,-20" }));
+      }
+
+      return organ;
+    }
+
+    function drawLabels(visibleWhorls) {
+      const labels = [];
+      currentWhorls.forEach(whorlData => {
+        if (whorlData.whorl > visibleWhorls) return;
+        const config = whorlConfigs[whorlData.whorl - 1];
+        const labelX = 690;
+        const labelY = config.labelY;
+        const labelMidY = labelY + 26;
+        const leaderStartY = Math.max(center.y - config.radius, Math.min(center.y + config.radius, labelMidY));
+        const leaderXOffset = Math.sqrt(Math.max(0, config.radius ** 2 - (leaderStartY - center.y) ** 2));
+        const leaderStartX = center.x + leaderXOffset;
+        labels.push(createSvgElement("path", {
+          class: "label-leader",
+          d: `M${leaderStartX},${leaderStartY} C${leaderStartX + 70},${leaderStartY} ${labelX - 34},${labelMidY} ${labelX},${labelMidY}`
+        }));
+
+        const labelGroup = createSvgElement("g", { class: "svg-label", transform: `translate(${labelX} ${labelY})` });
+        labelGroup.appendChild(createSvgElement("rect", { width: 176, height: 52 }));
+        const whorlText = createSvgElement("text", { class: "whorl-name", x: 12, y: 21 });
+        whorlText.textContent = `Whorl ${whorlData.whorl}`;
+        const organText = createSvgElement("text", { class: "organ-name", x: 12, y: 40 });
+        organText.textContent = whorlData.identity.label;
+        labelGroup.append(whorlText, organText);
+        labels.push(labelGroup);
+      });
+
+      setChildren(labelLayer, labels);
+    }
+
+    function updateExpressionPanel(activeWhorl = null) {
+      const rows = currentWhorls.map(whorlData => {
+        const activeClass = activeWhorl === whorlData.whorl ? " active-build" : "";
+        return `
+          <div class="expression-row${activeClass}" data-whorl="${whorlData.whorl}">
+            <strong>Whorl ${whorlData.whorl}</strong>
+            <div class="formula">${formulaHtml(whorlData.genes, whorlData.identity)}</div>
+          </div>
+        `;
+      });
+      expressionPanel.innerHTML = rows.join("");
+    }
+
+    function updateTable() {
+      const rows = currentWhorls.map(whorlData => `
+        <tr>
+          <td>Whorl ${whorlData.whorl}</td>
+          <td><div class="formula">${formulaHtml(whorlData.genes, whorlData.identity)}</div></td>
+          <td>
+            <span class="organ-chip">
+              <span class="organ-dot" style="background: ${whorlData.identity.color};"></span>
+              ${whorlData.identity.label}
+            </span>
+          </td>
+        </tr>
+      `);
+      tableBody.innerHTML = rows.join("");
+    }
+
+    function updateExplanation() {
+      const knockedOut = genes.filter(gene => knockoutState[gene]);
+      if (knockedOut.length === 0) {
+        explanationBox.textContent = "Wild type: A, B, C, and E expression domains combine to form sepals, petals, stamens, and carpels.";
+        statusPill.textContent = "Wild type";
+        return;
+      }
+
+      if (knockedOut.length === 1 && knockoutState.A) {
+        explanationBox.textContent = "A knockout: A and C normally inhibit one another. Without A expression in the outer whorls, C expression expands outward into whorls 1 and 2. As a result, whorl 1 becomes carpel-like and whorl 2 becomes stamen-like.";
+        statusPill.textContent = "A knockout";
+        return;
+      }
+
+      if (knockedOut.length === 1 && knockoutState.B) {
+        explanationBox.textContent = "B knockout: petal and stamen identity are lost. Whorl 2 becomes sepal-like and whorl 3 becomes carpel-like.";
+        statusPill.textContent = "B knockout";
+        return;
+      }
+
+      if (knockedOut.length === 1 && knockoutState.C) {
+        explanationBox.textContent = "C knockout: A activity expands inward, so whorl 3 becomes petal-like and whorl 4 becomes sepal-like.";
+        statusPill.textContent = "C knockout";
+        return;
+      }
+
+      if (knockedOut.length === 1 && knockoutState.E) {
+        explanationBox.textContent = "E knockout: E genes are required for normal floral organ identity, so all whorls become leaf-like.";
+        statusPill.textContent = "E knockout";
+        return;
+      }
+
+      const geneListText = knockedOut.length === 2
+        ? knockedOut.join(" and ")
+        : `${knockedOut.slice(0, -1).join(", ")}, and ${knockedOut.at(-1)}`;
+      const eReminder = knockoutState.E
+        ? " Because E is knocked out, normal organ identity is overridden and every whorl becomes leaf-like."
+        : " Organ identity is calculated from the remaining active genes in each whorl.";
+
+      explanationBox.textContent = `Combined knockout: ${geneListText} genes are knocked out.${eReminder}`;
+      statusPill.textContent = `${knockedOut.join("")} knockout`;
+    }
+
+    function refresh(activeWhorl = null) {
+      currentWhorls = calculateWhorlGenes();
+      drawFlower();
+      updateExpressionPanel(activeWhorl);
+      updateTable();
+      updateExplanation();
+    }
+
+    function setControlsDisabled(disabled) {
+      knockoutInputs.forEach(input => input.disabled = disabled);
+      resetButton.disabled = disabled;
+      buildButton.disabled = disabled;
+    }
+
+    function stopBuildTimers() {
+      buildTimerIds.forEach(timerId => window.clearTimeout(timerId));
+      buildTimerIds = [];
+      buildMode = false;
+      buildStage = 4;
+      setControlsDisabled(false);
+    }
+
+    function syncInputsFromState() {
+      knockoutInputs.forEach(input => {
+        input.checked = knockoutState[input.dataset.gene];
+      });
+    }
+
+    function resetWildType() {
+      stopBuildTimers();
+      knockoutState = { A: false, B: false, C: false, E: false };
+      syncInputsFromState();
+      refresh();
+    }
+
+    function playWildTypeBuild() {
+      stopBuildTimers();
+      knockoutState = { A: false, B: false, C: false, E: false };
+      syncInputsFromState();
+      buildMode = true;
+      buildStage = 0;
+      setControlsDisabled(true);
+      refresh(null);
+
+      [1, 2, 3, 4].forEach((stage, index) => {
+        const timerId = window.setTimeout(() => {
+          buildStage = stage;
+          refresh(stage);
+        }, 520 + index * 760);
+        buildTimerIds.push(timerId);
+      });
+
+      const finishTimer = window.setTimeout(() => {
+        buildMode = false;
+        buildStage = 4;
+        setControlsDisabled(false);
+        refresh(null);
+        buildTimerIds = [];
+      }, 520 + 4 * 760 + 540);
+      buildTimerIds.push(finishTimer);
+    }
+
+    knockoutInputs.forEach(input => {
+      input.addEventListener("change", event => {
+        stopBuildTimers();
+        const gene = event.target.dataset.gene;
+        knockoutState[gene] = event.target.checked;
+        refresh();
+      });
+    });
+
+    resetButton.addEventListener("click", resetWildType);
+    buildButton.addEventListener("click", playWildTypeBuild);
+
+    drawGuides();
+    refresh();
+    window.addEventListener("load", () => {
+      window.setTimeout(playWildTypeBuild, 350);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,728 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Resting Membrane Potential Student Model</title>
+  <style>
+    :root {
+      --ink:#172033;
+      --muted:#5d6878;
+      --panel:#fff;
+      --line:#cfd8e3;
+      --page:#eef4f8;
+      --outside:#f7fcff;
+      --inside:#fffdf7;
+      --na:#5db8ff;
+      --na-edge:#1f6fa2;
+      --k:#ff91ba;
+      --k-edge:#b42f68;
+      --mem-head:#f5c84c;
+      --mem-tail:#c99122;
+      --pump:#ffbd6e;
+      --btn:#2563eb;
+      --btn-dark:#1e48b6;
+      font-family:"Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;color:var(--ink);background:linear-gradient(#fff8,#fff0),var(--page)}
+    .app{width:min(1220px,calc(100vw - 24px));margin:0 auto;padding:12px 0 24px}
+    .attribution{margin:0 0 8px;text-align:center;font-weight:900;font-size:clamp(1rem,1.35vw,1.18rem)}
+    h1{margin:0 0 10px;font-size:clamp(.9rem,1.75vw,1.5rem);letter-spacing:0;line-height:1.05}
+    .layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:12px;align-items:start}
+    .scene-panel,.info,.controls{border:1px solid var(--line);border-radius:8px;background:var(--panel);box-shadow:0 12px 30px #1f29331a}
+    .scene-panel{overflow:hidden}
+    svg{display:block;width:100%;height:auto}
+    .label{font-weight:900;fill:#253244}
+    .small{font-weight:800;fill:#425266}
+    .lipid-head{fill:var(--mem-head);stroke:#8b6818;stroke-width:1}
+    .lipid-tail{stroke:var(--mem-tail);stroke-width:3;stroke-linecap:round}
+    .channel-label{font-size:16px;font-weight:900;text-anchor:middle;fill:#2f3948}
+    .k-leak .body{fill:#ffe1eb;stroke:var(--k-edge);stroke-width:4}
+    .na-leak .body{fill:#dff1ff;stroke:var(--na-edge);stroke-width:4}
+    .pore{fill:#fff;stroke:#9aa8b7;stroke-width:1.5}
+    #pumpBody{fill:var(--pump);stroke:#a55b00;stroke-width:5;transition:transform .25s ease,fill .25s ease;transform-box:fill-box;transform-origin:center}
+    #pump.pump-out #pumpBody{fill:#ffd08f;transform:scale(1.08,.92)}
+    #pump.pump-in #pumpBody{fill:#ffb55f;transform:scale(.94,1.08)}
+    .pocket-na{fill:#e7f6ff;stroke:var(--na-edge);stroke-width:3}
+    .pocket-k{fill:#ffe8f1;stroke:var(--k-edge);stroke-width:3}
+    .gated-channel{display:none}
+    .gated-channel.visible{display:inline}
+    .gated-channel .body{stroke-width:4}
+    .gated-channel.na .body{fill:#d8edff;stroke:#134e7c}
+    .gated-channel.k .body{fill:#ffe1ec;stroke:#982452}
+    .gate-bar{fill:#111827;transition:transform .32s ease;transform-box:fill-box;transform-origin:center}
+    .gated-channel.open .gate-bar{transform:translateX(24px)}
+    .wire{fill:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+    .wire-a{stroke:#1f2937}.wire-b{stroke:#c2410c}
+    .meter-box,.scope-box{fill:#fff;stroke:#9aa8b7;stroke-width:2}
+    .needle{stroke:#e11d48;stroke-width:5;stroke-linecap:round;transition:x2 .3s ease,y2 .3s ease}
+    #meterLabel,#meterText{paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}
+    .scope-line{fill:none;stroke:#2563eb;stroke-width:3;stroke-linejoin:round}
+    .scope-zero{stroke:#94a3b8;stroke-width:1.5;stroke-dasharray:5 5}
+    .ion text{font-size:16px;font-weight:900;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+    .ion.na circle{fill:var(--na);stroke:var(--na-edge);stroke-width:2.5}
+    .ion.na text{fill:#073b5a}
+    .ion.k rect{fill:var(--k);stroke:var(--k-edge);stroke-width:2.5}
+    .ion.k text{fill:#661336}
+    .info{padding:12px;display:grid;gap:10px}
+    .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .stat{min-height:72px;padding:9px;border:1px solid var(--line);border-radius:8px;background:#f8fafc}
+    .stat span{display:block;color:var(--muted);font-size:.82rem;font-weight:900;text-transform:uppercase;line-height:1.15}
+    .stat strong{display:block;margin-top:4px;font-size:1.8rem;line-height:1}
+    .event{min-height:74px;padding:10px 12px;border:1px solid #b9d7dc;border-left:5px solid #278a9b;border-radius:8px;background:#f5feff;font-weight:750;line-height:1.3}
+    .note{font-size:.95rem;line-height:1.38;color:#3f5061;margin:0}
+    .controls{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:12px;padding:10px}
+    button{min-height:54px;border:0;border-radius:8px;padding:10px 12px;color:#fff;background:var(--btn);font-size:clamp(.94rem,1.25vw,1.06rem);font-weight:900;line-height:1.12;cursor:pointer;box-shadow:inset 0 -3px 0 #0003;transition:background .12s ease,transform .12s ease,opacity .12s ease}
+    button:hover:not(:disabled){background:var(--btn-dark);transform:translateY(-1px)}
+    button:active:not(:disabled){transform:translateY(1px)}
+    button:disabled{cursor:not-allowed;opacity:.45;box-shadow:none}
+    .reset{background:#475569}
+    .reset:hover:not(:disabled){background:#334155}
+    @media(max-width:940px){.layout{grid-template-columns:1fr}.info{grid-template-columns:1fr 1fr}.event,.note{grid-column:1/-1}.controls{grid-template-columns:1fr 1fr}}
+    @media(max-width:620px){.app{width:min(100vw - 14px,1220px)}.info,.controls{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}button{width:100%}}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <p class="attribution">Animation Prompted by Jerred Seveyka for his biology class</p>
+    <h1>Resting Membrane Potential: Interactive Student Model</h1>
+
+    <div class="layout">
+      <section class="scene-panel" aria-label="Interactive membrane model">
+        <svg id="scene" viewBox="0 0 1000 670" role="img" aria-labelledby="sceneTitle sceneDesc">
+          <title id="sceneTitle">Simplified resting membrane potential model</title>
+          <desc id="sceneDesc">Sodium and potassium ions move through pump, leak, and gated membrane structures while voltage changes are graphed.</desc>
+
+          <rect x="0" y="0" width="1000" height="292" fill="var(--outside)"></rect>
+          <rect id="insideTint" x="0" y="368" width="1000" height="302" fill="var(--inside)"></rect>
+          <rect x="0" y="292" width="1000" height="76" fill="#fff7dc"></rect>
+          <text class="label" x="34" y="38" font-size="25">extracellular fluid</text>
+          <text class="label" x="34" y="650" font-size="25">intracellular fluid</text>
+
+          <path class="wire wire-a" d="M704 286 C734 254,760 228,792 203"></path>
+          <path class="wire wire-b" d="M704 378 C750 379,780 338,809 290"></path>
+          <circle cx="690" cy="286" r="16" fill="#f8fafc" stroke="#111827" stroke-width="4"></circle>
+          <text x="690" y="286" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="900">-</text>
+          <circle cx="690" cy="378" r="16" fill="#fff7ed" stroke="#c2410c" stroke-width="4"></circle>
+          <text x="690" y="378" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="900" fill="#c2410c">+</text>
+
+          <g id="lipids"></g>
+
+          <g class="k-leak" transform="translate(150 0)">
+            <rect class="body" x="-24" y="276" width="48" height="108" rx="19"></rect>
+            <rect class="pore" x="-8" y="282" width="16" height="96" rx="8"></rect>
+            <text class="channel-label" x="0" y="262">K+ leak</text>
+          </g>
+          <g class="k-leak" transform="translate(260 0)">
+            <rect class="body" x="-24" y="276" width="48" height="108" rx="19"></rect>
+            <rect class="pore" x="-8" y="282" width="16" height="96" rx="8"></rect>
+            <text class="channel-label" x="0" y="262">K+ leak</text>
+          </g>
+          <g class="k-leak" transform="translate(370 0)">
+            <rect class="body" x="-24" y="276" width="48" height="108" rx="19"></rect>
+            <rect class="pore" x="-8" y="282" width="16" height="96" rx="8"></rect>
+            <text class="channel-label" x="0" y="262">K+ leak</text>
+          </g>
+
+          <g id="pump" transform="translate(510 0)">
+            <rect id="pumpBody" x="-58" y="262" width="116" height="132" rx="44"></rect>
+            <circle class="pocket-na" cx="-30" cy="346" r="12"></circle>
+            <circle class="pocket-na" cx="0" cy="358" r="12"></circle>
+            <circle class="pocket-na" cx="30" cy="346" r="12"></circle>
+            <rect class="pocket-k" x="-28" y="294" width="22" height="22" rx="4"></rect>
+            <rect class="pocket-k" x="6" y="294" width="22" height="22" rx="4"></rect>
+            <text class="channel-label" x="0" y="246">Na+/K+ pump</text>
+          </g>
+
+          <g class="na-leak" transform="translate(635 0)">
+            <rect class="body" x="-24" y="276" width="48" height="108" rx="19"></rect>
+            <rect class="pore" x="-8" y="282" width="16" height="96" rx="8"></rect>
+            <text class="channel-label" x="0" y="262">Na+ leak</text>
+          </g>
+
+          <g id="gatedNa" class="gated-channel na" transform="translate(770 0)">
+            <rect class="body" x="-27" y="274" width="54" height="112" rx="12"></rect>
+            <rect class="pore" x="-9" y="282" width="18" height="96" rx="9"></rect>
+            <rect class="gate-bar" x="-5" y="292" width="10" height="76" rx="5"></rect>
+            <text class="channel-label" x="0" y="407">gated Na+</text>
+          </g>
+          <g id="gatedK" class="gated-channel k" transform="translate(865 0)">
+            <rect class="body" x="-27" y="274" width="54" height="112" rx="12"></rect>
+            <rect class="pore" x="-9" y="282" width="18" height="96" rx="9"></rect>
+            <rect class="gate-bar" x="-5" y="292" width="10" height="76" rx="5"></rect>
+            <text class="channel-label" x="0" y="407">gated K+</text>
+          </g>
+
+          <g id="meter">
+            <rect class="meter-box" x="752" y="34" width="220" height="126" rx="8"></rect>
+            <text id="meterLabel" x="862" y="24" text-anchor="middle" font-size="19" font-weight="900" fill="#253244">Voltmeter</text>
+            <path d="M790 125 A72 72 0 0 1 934 125" fill="none" stroke="#dbe3ed" stroke-width="12" stroke-linecap="round"></path>
+            <line id="needle" class="needle" x1="862" y1="125" x2="862" y2="68"></line>
+            <circle cx="862" cy="125" r="7" fill="#1f2937"></circle>
+            <text x="792" y="146" text-anchor="middle" font-size="14" font-weight="900" fill="#1d4ed8">-80</text>
+            <text x="862" y="76" text-anchor="middle" font-size="14" font-weight="900" fill="#475569">0</text>
+            <text x="934" y="146" text-anchor="middle" font-size="14" font-weight="900" fill="#c2410c">+40</text>
+            <text id="meterText" x="862" y="154" text-anchor="middle" font-size="16" font-weight="900" fill="#253244">0 mV</text>
+          </g>
+
+          <g id="scope">
+            <rect class="scope-box" x="752" y="176" width="220" height="104" rx="8"></rect>
+            <text x="862" y="197" text-anchor="middle" font-size="17" font-weight="900" fill="#253244">Voltage over time</text>
+            <line class="scope-zero" x1="772" y1="213" x2="952" y2="213"></line>
+            <text class="small" x="768" y="195" font-size="12" text-anchor="end">+40</text>
+            <text class="small" x="768" y="217" font-size="12" text-anchor="end">0</text>
+            <text class="small" x="768" y="266" font-size="12" text-anchor="end">-80</text>
+            <polyline id="scopeLine" class="scope-line" points=""></polyline>
+            <text id="scopeText" x="862" y="274" text-anchor="middle" font-size="14" font-weight="900" fill="#1d4ed8">0 mV</text>
+          </g>
+
+          <g id="ions"></g>
+        </svg>
+      </section>
+
+      <aside class="info" aria-live="polite">
+        <div class="stats">
+          <div class="stat"><span>Na+ inside</span><strong id="naIn">12</strong></div>
+          <div class="stat"><span>Na+ outside</span><strong id="naOut">12</strong></div>
+          <div class="stat"><span>K+ inside</span><strong id="kIn">12</strong></div>
+          <div class="stat"><span>K+ outside</span><strong id="kOut">12</strong></div>
+          <div class="stat"><span>Pump cycles</span><strong id="pumpCount">0</strong></div>
+          <div class="stat"><span>Membrane voltage</span><strong id="voltageCount">0 mV</strong></div>
+        </div>
+        <div id="eventText" class="event">Equal Na+ and K+ counts on both sides begin at 0 mV.</div>
+        <p class="note">This is a simplified teaching model. Positive charge moving out makes the inside more negative; positive charge moving in makes it less negative.</p>
+      </aside>
+    </div>
+
+    <div class="controls" aria-label="Model controls">
+      <button id="pumpButton" type="button">Run Na+/K+ pump</button>
+      <button id="leakButton" type="button">Leak ions</button>
+      <button id="addNaButton" type="button">Add gated Na+ channel</button>
+      <button id="openNaButton" type="button">Open gated Na+ channel</button>
+      <button id="addKButton" type="button">Add gated K+ channel</button>
+      <button id="openKButton" type="button">Open gated K+ channel</button>
+      <button id="resetButton" class="reset" type="button">Reset</button>
+    </div>
+  </main>
+
+  <script>
+    const NS = "http://www.w3.org/2000/svg";
+    const $ = (id) => document.getElementById(id);
+    const el = {
+      ions: $("ions"),
+      lipids: $("lipids"),
+      pump: $("pump"),
+      gatedNa: $("gatedNa"),
+      gatedK: $("gatedK"),
+      needle: $("needle"),
+      meterText: $("meterText"),
+      scopeLine: $("scopeLine"),
+      scopeText: $("scopeText"),
+      insideTint: $("insideTint"),
+      eventText: $("eventText"),
+      buttons: {
+        pump: $("pumpButton"),
+        leak: $("leakButton"),
+        addNa: $("addNaButton"),
+        openNa: $("openNaButton"),
+        addK: $("addKButton"),
+        openK: $("openKButton"),
+        reset: $("resetButton")
+      },
+      readout: {
+        naIn: $("naIn"),
+        naOut: $("naOut"),
+        kIn: $("kIn"),
+        kOut: $("kOut"),
+        pumpCount: $("pumpCount"),
+        voltage: $("voltageCount")
+      }
+    };
+
+    let slots = makeIonSlots();
+
+    const pumpSites = {
+      Na: [{ x: 480, y: 346 }, { x: 510, y: 358 }, { x: 540, y: 346 }],
+      K: [{ x: 493, y: 305 }, { x: 527, y: 305 }]
+    };
+    const structures = {
+      kLeaks: [{ x: 150 }, { x: 260 }, { x: 370 }],
+      naLeak: { x: 635 },
+      gatedNa: { x: 770 },
+      gatedK: { x: 865 },
+      top: 282,
+      center: 330,
+      bottom: 382
+    };
+    const state = {
+      animating: false,
+      pumpCycles: 0,
+      voltage: 0,
+      history: [0],
+      gatedNa: false,
+      gatedK: false
+    };
+    let ions = [];
+    let nextIonId = 1;
+    let frameStart = performance.now();
+
+    // Build fresh scattered positions on each reset so ions look naturally distributed.
+    function makeIonSlots() {
+      const occupied = { outside: [], inside: [] };
+      return {
+        Na: {
+          outside: makeScatteredSlots("outside", occupied.outside),
+          inside: makeScatteredSlots("inside", occupied.inside)
+        },
+        K: {
+          outside: makeScatteredSlots("outside", occupied.outside),
+          inside: makeScatteredSlots("inside", occupied.inside)
+        }
+      };
+    }
+
+    function makeScatteredSlots(side, occupied) {
+      const bounds = side === "outside"
+        ? { x1: 52, x2: 675, y1: 68, y2: 252 }
+        : { x1: 52, x2: 675, y1: 420, y2: 620 };
+      const points = [];
+      for (let i = 0; i < 30; i += 1) {
+        let point = null;
+        for (let attempt = 0; attempt < 420; attempt += 1) {
+          const candidate = {
+            x: bounds.x1 + Math.random() * (bounds.x2 - bounds.x1),
+            y: bounds.y1 + Math.random() * (bounds.y2 - bounds.y1)
+          };
+          if (farEnough(candidate, occupied, 34)) {
+            point = candidate;
+            break;
+          }
+        }
+        if (!point) {
+          point = {
+            x: bounds.x1 + ((i * 71) % Math.max(1, bounds.x2 - bounds.x1)),
+            y: bounds.y1 + ((i * 43) % Math.max(1, bounds.y2 - bounds.y1))
+          };
+        }
+        points.push(point);
+        occupied.push(point);
+      }
+      return points;
+    }
+
+    function farEnough(point, others, minimum) {
+      return others.every((other) => distance(point, other) >= minimum);
+    }
+    function svg(tag, attrs = {}) {
+      const node = document.createElementNS(NS, tag);
+      Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+      return node;
+    }
+
+    function buildLipids() {
+      for (let x = 38; x <= 958; x += 26) {
+        el.lipids.append(
+          svg("line", { class: "lipid-tail", x1: x - 4, y1: 302, x2: x - 8, y2: 356 }),
+          svg("line", { class: "lipid-tail", x1: x + 4, y1: 302, x2: x + 8, y2: 356 }),
+          svg("circle", { class: "lipid-head", cx: x, cy: 296, r: 8 }),
+          svg("circle", { class: "lipid-head", cx: x, cy: 364, r: 8 })
+        );
+      }
+    }
+
+    function addIon(type, side, slotIndex) {
+      const group = svg("g", { class: `ion ${type.toLowerCase()}` });
+      if (type === "Na") {
+        group.append(svg("circle", { r: 16 }), svg("text", { x: 0, y: 1 }));
+      } else {
+        group.append(svg("rect", { x: -16, y: -16, width: 32, height: 32, rx: 5 }), svg("text", { x: 0, y: 1 }));
+      }
+      group.querySelector("text").textContent = `${type}+`;
+      el.ions.append(group);
+      const base = slots[type][side][slotIndex];
+      ions.push({ id: nextIonId++, type, side, slotIndex, el: group, x: base.x, y: base.y, moving: false, seed: nextIonId * 0.67 });
+    }
+
+    function resetModel() {
+      state.animating = false;
+      state.pumpCycles = 0;
+      state.voltage = 0;
+      state.history = [0];
+      state.gatedNa = false;
+      state.gatedK = false;
+      slots = makeIonSlots();
+      el.gatedNa.classList.remove("visible", "open");
+      el.gatedK.classList.remove("visible", "open");
+      el.pump.classList.remove("pump-out", "pump-in");
+      el.ions.innerHTML = "";
+      ions = [];
+      nextIonId = 1;
+      for (let i = 0; i < 12; i += 1) {
+        addIon("Na", "inside", i);
+        addIon("Na", "outside", i);
+        addIon("K", "inside", i);
+        addIon("K", "outside", i);
+      }
+      refreshReadouts("Equal Na+ and K+ counts on both sides begin at 0 mV.", false);
+    }
+
+    function count(type, side) {
+      return ions.filter((ion) => ion.type === type && ion.side === side).length;
+    }
+
+    function slotOf(ion) {
+      return slots[ion.type][ion.side][ion.slotIndex];
+    }
+
+    function openSlots(type, side) {
+      const used = new Set(ions.filter((ion) => ion.type === type && ion.side === side).map((ion) => ion.slotIndex));
+      return slots[type][side].map((_, index) => index).filter((index) => !used.has(index));
+    }
+
+    function pickIons(type, side, amount) {
+      return ions
+        .filter((ion) => ion.type === type && ion.side === side && !ion.moving)
+        .sort((a, b) => distance(slotOf(a), { x: 500, y: 330 }) - distance(slotOf(b), { x: 500, y: 330 }))
+        .slice(0, amount);
+    }
+
+    function reserveSlots(type, side, amount) {
+      return openSlots(type, side).slice(0, amount);
+    }
+
+    function setBusy(value) {
+      state.animating = value;
+      updateButtons();
+    }
+
+    function updateButtons() {
+      const busy = state.animating;
+      el.buttons.pump.disabled = busy || count("Na", "inside") < 3 || count("K", "outside") < 2;
+      el.buttons.leak.disabled = busy || state.pumpCycles < 3;
+      el.buttons.addNa.disabled = busy || state.pumpCycles < 3 || state.gatedNa;
+      el.buttons.openNa.disabled = busy || !state.gatedNa;
+      el.buttons.addK.disabled = busy || state.pumpCycles < 3 || state.gatedK;
+      el.buttons.openK.disabled = busy || !state.gatedK;
+      el.buttons.reset.disabled = busy;
+    }
+
+    async function runPump() {
+      if (state.animating) return;
+      const na = pickIons("Na", "inside", 3);
+      const k = pickIons("K", "outside", 2);
+      const naDest = reserveSlots("Na", "outside", 3);
+      const kDest = reserveSlots("K", "inside", 2);
+      if (na.length < 3 || k.length < 2 || naDest.length < 3 || kDest.length < 2) {
+        refreshReadouts("The pump needs 3 intracellular Na+ and 2 extracellular K+ to run.", false);
+        return;
+      }
+      setBusy(true);
+      el.eventText.textContent = "Na+ and K+ ions are moving into the pump binding sites.";
+      await Promise.all([
+        ...na.map((ion, i) => moveIon(ion, [pointNow(ion), { x: pumpSites.Na[i].x, y: structures.bottom }, pumpSites.Na[i]], 1050, i * 90)
+          .then(() => holdIon(ion, pumpSites.Na[i]))),
+        ...k.map((ion, i) => moveIon(ion, [pointNow(ion), { x: pumpSites.K[i].x, y: structures.top }, pumpSites.K[i]], 1050, i * 100)
+          .then(() => holdIon(ion, pumpSites.K[i])))
+      ]);
+      await wait(450);
+      el.pump.classList.add("pump-out");
+      el.eventText.textContent = "The pump changes shape and moves 3 Na+ out while 2 K+ move in.";
+      await Promise.all([
+        ...na.map((ion, i) => {
+        const end = slots.Na.outside[naDest[i]];
+        return moveIon(ion, [pumpSites.Na[i], { x: 510, y: structures.center }, { x: 510, y: structures.top }, end], 1200, i * 85)
+          .then(() => placeIon(ion, "outside", naDest[i]));
+      }),
+        ...k.map((ion, i) => {
+        const end = slots.K.inside[kDest[i]];
+        return moveIon(ion, [pumpSites.K[i], { x: 510, y: structures.center }, { x: 510, y: structures.bottom }, end], 1200, i * 110)
+          .then(() => placeIon(ion, "inside", kDest[i]));
+      })
+      ]);
+      await wait(250);
+      el.pump.classList.remove("pump-out");
+      el.pump.classList.remove("pump-in");
+      state.pumpCycles += 1;
+      changeVoltage(-6, "Pump moved 3 Na+ out and 2 K+ in.");
+      setBusy(false);
+    }
+
+    async function leakIons() {
+      if (state.animating || state.pumpCycles < 3) return;
+      const k = pickIons("K", "inside", 3);
+      const na = pickIons("Na", "outside", 1);
+      const kDest = reserveSlots("K", "outside", k.length);
+      const naDest = reserveSlots("Na", "inside", na.length);
+      if (!k.length && !na.length) {
+        refreshReadouts("No leak movement is available with the current ion positions.", false);
+        return;
+      }
+      setBusy(true);
+      el.eventText.textContent = "K+ leaks out through three pink channels while Na+ leaks in through one blue channel.";
+      const moves = [];
+      k.forEach((ion, i) => {
+        const channel = structures.kLeaks[i % structures.kLeaks.length];
+        const end = slots.K.outside[kDest[i]];
+        moves.push(moveIon(ion, [pointNow(ion), { x: channel.x, y: structures.bottom }, { x: channel.x, y: structures.center }, { x: channel.x, y: structures.top }, end], 2600, i * 120)
+          .then(() => placeIon(ion, "outside", kDest[i])));
+      });
+      na.forEach((ion, i) => {
+        const end = slots.Na.inside[naDest[i]];
+        moves.push(moveIon(ion, [pointNow(ion), { x: structures.naLeak.x, y: structures.top }, { x: structures.naLeak.x, y: structures.center }, { x: structures.naLeak.x, y: structures.bottom }, end], 2600, 180 + i * 120)
+          .then(() => placeIon(ion, "inside", naDest[i])));
+      });
+      await Promise.all(moves);
+      changeVoltage((na.length - k.length) * 6, "More K+ leaked out than Na+ leaked in.");
+      setBusy(false);
+    }
+
+    function addGated(kind) {
+      if (state.animating) return;
+      if (kind === "Na") {
+        state.gatedNa = true;
+        el.gatedNa.classList.add("visible");
+        refreshReadouts("A gated Na+ channel was added to the membrane.", false);
+      } else {
+        state.gatedK = true;
+        el.gatedK.classList.add("visible");
+        refreshReadouts("A gated K+ channel was added to the membrane.", false);
+      }
+    }
+
+    async function openGatedNa() {
+      if (state.animating || !state.gatedNa) return;
+      if (count("Na", "outside") <= count("Na", "inside")) {
+        refreshReadouts("Na+ is not more concentrated outside, so the gated Na+ channel has little driving force.", false);
+        return;
+      }
+      const amount = Math.min(4, count("Na", "outside"), openSlots("Na", "inside").length);
+      await openGated("Na", "outside", "inside", amount, structures.gatedNa.x, el.gatedNa, "Opening the gated Na+ channel depolarized the cell.", 6);
+    }
+
+    async function openGatedK() {
+      if (state.animating || !state.gatedK) return;
+      if (count("K", "inside") <= count("K", "outside")) {
+        refreshReadouts("K+ is not more concentrated inside, so the gated K+ channel has little driving force.", false);
+        return;
+      }
+      const amount = Math.min(4, count("K", "inside"), openSlots("K", "outside").length);
+      await openGated("K", "inside", "outside", amount, structures.gatedK.x, el.gatedK, "Opening the gated K+ channel made the inside more negative.", -6);
+    }
+
+    async function openGated(type, from, to, amount, x, channelEl, message, voltagePerIon) {
+      const selected = pickIons(type, from, amount);
+      const destSlots = reserveSlots(type, to, selected.length);
+      if (!selected.length || destSlots.length < selected.length) {
+        refreshReadouts(`No ${type}+ ions can move through that gated channel right now.`, false);
+        return;
+      }
+      setBusy(true);
+      channelEl.classList.add("open");
+      el.eventText.textContent = `The gated ${type}+ channel opens. ${type}+ ions begin moving through it.`;
+      await wait(420);
+      await Promise.all(selected.map((ion, i) => {
+        const end = slots[type][to][destSlots[i]];
+        const firstY = from === "outside" ? structures.top : structures.bottom;
+        const lastY = to === "outside" ? structures.top : structures.bottom;
+        return moveIon(ion, [pointNow(ion), { x, y: firstY }, { x, y: structures.center }, { x, y: lastY }, end], 1400, i * 150)
+          .then(() => placeIon(ion, to, destSlots[i]));
+      }));
+      channelEl.classList.remove("open");
+      changeVoltage(voltagePerIon * selected.length, message);
+      setBusy(false);
+    }
+
+    function changeVoltage(delta, message) {
+      state.voltage = clamp(state.voltage + delta, -80, 40);
+      state.history.push(state.voltage);
+      if (state.history.length > 14) state.history.shift();
+      refreshReadouts(message, true);
+    }
+
+    function refreshReadouts(message, drawNewPoint) {
+      el.readout.naIn.textContent = count("Na", "inside");
+      el.readout.naOut.textContent = count("Na", "outside");
+      el.readout.kIn.textContent = count("K", "inside");
+      el.readout.kOut.textContent = count("K", "outside");
+      el.readout.pumpCount.textContent = state.pumpCycles;
+      el.readout.voltage.textContent = `${formatVoltage(state.voltage)} mV`;
+      el.eventText.textContent = message;
+      updateMeter();
+      updateScope();
+      updateTint();
+      updateButtons();
+    }
+
+    function updateMeter() {
+      const value = clamp(state.voltage, -80, 40);
+      const angle = value <= 0
+        ? 180 + ((value + 80) / 80) * 90
+        : 270 + (value / 40) * 90;
+      const point = polar(862, 125, 58, angle);
+      el.needle.setAttribute("x2", point.x);
+      el.needle.setAttribute("y2", point.y);
+      el.meterText.textContent = `${formatVoltage(state.voltage)} mV`;
+      el.scopeText.textContent = `${formatVoltage(state.voltage)} mV`;
+    }
+
+    function updateScope() {
+      const min = -80;
+      const max = 40;
+      const pts = state.history.map((value, i) => {
+        const x = state.history.length === 1 ? 772 : 772 + i * (180 / (state.history.length - 1));
+        const y = 260 - ((value - min) / (max - min)) * 70;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      });
+      el.scopeLine.setAttribute("points", pts.join(" "));
+    }
+
+    function updateTint() {
+      if (state.voltage < 0) {
+        el.insideTint.setAttribute("fill", mix("#fffdf7", "#dbeafe", Math.min(Math.abs(state.voltage) / 80, 1) * 0.75));
+      } else if (state.voltage > 0) {
+        el.insideTint.setAttribute("fill", mix("#fffdf7", "#ffedd5", Math.min(state.voltage / 40, 1) * 0.7));
+      } else {
+        el.insideTint.setAttribute("fill", "var(--inside)");
+      }
+    }
+
+    function moveIon(ion, points, duration, delay = 0) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          ion.moving = true;
+          el.ions.append(ion.el);
+          let started = null;
+          function step(now) {
+            if (started === null) started = now;
+            const t = clamp((now - started) / duration, 0, 1);
+            const p = pointOnPath(points, ease(t));
+            ion.x = p.x;
+            ion.y = p.y;
+            if (t < 1) {
+              requestAnimationFrame(step);
+            } else {
+              ion.x = points[points.length - 1].x;
+              ion.y = points[points.length - 1].y;
+              ion.moving = false;
+              resolve();
+            }
+          }
+          requestAnimationFrame(step);
+        }, delay);
+      });
+    }
+
+    function placeIon(ion, side, slotIndex) {
+      ion.side = side;
+      ion.slotIndex = slotIndex;
+      ion.hold = null;
+      const base = slotOf(ion);
+      ion.x = base.x;
+      ion.y = base.y;
+    }
+
+    function holdIon(ion, point) {
+      ion.hold = { x: point.x, y: point.y };
+      ion.x = point.x;
+      ion.y = point.y;
+    }
+
+    function render(now) {
+      ions.forEach((ion) => {
+        let x = ion.x;
+        let y = ion.y;
+        if (!ion.moving) {
+          const base = ion.hold || slotOf(ion);
+          const t = (now - frameStart) / 1000;
+          x = base.x + Math.sin(t * 2.1 + ion.seed) * 2.7;
+          y = base.y + Math.cos(t * 2.5 + ion.seed * 1.3) * 2.2;
+        }
+        ion.el.setAttribute("transform", `translate(${x.toFixed(2)} ${y.toFixed(2)})`);
+      });
+      requestAnimationFrame(render);
+    }
+
+    function pointNow(ion) {
+      return { x: ion.x, y: ion.y };
+    }
+
+    function pointOnPath(points, t) {
+      const lengths = [];
+      let total = 0;
+      for (let i = 0; i < points.length - 1; i += 1) {
+        const length = distance(points[i], points[i + 1]);
+        lengths.push(length);
+        total += length;
+      }
+      let remaining = t * total;
+      for (let i = 0; i < lengths.length; i += 1) {
+        if (remaining <= lengths[i] || i === lengths.length - 1) {
+          const local = lengths[i] === 0 ? 1 : remaining / lengths[i];
+          return {
+            x: lerp(points[i].x, points[i + 1].x, local),
+            y: lerp(points[i].y, points[i + 1].y, local)
+          };
+        }
+        remaining -= lengths[i];
+      }
+      return points[points.length - 1];
+    }
+
+    function wait(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    function ease(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - ((-2 * t + 2) ** 3) / 2;
+    }
+
+    function distance(a, b) {
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    function polar(cx, cy, r, degrees) {
+      const radians = degrees * Math.PI / 180;
+      return { x: cx + Math.cos(radians) * r, y: cy + Math.sin(radians) * r };
+    }
+
+    function formatVoltage(value) {
+      return value > 0 ? `+${value}` : `${value}`;
+    }
+
+    function mix(a, b, amount) {
+      const ar = hex(a), br = hex(b);
+      const out = ar.map((value, i) => Math.round(value + (br[i] - value) * amount));
+      return `rgb(${out[0]}, ${out[1]}, ${out[2]})`;
+    }
+
+    function hex(value) {
+      const clean = value.replace("#", "");
+      return [0, 2, 4].map((i) => parseInt(clean.slice(i, i + 2), 16));
+    }
+
+    el.buttons.pump.addEventListener("click", runPump);
+    el.buttons.leak.addEventListener("click", leakIons);
+    el.buttons.addNa.addEventListener("click", () => addGated("Na"));
+    el.buttons.openNa.addEventListener("click", openGatedNa);
+    el.buttons.addK.addEventListener("click", () => addGated("K"));
+    el.buttons.openK.addEventListener("click", openGatedK);
+    el.buttons.reset.addEventListener("click", resetModel);
+
+    buildLipids();
+    resetModel();
+    requestAnimationFrame(render);
+  </script>
+</body>
+</html>
+
+
+

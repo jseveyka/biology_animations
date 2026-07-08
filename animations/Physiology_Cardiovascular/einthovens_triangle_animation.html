@@ -1,0 +1,1679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Einthoven's Triangle ECG Projection Animation</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1c2b2d;
+      --muted: #5d6d73;
+      --paper: #fbfbf7;
+      --panel: #ffffff;
+      --line: #d9e0df;
+      --heart-dark: #93444d;
+      --heart-mid: #c96d72;
+      --heart-light: #e39a91;
+      --oxygen: #c84f5f;
+      --deoxygen: #8f7aa8;
+      --vector: #ff5a1f;
+      --lead-i: #2f6fa7;
+      --lead-ii: #087f75;
+      --lead-iii: #8557a7;
+      --shadow: rgba(28, 43, 45, 0.16);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, #f8faf8 0%, #edf4f3 54%, #f7f4ef 100%);
+    }
+
+    header {
+      padding: 16px clamp(18px, 3vw, 42px) 10px;
+      border-bottom: 1px solid rgba(28, 43, 45, 0.12);
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(8px);
+    }
+
+    .attribution {
+      margin: 0 0 8px;
+      font-size: clamp(1rem, 1.7vw, 1.35rem);
+      font-weight: 800;
+      color: #1a3f42;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.25rem, 2.35vw, 2rem);
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 0;
+      max-width: 700px;
+      color: var(--muted);
+      font-size: clamp(0.92rem, 1.35vw, 1.08rem);
+      line-height: 1.35;
+    }
+
+    .app-shell {
+      width: min(100%, 1400px);
+      margin: 0 auto;
+      padding: 14px clamp(10px, 2vw, 24px) 20px;
+    }
+
+    .stage-wrap {
+      overflow: auto;
+      border: 1px solid rgba(28, 43, 45, 0.16);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 18px 44px rgba(35, 57, 64, 0.14);
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      min-width: 980px;
+      height: auto;
+      aspect-ratio: 16 / 9;
+      background: #fffefa;
+    }
+
+    .control-panel {
+      margin-top: 12px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      border: 1px solid rgba(28, 43, 45, 0.14);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 6px;
+      padding: 10px 16px;
+      min-width: 94px;
+      background: #1f6664;
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 1rem;
+      cursor: pointer;
+      box-shadow: 0 3px 0 rgba(12, 57, 56, 0.28);
+    }
+
+    button.secondary {
+      background: #5d6675;
+      box-shadow: 0 3px 0 rgba(42, 48, 57, 0.24);
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible {
+      outline: 3px solid #f9b233;
+      outline-offset: 3px;
+    }
+
+    .speed-control,
+    .rotation-control,
+    .display-mode-control,
+    .conduction-control,
+    .toggle-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 42px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #24383b;
+    }
+
+    input[type="range"] {
+      width: min(280px, 52vw);
+      accent-color: #1f6664;
+    }
+
+    input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: #1f6664;
+    }
+
+    select {
+      min-height: 38px;
+      max-width: 220px;
+      padding: 6px 30px 6px 10px;
+      border: 1px solid rgba(28, 43, 45, 0.3);
+      border-radius: 6px;
+      background: #ffffff;
+      color: #24383b;
+      font: inherit;
+      font-weight: 700;
+    }
+
+    .conduction-control[hidden] {
+      display: none;
+    }
+
+    .speed-value,
+    .rotation-value {
+      min-width: 46px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .label-halo {
+      paint-order: stroke;
+      stroke: rgba(255, 255, 255, 0.94);
+      stroke-width: 5px;
+      stroke-linejoin: round;
+    }
+
+    .small-halo {
+      paint-order: stroke;
+      stroke: rgba(255, 255, 255, 0.96);
+      stroke-width: 4px;
+      stroke-linejoin: round;
+    }
+
+    @media (max-width: 720px) {
+      header {
+        padding-top: 12px;
+      }
+
+      .control-panel {
+        justify-content: stretch;
+      }
+
+      button {
+        flex: 1 1 130px;
+      }
+
+      .speed-control,
+      .toggle-control {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="attribution">“Animation Prompted by Jerred Seveyka for his biology class.”</p>
+    <div class="title-row">
+      <h1>Einthoven's Triangle: ECG Viewing Angles</h1>
+      <p class="subtitle">Each limb lead records the shadow, or projection, of the heart's summed electrical vector along that lead axis.</p>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="stage-wrap" aria-label="Einthoven's triangle animation">
+      <svg id="scene" viewBox="0 0 1280 720" role="img" aria-labelledby="sceneTitle sceneDesc" preserveAspectRatio="xMidYMid meet">
+        <title id="sceneTitle">Einthoven's triangle and ECG projection animation</title>
+        <desc id="sceneDesc">A simplified frontal heart inside Einthoven's triangle with synchronized vectors, projections, and ECG traces for Leads I, II, and III.</desc>
+        <defs>
+          <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#203438" flood-opacity="0.16"></feDropShadow>
+          </filter>
+          <filter id="tinyShadow" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#203438" flood-opacity="0.16"></feDropShadow>
+          </filter>
+          <linearGradient id="heartShine" x1="0%" x2="90%" y1="0%" y2="100%">
+            <stop offset="0%" stop-color="#efb1a8"></stop>
+            <stop offset="55%" stop-color="#c96d72"></stop>
+            <stop offset="100%" stop-color="#93444d"></stop>
+          </linearGradient>
+          <pattern id="gridPattern" width="16" height="16" patternUnits="userSpaceOnUse">
+            <path d="M 16 0 L 0 0 0 16" fill="none" stroke="#e8eeee" stroke-width="1"></path>
+          </pattern>
+        </defs>
+      </svg>
+    </section>
+
+    <section class="control-panel" aria-label="Animation controls">
+      <button id="playPause" type="button" aria-pressed="true">Pause</button>
+      <button id="reset" class="secondary" type="button">Reset</button>
+      <label class="speed-control" for="speed">
+        Animation speed
+        <input id="speed" type="range" min="0.25" max="2.5" step="0.05" value="1">
+        <span id="speedValue" class="speed-value">1.00x</span>
+      </label>
+      <label class="rotation-control" for="heartRotation">
+        Heart rotation
+        <input id="heartRotation" type="range" min="-45" max="45" step="1" value="-10">
+        <span id="rotationValue" class="rotation-value">-10&deg;</span>
+      </label>
+      <label class="display-mode-control" for="displayMode">
+        Display mode
+        <select id="displayMode">
+          <option value="einthoven">Einthoven leads mode</option>
+          <option value="avBlock">AV block rhythm mode</option>
+        </select>
+      </label>
+      <label id="conductionControl" class="conduction-control" for="conductionMode" hidden>
+        AV conduction
+        <select id="conductionMode">
+          <option value="normal">Normal conduction</option>
+          <option value="first">1st degree heart block</option>
+          <option value="second">2nd degree heart block</option>
+          <option value="third">3rd degree heart block</option>
+        </select>
+      </label>
+      <label class="toggle-control" for="showProjections">
+        <input id="showProjections" type="checkbox" checked>
+        Show vector projections
+      </label>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const SVG_NS = "http://www.w3.org/2000/svg";
+      const svg = document.getElementById("scene");
+      const playPauseButton = document.getElementById("playPause");
+      const resetButton = document.getElementById("reset");
+      const speedSlider = document.getElementById("speed");
+      const speedValue = document.getElementById("speedValue");
+      const rotationSlider = document.getElementById("heartRotation");
+      const rotationValue = document.getElementById("rotationValue");
+      const displayModeSelect = document.getElementById("displayMode");
+      const conductionControl = document.getElementById("conductionControl");
+      const conductionSelect = document.getElementById("conductionMode");
+      const showProjectionToggle = document.getElementById("showProjections");
+
+      const WIDTH = 1280;
+      const HEIGHT = 720;
+      const CYCLE_MS = 6000;
+      const ATRIAL_CYCLE_MS = 750;
+      const VENTRICULAR_ESCAPE_CYCLE_MS = 2000;
+      const THIRD_DEGREE_ATRIAL_PERIOD = 1;
+      const THIRD_DEGREE_VENTRICULAR_PERIOD = VENTRICULAR_ESCAPE_CYCLE_MS / ATRIAL_CYCLE_MS;
+      const vectorOrigin = { x: 390, y: 358 };
+      const vectorScale = 138;
+      const DEFAULT_HEART_ROTATION = -10;
+      const heartCenter = { x: 410, y: 360 };
+
+      const colors = {
+        leadI: "#2f6fa7",
+        leadII: "#087f75",
+        leadIII: "#8557a7",
+        vector: "#ff5a1f",
+        depol: "#f7b733",
+        repol: "#2fa6b8",
+        ink: "#1c2b2d",
+        muted: "#5d6d73",
+        baseline: "#59666c",
+        grid: "#e7eeee"
+      };
+
+      const vertices = {
+        RA: { x: 132, y: 122, label: "RA -" },
+        LA: { x: 650, y: 122, label: "LA +" },
+        LL: { x: 352, y: 612, label: "LL +" }
+      };
+
+      const leads = [
+        {
+          key: "I",
+          name: "Lead I",
+          color: colors.leadI,
+          from: vertices.RA,
+          to: vertices.LA,
+          graph: { x: 790, y: 26, w: 420, h: 216 },
+          labelOffset: { x: 0, y: -24 },
+          badge: "Positive LA view"
+        },
+        {
+          key: "II",
+          name: "Lead II",
+          color: colors.leadII,
+          from: vertices.RA,
+          to: vertices.LL,
+          graph: { x: 790, y: 252, w: 420, h: 216 },
+          labelOffset: { x: 38, y: 0 },
+          badge: "Best view of main QRS"
+        },
+        {
+          key: "III",
+          name: "Lead III",
+          color: colors.leadIII,
+          from: vertices.LA,
+          to: vertices.LL,
+          graph: { x: 790, y: 478, w: 420, h: 216 },
+          labelOffset: { x: -42, y: 5 },
+          badge: "Left arm to left leg view"
+        }
+      ];
+
+      const einthovenLeadIIGraph = { x: 790, y: 252, w: 420, h: 216 };
+      const rhythmLeadIIGraph = { x: 760, y: 72, w: 480, h: 588 };
+
+      leads.forEach((lead) => {
+        lead.unit = normalize({
+          x: lead.to.x - lead.from.x,
+          y: lead.to.y - lead.from.y
+        });
+      });
+
+      const SPEED_PLAYBACK_SCALE = 0.3;
+
+      const state = {
+        playing: true,
+        time: 0,
+        speed: Number(speedSlider.value) * SPEED_PLAYBACK_SCALE,
+        heartRotation: Number(rotationSlider.value),
+        displayMode: displayModeSelect.value,
+        conductionMode: conductionSelect.value,
+        showProjections: showProjectionToggle.checked,
+        lastFrame: null
+      };
+
+      const layers = {};
+
+      function createSvgElement(tag, attributes = {}, parent = svg) {
+        const element = document.createElementNS(SVG_NS, tag);
+        Object.entries(attributes).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            element.setAttribute(key, String(value));
+          }
+        });
+        parent.appendChild(element);
+        return element;
+      }
+
+      function clearGroup(group) {
+        while (group.firstChild) {
+          group.removeChild(group.firstChild);
+        }
+      }
+
+      function setAttributes(element, attributes) {
+        Object.entries(attributes).forEach(([key, value]) => {
+          element.setAttribute(key, String(value));
+        });
+      }
+
+      function pointString(points) {
+        return points.map((point) => `${point.x},${point.y}`).join(" ");
+      }
+
+      function normalize(vector) {
+        const magnitude = Math.hypot(vector.x, vector.y) || 1;
+        return { x: vector.x / magnitude, y: vector.y / magnitude };
+      }
+
+      function dot(a, b) {
+        return a.x * b.x + a.y * b.y;
+      }
+
+      function add(a, b) {
+        return { x: a.x + b.x, y: a.y + b.y };
+      }
+
+      function scale(vector, amount) {
+        return { x: vector.x * amount, y: vector.y * amount };
+      }
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function gaussian(t, center, width) {
+        const z = (t - center) / width;
+        return Math.exp(-0.5 * z * z);
+      }
+
+      function phaseProgress(t, start, end) {
+        return clamp((t - start) / (end - start), 0, 1);
+      }
+
+      function interpolatePoint(start, end, amount) {
+        return {
+          x: start.x + (end.x - start.x) * amount,
+          y: start.y + (end.y - start.y) * amount
+        };
+      }
+
+      function rotateHeartPoint(point) {
+        const radians = state.heartRotation * Math.PI / 180;
+        const dx = point.x - heartCenter.x;
+        const dy = point.y - heartCenter.y;
+        return {
+          x: heartCenter.x + dx * Math.cos(radians) - dy * Math.sin(radians),
+          y: heartCenter.y + dx * Math.sin(radians) + dy * Math.cos(radians)
+        };
+      }
+
+      function rotateHeartVector(vector) {
+        const radians = state.heartRotation * Math.PI / 180;
+        return {
+          x: vector.x * Math.cos(radians) - vector.y * Math.sin(radians),
+          y: vector.x * Math.sin(radians) + vector.y * Math.cos(radians)
+        };
+      }
+
+      function heartTransform() {
+        return `rotate(${state.heartRotation} ${heartCenter.x} ${heartCenter.y})`;
+      }
+
+      function updateHeartTransform() {
+        const transform = heartTransform();
+        layers.heart.setAttribute("transform", transform);
+        layers.wavefronts.setAttribute("transform", transform);
+        if (layers.heartAnnotation) {
+          layers.heartAnnotation.setAttribute("transform", transform);
+        }
+      }
+
+      function mixVectors(components) {
+        return components.reduce(
+          (sum, component) => ({
+            x: sum.x + component.direction.x * component.amount,
+            y: sum.y + component.direction.y * component.amount
+          }),
+          { x: 0, y: 0 }
+        );
+      }
+
+      function activeVectorFrom(components, fallbackOrigin) {
+        const vector = mixVectors(components);
+        const weight = components.reduce((sum, component) => sum + component.amount, 0);
+        const origin = weight > 0.004
+          ? components.reduce(
+            (sum, component) => ({
+              x: sum.x + component.origin.x * component.amount / weight,
+              y: sum.y + component.origin.y * component.amount / weight
+            }),
+            { x: 0, y: 0 }
+          )
+          : fallbackOrigin;
+        const magnitude = Math.hypot(vector.x, vector.y);
+        return { x: vector.x, y: vector.y, magnitude, origin };
+      }
+
+      function initializeScene() {
+        ["background", "triangle", "heart", "wavefronts", "projections", "vector", "labels", "graphs", "callouts"].forEach((name) => {
+          layers[name] = createSvgElement("g", { id: `${name}Layer` });
+        });
+
+        createSvgElement("rect", {
+          x: 0,
+          y: 0,
+          width: WIDTH,
+          height: HEIGHT,
+          fill: "#fffefa"
+        }, layers.background);
+
+        createSvgElement("path", {
+          d: "M0,575 C180,540 255,668 410,635 C600,595 642,494 774,535 C904,574 963,681 1280,615 L1280,720 L0,720 Z",
+          fill: "#edf4f3",
+          opacity: 0.82
+        }, layers.background);
+
+        drawEinthovenTriangle();
+        drawHeart();
+        rebuildECGGraphs();
+        drawStaticNotes();
+        updateAnimation(0);
+      }
+
+      function drawArrowHead(parent, from, to, color, size = 16, opacity = 1) {
+        const unit = normalize({ x: to.x - from.x, y: to.y - from.y });
+        const normal = { x: -unit.y, y: unit.x };
+        const tip = to;
+        const base = add(to, scale(unit, -size));
+        const left = add(base, scale(normal, size * 0.45));
+        const right = add(base, scale(normal, -size * 0.45));
+        createSvgElement("polygon", {
+          points: pointString([tip, left, right]),
+          fill: color,
+          opacity
+        }, parent);
+      }
+
+      function drawLeadEndpointBadge(parent, position, sign, lead) {
+        const along = normalize({
+          x: lead.to.x - lead.from.x,
+          y: lead.to.y - lead.from.y
+        });
+        const offset = sign === "+"
+          ? scale(along, -34)
+          : scale(along, 34);
+        const badgePoint = add(position, offset);
+        createSvgElement("circle", {
+          cx: badgePoint.x,
+          cy: badgePoint.y,
+          r: 13,
+          fill: "#ffffff",
+          stroke: lead.color,
+          "stroke-width": 2.6
+        }, parent);
+        createSvgElement("text", {
+          x: badgePoint.x,
+          y: badgePoint.y + 5,
+          "text-anchor": "middle",
+          "font-size": 18,
+          "font-weight": 900,
+          fill: lead.color
+        }, parent).textContent = sign;
+      }
+
+      function drawEinthovenTriangle() {
+        const group = layers.triangle;
+
+        leads.forEach((lead) => {
+          createSvgElement("line", {
+            x1: lead.from.x,
+            y1: lead.from.y,
+            x2: lead.to.x,
+            y2: lead.to.y,
+            stroke: lead.color,
+            "stroke-width": 5,
+            "stroke-linecap": "round",
+            opacity: 0.8
+          }, group);
+          drawArrowHead(group, lead.from, lead.to, lead.color, 17, 0.84);
+          drawLeadEndpointBadge(group, lead.from, "-", lead);
+          drawLeadEndpointBadge(group, lead.to, "+", lead);
+
+          const middle = {
+            x: (lead.from.x + lead.to.x) / 2 + lead.labelOffset.x,
+            y: (lead.from.y + lead.to.y) / 2 + lead.labelOffset.y
+          };
+          createSvgElement("text", {
+            x: middle.x,
+            y: middle.y,
+            "text-anchor": "middle",
+            "font-size": 23,
+            "font-weight": 900,
+            fill: lead.color,
+            class: "label-halo"
+          }, layers.labels).textContent = lead.name;
+        });
+
+        Object.entries(vertices).forEach(([key, point]) => {
+          const labelPosition = key === "RA"
+            ? { x: point.x + 42, y: point.y - 30, anchor: "start" }
+            : key === "LA"
+              ? { x: point.x - 42, y: point.y - 30, anchor: "end" }
+              : { x: point.x + 28, y: point.y + 30, anchor: "start" };
+          createSvgElement("circle", {
+            cx: point.x,
+            cy: point.y,
+            r: 19,
+            fill: "#ffffff",
+            stroke: "#1c2b2d",
+            "stroke-width": 2.5,
+            filter: "url(#tinyShadow)"
+          }, group);
+          createSvgElement("text", {
+            x: labelPosition.x,
+            y: labelPosition.y,
+            "text-anchor": labelPosition.anchor,
+            "font-size": 25,
+            "font-weight": 900,
+            fill: "#24383b",
+            class: "label-halo"
+          }, layers.labels).textContent = point.label;
+        });
+
+        createSvgElement("text", {
+          x: vertices.LA.x + 62,
+          y: vertices.LA.y + 42,
+          "font-size": 14,
+          "font-weight": 800,
+          fill: colors.leadIII,
+          class: "small-halo"
+        }, layers.labels).textContent = "Lead III starts as - here";
+      }
+
+      function drawHeart() {
+        const group = layers.heart;
+        group.setAttribute("filter", "url(#softShadow)");
+        updateHeartTransform();
+
+        createSvgElement("path", {
+          d: [
+            "M408 188",
+            "C365 174 322 191 294 232",
+            "C268 270 268 319 279 365",
+            "C292 422 326 484 358 538",
+            "C370 558 378 579 382 598",
+            "C406 561 437 532 468 501",
+            "C506 463 525 416 529 367",
+            "C534 309 519 261 492 224",
+            "C470 195 442 181 408 188",
+            "Z"
+          ].join(" "),
+          fill: "url(#heartShine)",
+          stroke: "#793b44",
+          "stroke-width": 4
+        }, group);
+
+        createSvgElement("path", {
+          d: [
+            "M338 222",
+            "C304 231 290 270 298 331",
+            "C324 324 351 332 377 351",
+            "C381 294 373 248 338 222",
+            "Z"
+          ].join(" "),
+          fill: "#d98f95",
+          stroke: "#8f4953",
+          "stroke-width": 2.2,
+          opacity: 0.96
+        }, group);
+
+        createSvgElement("path", {
+          d: [
+            "M420 222",
+            "C461 224 492 259 500 316",
+            "C469 312 434 324 400 348",
+            "C399 290 403 244 420 222",
+            "Z"
+          ].join(" "),
+          fill: "#e7a198",
+          stroke: "#8f4953",
+          "stroke-width": 2.2,
+          opacity: 0.96
+        }, group);
+
+        createSvgElement("path", {
+          d: [
+            "M297 339",
+            "C308 406 343 479 381 548",
+            "C397 481 390 409 377 351",
+            "C350 331 319 327 297 339",
+            "Z"
+          ].join(" "),
+          fill: "#aa88ad",
+          stroke: "#68446d",
+          "stroke-width": 2.2,
+          opacity: 0.94
+        }, group);
+
+        createSvgElement("path", {
+          d: [
+            "M400 348",
+            "C443 323 479 324 505 340",
+            "C510 421 465 499 382 598",
+            "C386 513 394 421 400 348",
+            "Z"
+          ].join(" "),
+          fill: "#c85863",
+          stroke: "#793b44",
+          "stroke-width": 2.4,
+          opacity: 0.95
+        }, group);
+
+        createSvgElement("path", {
+          d: [
+            "M420 370",
+            "C451 348 478 350 489 370",
+            "C480 435 443 504 391 575",
+            "C397 504 406 422 420 370",
+            "Z"
+          ].join(" "),
+          fill: "#dc8587",
+          stroke: "#8f3541",
+          "stroke-width": 10,
+          opacity: 0.72
+        }, group);
+
+        createSvgElement("path", {
+          d: "M389 342 C398 403 391 501 382 586",
+          fill: "none",
+          stroke: "#6d2f38",
+          "stroke-width": 7,
+          "stroke-linecap": "round",
+          opacity: 0.88
+        }, group);
+
+        createSvgElement("path", {
+          d: "M326 232 C310 264 310 302 320 333",
+          fill: "none",
+          stroke: "#ffffff",
+          "stroke-width": 4,
+          "stroke-linecap": "round",
+          opacity: 0.32
+        }, group);
+
+        createSvgElement("path", {
+          d: "M442 238 C466 256 480 287 480 318",
+          fill: "none",
+          stroke: "#ffffff",
+          "stroke-width": 4,
+          "stroke-linecap": "round",
+          opacity: 0.28
+        }, group);
+
+        drawHeartLabel("right atrium", 327, 292);
+        drawHeartLabel("left atrium", 455, 292);
+        drawHeartLabel("right ventricle", 335, 432);
+        drawHeartLabel("left ventricle", 451, 438);
+
+        layers.heartAnnotation = createSvgElement("g", {
+          transform: heartTransform()
+        }, layers.labels);
+
+        createSvgElement("line", {
+          x1: 496,
+          y1: 470,
+          x2: 390,
+          y2: 444,
+          stroke: "#24383b",
+          "stroke-width": 2,
+          "stroke-dasharray": "5 5",
+          opacity: 0.8
+        }, layers.heartAnnotation);
+        createSvgElement("text", {
+          x: 506,
+          y: 475,
+          "font-size": 16,
+          "font-weight": 800,
+          fill: "#24383b",
+          class: "small-halo"
+        }, layers.heartAnnotation).textContent = "interventricular septum";
+
+      }
+
+      function drawHeartLabel(label, x, y) {
+        const words = label.split(" ");
+        words.forEach((word, index) => {
+          createSvgElement("text", {
+            x,
+            y: y + index * 17,
+            "text-anchor": "middle",
+            "font-size": 15,
+            "font-weight": 900,
+            fill: "#ffffff",
+            stroke: "rgba(78, 32, 42, 0.44)",
+            "stroke-width": 2,
+            "paint-order": "stroke",
+            "stroke-linejoin": "round"
+          }, layers.labels).textContent = word;
+        });
+      }
+
+      function drawStaticNotes() {
+        const noteGroup = layers.callouts;
+
+        createSvgElement("rect", {
+          x: 30,
+          y: 18,
+          width: 712,
+          height: 58,
+          rx: 8,
+          fill: "#ffffff",
+          stroke: "#d8e2e0",
+          "stroke-width": 1.5,
+          opacity: 0.96,
+          filter: "url(#tinyShadow)"
+        }, noteGroup);
+
+        noteGroup.phaseLabel = createSvgElement("text", {
+          x: 54,
+          y: 54,
+          "font-size": 22,
+          "font-weight": 900,
+          fill: "#1c2b2d"
+        }, noteGroup);
+
+        createSvgElement("rect", {
+          x: 770,
+          y: 456,
+          width: 470,
+          height: 30,
+          rx: 8,
+          fill: "#ffffff",
+          stroke: "#d8e2e0",
+          "stroke-width": 1.4,
+          opacity: 0.95
+        }, noteGroup);
+
+        createSvgElement("text", {
+          x: 790,
+          y: 476,
+          "font-size": 15,
+          "font-weight": 800,
+          fill: "#4b5d61"
+        }, noteGroup).textContent = "Each lead records the vector's shadow/projection along that lead axis.";
+
+        createSvgElement("rect", {
+          x: 34,
+          y: 660,
+          width: 700,
+          height: 44,
+          rx: 8,
+          fill: "rgba(255,255,255,0.86)",
+          stroke: "#d8e2e0",
+          "stroke-width": 1.2
+        }, noteGroup);
+
+        createSvgElement("text", {
+          x: 56,
+          y: 679,
+          "font-size": 16,
+          "font-weight": 900,
+          fill: "#24383b"
+        }, noteGroup).textContent = "Arrow = summed/net electrical vector of many cells, not electricity moving as a single point.";
+
+        createSvgElement("text", {
+          x: 56,
+          y: 698,
+          "font-size": 15,
+          "font-weight": 800,
+          fill: "#5d6d73"
+        }, noteGroup).textContent = "P, QRS, and T differ because atria, ventricles, and repolarizing tissue have different net directions and muscle mass.";
+      }
+
+      function calculateProjection(vector, lead) {
+        const scalar = dot(vector, lead.unit);
+        return {
+          scalar,
+          vector: scale(lead.unit, scalar),
+          category: projectionCategory(scalar)
+        };
+      }
+
+      function projectionCategory(value) {
+        const magnitude = Math.abs(value);
+        if (magnitude < 0.045) {
+          return "near baseline";
+        }
+        const direction = value >= 0 ? "positive" : "negative";
+        if (magnitude >= 0.82) {
+          return `large ${direction}`;
+        }
+        if (magnitude >= 0.34) {
+          return `medium ${direction}`;
+        }
+        return `small ${direction}`;
+      }
+
+      const conductionModes = {
+        normal: {
+          label: "Normal conduction",
+          summary: "Each P wave conducts to a QRS and T wave."
+        },
+        first: {
+          label: "1st degree heart block",
+          summary: "Prolonged PR interval; every P wave still conducts."
+        },
+        second: {
+          label: "2nd degree heart block",
+          summary: "Every third P wave is blocked: no following QRS/T."
+        },
+        third: {
+          label: "3rd degree heart block",
+          summary: "Complete AV block: atria and ventricles are independent."
+        }
+      };
+
+      function activeConductionMode() {
+        return state.displayMode === "einthoven" ? "normal" : state.conductionMode;
+      }
+
+      function positiveModulo(value, divisor) {
+        return ((value % divisor) + divisor) % divisor;
+      }
+
+      function nearestVentricularEvent(time) {
+        const mode = activeConductionMode();
+        if (mode === "third") {
+          const period = THIRD_DEGREE_VENTRICULAR_PERIOD;
+          const index = Math.round((time - 0.46) / period);
+          return { center: 0.46 + index * period, index };
+        }
+
+        const offset = mode === "first"
+          ? 0.5
+          : mode === "second"
+            ? 0.55
+            : 0.382;
+        const baseIndex = Math.floor(time);
+        let nearest = null;
+        for (let index = baseIndex - 2; index <= baseIndex + 2; index += 1) {
+          if (mode === "second" && positiveModulo(index, 3) === 2) {
+            continue;
+          }
+          const center = index + offset;
+          if (!nearest || Math.abs(time - center) < Math.abs(time - nearest.center)) {
+            nearest = { center, index };
+          }
+        }
+        return nearest;
+      }
+
+      function conductionActivityAt(time) {
+        const mode = activeConductionMode();
+        const atrialPeriod = mode === "third" ? THIRD_DEGREE_ATRIAL_PERIOD : 1;
+        const atrialIndex = Math.round((time - 0.18) / atrialPeriod);
+        const pCenter = 0.18 + atrialIndex * atrialPeriod;
+        const ventricular = nearestVentricularEvent(time);
+        const qrsCenter = ventricular.center;
+        const tCenter = qrsCenter + 0.338;
+        const atrialRepolCenter = pCenter + 0.32;
+        const pProgress = phaseProgress(time, pCenter - 0.07, pCenter + 0.075);
+        const qrsProgress = phaseProgress(time, qrsCenter - 0.062, qrsCenter + 0.098);
+        const tProgress = phaseProgress(time, tCenter - 0.12, tCenter + 0.14);
+        const atrialRepolProgress = phaseProgress(time, atrialRepolCenter - 0.1, atrialRepolCenter + 0.12);
+        const pActive = Math.abs(time - pCenter) < 0.09;
+        const qrsActive = time >= qrsCenter - 0.062 && time < qrsCenter + 0.098;
+        const tActive = Math.abs(time - tCenter) < 0.16;
+        const atrialRepolActive = mode === "third" && Math.abs(time - atrialRepolCenter) < 0.13;
+        const droppedBeat = mode === "second" && positiveModulo(atrialIndex, 3) === 2;
+        const expectedQrs = atrialIndex + (mode === "first" ? 0.5 : mode === "second" ? 0.55 : 0.382);
+        const avDelayActive = mode === "third"
+          ? !pActive && !qrsActive && !tActive
+          : time > pCenter + 0.07 && time < (droppedBeat ? pCenter + 0.58 : expectedQrs - 0.05);
+
+        return {
+          time,
+          pCenter,
+          qrsCenter,
+          tCenter,
+          atrialRepolCenter,
+          pProgress,
+          qrsProgress,
+          tProgress,
+          atrialRepolProgress,
+          pActive,
+          qrsActive,
+          tActive,
+          atrialRepolActive,
+          droppedBeat,
+          avDelayActive
+        };
+      }
+
+      function heartVectorAt(t, activity = conductionActivityAt(t)) {
+        const mode = activeConductionMode();
+        const { pProgress, qrsProgress, tProgress, atrialRepolProgress } = activity;
+        const pDirection = normalize({ x: 0.96, y: -0.1 });
+        const atrialRepolDirection = normalize({ x: -0.96, y: 0.1 });
+        const mainQrsDirection = normalize({ x: -0.47, y: 0.88 });
+        const earlyQrsDirection = normalize({ x: -0.28, y: 0.96 });
+        const lateQrsDirection = normalize({ x: 0.52, y: -0.85 });
+        const tDirection = normalize({ x: -0.27, y: 0.96 });
+        const pOrigin = interpolatePoint({ x: 330, y: 306 }, { x: 462, y: 294 }, pProgress);
+        const atrialRepolOrigin = interpolatePoint({ x: 462, y: 294 }, { x: 330, y: 306 }, atrialRepolProgress);
+        const earlyQrsOrigin = mode === "third"
+          ? interpolatePoint({ x: 392, y: 430 }, { x: 380, y: 478 }, phaseProgress(qrsProgress, 0, 0.32))
+          : interpolatePoint({ x: 404, y: 330 }, { x: 390, y: 404 }, phaseProgress(qrsProgress, 0, 0.32));
+        const mainQrsOrigin = interpolatePoint({ x: 392, y: 404 }, { x: 354, y: 542 }, phaseProgress(qrsProgress, 0.22, 0.7));
+        const lateQrsOrigin = interpolatePoint({ x: 392, y: 514 }, { x: 478, y: 424 }, phaseProgress(qrsProgress, 0.65, 1));
+        const tOrigin = interpolatePoint({ x: 470, y: 520 }, { x: 374, y: 432 }, tProgress);
+
+        const fallbackOrigin = activity.avDelayActive
+          ? { x: 406, y: 364 }
+          : vectorOrigin;
+
+        const currentVector = activeVectorFrom([
+          {
+            direction: pDirection,
+            origin: pOrigin,
+            amount: 0.33 * gaussian(t, activity.pCenter, 0.035)
+          },
+          {
+            direction: atrialRepolDirection,
+            origin: atrialRepolOrigin,
+            amount: activity.atrialRepolActive
+              ? 0.11 * gaussian(t, activity.atrialRepolCenter, 0.055)
+              : 0
+          },
+          {
+            direction: earlyQrsDirection,
+            origin: earlyQrsOrigin,
+            amount: 0.28 * gaussian(t, activity.qrsCenter - 0.047, 0.010)
+          },
+          {
+            direction: mainQrsDirection,
+            origin: mainQrsOrigin,
+            amount: 1.18 * gaussian(t, activity.qrsCenter, 0.018)
+          },
+          {
+            direction: lateQrsDirection,
+            origin: lateQrsOrigin,
+            amount: 0.36 * gaussian(t, activity.qrsCenter + 0.044, 0.016)
+          },
+          {
+            direction: tDirection,
+            origin: tOrigin,
+            amount: 0.46 * gaussian(t, activity.tCenter, 0.068)
+          }
+        ], fallbackOrigin);
+        const rotatedVector = rotateHeartVector(currentVector);
+        return {
+          ...currentVector,
+          ...rotatedVector,
+          origin: rotateHeartPoint(currentVector.origin)
+        };
+      }
+
+      function phaseForActivity(activity) {
+        const mode = activeConductionMode();
+        if (activity.pActive && activity.qrsActive) {
+          return {
+            name: "Independent atrial and ventricular activity",
+            vectorLabel: "Atrial + ventricular vectors",
+            callout: "In complete heart block, atrial and ventricular rhythms can overlap without conducting."
+          };
+        }
+        if (activity.qrsActive) {
+          return {
+            name: "QRS complex",
+            vectorLabel: mode === "third" ? "Ventricular escape depolarization" : "Ventricular depolarization",
+            callout: mode === "third"
+              ? "The ventricles depolarize from an independent, slower escape rhythm."
+              : "A conducted atrial impulse activates the ventricles."
+          };
+        }
+        if (activity.pActive) {
+          return {
+            name: "P wave",
+            vectorLabel: "Atrial depolarization",
+            callout: mode === "third"
+              ? "Atrial depolarization continues independently of ventricular activity."
+              : "The atrial impulse approaches the AV node."
+          };
+        }
+        if (activity.tActive) {
+          return {
+            name: "T wave",
+            vectorLabel: "Ventricular repolarization",
+            callout: "Ventricular repolarization follows each ventricular depolarization."
+          };
+        }
+        if (activity.atrialRepolActive) {
+          return {
+            name: "Atrial repolarization",
+            vectorLabel: "Atrial repolarization",
+            callout: "The atria repolarize independently while AV conduction remains blocked."
+          };
+        }
+        if (activity.avDelayActive) {
+          return {
+            name: "AV node",
+            vectorLabel: activity.droppedBeat || mode === "third" ? "AV conduction blocked" : "AV node delay",
+            callout: conductionModes[mode].summary
+          };
+        }
+        return {
+          name: "Resting baseline",
+          vectorLabel: "Resting baseline",
+          callout: conductionModes[mode].summary
+        };
+      }
+
+      function drawWavefronts(activity) {
+        const group = layers.wavefronts;
+        clearGroup(group);
+
+        if (activity.pActive) {
+          const progress = activity.pProgress;
+          const front = interpolatePoint({ x: 326, y: 306 }, { x: 462, y: 296 }, progress);
+          const activated = interpolatePoint({ x: 326, y: 306 }, front, 0.5);
+          drawWaveEllipse(group, activated, 36 + progress * 54, 42, -5, colors.depol, 0.16);
+          drawWaveEllipse(group, front, 24, 56, -8, colors.depol, 0.56);
+        }
+
+        if (activity.qrsActive) {
+          const progress = activity.qrsProgress;
+          const wavefrontPoint = activeConductionMode() === "third"
+            ? thirdDegreeQrsWavefrontPoint
+            : qrsWavefrontPoint;
+          const front = wavefrontPoint(progress);
+          const trail = wavefrontPoint(Math.max(0, progress - 0.18));
+          drawWaveEllipse(group, trail, 42, 74, -14, colors.depol, 0.16);
+          drawWaveEllipse(group, front, 30 + progress * 12, 68, -16, colors.depol, 0.58);
+        }
+
+        if (activity.tActive) {
+          const progress = activity.tProgress;
+          const front = interpolatePoint({ x: 470, y: 520 }, { x: 374, y: 432 }, progress);
+          const trail = interpolatePoint({ x: 470, y: 520 }, front, 0.55);
+          drawWaveEllipse(group, trail, 58, 78, -28, colors.repol, 0.16);
+          drawWaveEllipse(group, front, 42, 80, -28, colors.repol, 0.5);
+        }
+
+        if (activity.atrialRepolActive) {
+          const progress = activity.atrialRepolProgress;
+          const front = interpolatePoint({ x: 462, y: 294 }, { x: 330, y: 306 }, progress);
+          const trail = interpolatePoint({ x: 462, y: 294 }, front, 0.5);
+          drawWaveEllipse(group, trail, 34 + progress * 34, 40, -5, colors.repol, 0.14);
+          drawWaveEllipse(group, front, 22, 50, -5, colors.repol, 0.46);
+        }
+
+        if (activity.avDelayActive || activeConductionMode() === "third") {
+          const blocked = activity.droppedBeat || activeConductionMode() === "third";
+          createSvgElement("circle", {
+            cx: 404,
+            cy: 330,
+            r: blocked ? 18 : 12,
+            fill: blocked ? "rgba(190,45,45,0.12)" : "rgba(247,183,51,0.18)",
+            stroke: blocked ? "#bd3434" : colors.depol,
+            "stroke-width": blocked ? 5 : 4,
+            "stroke-dasharray": blocked ? "6 4" : "none"
+          }, group);
+        }
+      }
+
+      function qrsWavefrontPoint(progress) {
+        if (progress < 0.3) {
+          return interpolatePoint({ x: 404, y: 330 }, { x: 390, y: 430 }, progress / 0.3);
+        }
+        if (progress < 0.72) {
+          return interpolatePoint({ x: 392, y: 430 }, { x: 352, y: 548 }, (progress - 0.3) / 0.42);
+        }
+        return interpolatePoint({ x: 370, y: 522 }, { x: 478, y: 424 }, (progress - 0.72) / 0.28);
+      }
+
+      function thirdDegreeQrsWavefrontPoint(progress) {
+        if (progress < 0.68) {
+          return interpolatePoint({ x: 392, y: 430 }, { x: 352, y: 548 }, progress / 0.68);
+        }
+        return interpolatePoint({ x: 370, y: 522 }, { x: 478, y: 424 }, (progress - 0.68) / 0.32);
+      }
+
+      function drawWaveEllipse(parent, center, rx, ry, rotation, color, opacity) {
+        createSvgElement("ellipse", {
+          cx: center.x,
+          cy: center.y,
+          rx,
+          ry,
+          transform: `rotate(${rotation} ${center.x} ${center.y})`,
+          fill: color,
+          stroke: color,
+          "stroke-width": 4,
+          opacity
+        }, parent);
+
+        createSvgElement("ellipse", {
+          cx: center.x,
+          cy: center.y,
+          rx: Math.max(8, rx * 0.35),
+          ry,
+          transform: `rotate(${rotation} ${center.x} ${center.y})`,
+          fill: "none",
+          stroke: "#ffffff",
+          "stroke-width": 3,
+          opacity: opacity + 0.14
+        }, parent);
+      }
+
+      function drawVector(currentVector, phase) {
+        const group = layers.vector;
+        clearGroup(group);
+        const origin = currentVector.origin || vectorOrigin;
+
+        createSvgElement("circle", {
+          cx: origin.x,
+          cy: origin.y,
+          r: 7,
+          fill: "#ffffff",
+          stroke: colors.vector,
+          "stroke-width": 3
+        }, group);
+
+        if (currentVector.magnitude < 0.035) {
+          createSvgElement("circle", {
+            cx: origin.x,
+            cy: origin.y,
+            r: 16,
+            fill: colors.vector,
+            opacity: 0.15
+          }, group);
+
+          drawVectorLabel(group, phase.vectorLabel, origin);
+          return;
+        }
+
+        const tip = add(origin, scale(currentVector, vectorScale));
+        createSvgElement("line", {
+          x1: origin.x,
+          y1: origin.y,
+          x2: tip.x,
+          y2: tip.y,
+          stroke: colors.vector,
+          "stroke-width": 8,
+          "stroke-linecap": "round"
+        }, group);
+        drawArrowHead(group, origin, tip, colors.vector, 22, 1);
+
+        drawVectorLabel(group, phase.vectorLabel, origin);
+      }
+
+      function drawVectorLabel(parent, label, origin) {
+        if (!label) {
+          return;
+        }
+
+        const width = Math.max(130, Math.min(270, label.length * 9.8 + 24));
+        const x = clamp(origin.x + 30, 210, 690 - width);
+        const y = clamp(origin.y - 48, 118, 588);
+
+        createSvgElement("rect", {
+          x,
+          y,
+          width,
+          height: 34,
+          rx: 8,
+          fill: "rgba(255, 255, 255, 0.92)",
+          stroke: colors.vector,
+          "stroke-width": 1.5,
+          opacity: 0.96
+        }, parent);
+
+        createSvgElement("text", {
+          x: x + 12,
+          y: y + 23,
+          "font-size": 18,
+          "font-weight": 900,
+          fill: colors.vector
+        }, parent).textContent = label;
+      }
+
+      function drawProjections(currentVector) {
+        const group = layers.projections;
+        clearGroup(group);
+
+        if (!state.showProjections || currentVector.magnitude < 0.045) {
+          return;
+        }
+
+        const origin = currentVector.origin || vectorOrigin;
+        const vectorTip = add(origin, scale(currentVector, vectorScale));
+
+        leads.forEach((lead, index) => {
+          const projection = calculateProjection(currentVector, lead);
+          const projectedPoint = add(origin, scale(projection.vector, vectorScale));
+          const guideStart = add(origin, scale(lead.unit, -118 - index * 2));
+          const guideEnd = add(origin, scale(lead.unit, 118 + index * 2));
+
+          createSvgElement("line", {
+            x1: guideStart.x,
+            y1: guideStart.y,
+            x2: guideEnd.x,
+            y2: guideEnd.y,
+            stroke: lead.color,
+            "stroke-width": 2,
+            "stroke-dasharray": "7 7",
+            opacity: 0.28
+          }, group);
+
+          createSvgElement("line", {
+            x1: origin.x,
+            y1: origin.y,
+            x2: projectedPoint.x,
+            y2: projectedPoint.y,
+            stroke: lead.color,
+            "stroke-width": 6,
+            "stroke-linecap": "round",
+            opacity: 0.58
+          }, group);
+
+          createSvgElement("line", {
+            x1: vectorTip.x,
+            y1: vectorTip.y,
+            x2: projectedPoint.x,
+            y2: projectedPoint.y,
+            stroke: lead.color,
+            "stroke-width": 2.5,
+            "stroke-dasharray": "5 6",
+            opacity: 0.65
+          }, group);
+
+          createSvgElement("circle", {
+            cx: projectedPoint.x,
+            cy: projectedPoint.y,
+            r: 5.5,
+            fill: "#ffffff",
+            stroke: lead.color,
+            "stroke-width": 2
+          }, group);
+        });
+      }
+
+      function drawECGGraph(lead) {
+        const graph = lead.graph;
+        const group = createSvgElement("g", { id: `graph-${lead.key}` }, layers.graphs);
+        const isRhythmStrip = state.displayMode === "avBlock" && lead.key === "II";
+        const pad = isRhythmStrip
+          ? { left: 30, right: 18, top: 72, bottom: 54 }
+          : { left: 48, right: 18, top: 26, bottom: 34 };
+        const inner = {
+          x: graph.x + pad.left,
+          y: graph.y + pad.top,
+          w: graph.w - pad.left - pad.right,
+          h: graph.h - pad.top - pad.bottom
+        };
+        const midY = inner.y + inner.h / 2;
+
+        createSvgElement("rect", {
+          x: graph.x,
+          y: graph.y,
+          width: graph.w,
+          height: graph.h,
+          rx: 8,
+          fill: "#ffffff",
+          stroke: "#cfdbda",
+          "stroke-width": 1.5,
+          filter: "url(#tinyShadow)"
+        }, group);
+
+        createSvgElement("rect", {
+          x: inner.x,
+          y: inner.y,
+          width: inner.w,
+          height: inner.h,
+          fill: "url(#gridPattern)",
+          stroke: "#e2e9e8",
+          "stroke-width": 1
+        }, group);
+
+        createSvgElement("line", {
+          x1: inner.x,
+          y1: midY,
+          x2: inner.x + inner.w,
+          y2: midY,
+          stroke: colors.baseline,
+          "stroke-width": 2,
+          opacity: 0.75
+        }, group);
+
+        createSvgElement("text", {
+          x: graph.x + 16,
+          y: graph.y + 26,
+          "font-size": 22,
+          "font-weight": 900,
+          fill: lead.color
+        }, group).textContent = lead.name;
+
+        const badgeLabel = createSvgElement("text", {
+          x: graph.x + graph.w - 18,
+          y: graph.y + 25,
+          "text-anchor": "end",
+          "font-size": 13,
+          "font-weight": 900,
+          fill: "#5d6d73"
+        }, group);
+        badgeLabel.textContent = isRhythmStrip ? "Continuous rhythm strip" : lead.badge;
+
+        const modeSummary = createSvgElement("text", {
+          x: graph.x + 16,
+          y: graph.y + 52,
+          "font-size": 15,
+          "font-weight": 800,
+          fill: "#405155"
+        }, group);
+
+        createSvgElement("text", {
+          x: inner.x + 8,
+          y: midY - 6,
+          "font-size": 12,
+          "font-weight": 800,
+          fill: "#6b777c"
+        }, group).textContent = "baseline";
+
+        const waveLabels = [
+          { label: "P wave", t: 0.18, y: inner.y + 16 },
+          { label: "QRS", t: 0.382, y: inner.y + 16 },
+          { label: "T wave", t: 0.72, y: inner.y + 16 }
+        ];
+
+        waveLabels.forEach((wave) => {
+          if (isRhythmStrip) {
+            return;
+          }
+          createSvgElement("text", {
+            x: inner.x + wave.t * inner.w,
+            y: wave.y,
+            "text-anchor": "middle",
+            "font-size": 13,
+            "font-weight": 900,
+            fill: "#405155"
+          }, group).textContent = wave.label;
+        });
+
+        const fullTrace = createSvgElement("path", {
+          fill: "none",
+          stroke: "#1c2b2d",
+          "stroke-width": 2.4,
+          opacity: 0.18,
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round"
+        }, group);
+
+        const revealedTrace = createSvgElement("path", {
+          fill: "none",
+          stroke: "#172427",
+          "stroke-width": 4,
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round"
+        }, group);
+
+        const cursor = createSvgElement("line", {
+          x1: inner.x,
+          y1: inner.y - 4,
+          x2: inner.x,
+          y2: inner.y + inner.h + 4,
+          stroke: lead.color,
+          "stroke-width": 3,
+          opacity: 0.9
+        }, group);
+
+        const projectionLabel = createSvgElement("text", {
+          x: graph.x + 16,
+          y: graph.y + graph.h - 12,
+          "font-size": 15,
+          "font-weight": 900,
+          fill: lead.color
+        }, group);
+
+        lead.graphRefs = {
+          group,
+          inner,
+          midY,
+          fullTrace,
+          revealedTrace,
+          cursor,
+          projectionLabel,
+          badgeLabel,
+          modeSummary
+        };
+      }
+
+      function ecgYForTime(lead, t) {
+        const refs = lead.graphRefs;
+        const value = calculateProjection(heartVectorAt(t), lead).scalar;
+        const scalePx = state.displayMode === "avBlock" ? 72 : 62;
+        return refs.midY - value * scalePx;
+      }
+
+      function makeRhythmPath(lead, now) {
+        const refs = lead.graphRefs;
+        const windowLength = 5.2;
+        const start = now - windowLength;
+        const sampleCount = 620;
+        const points = [];
+        for (let index = 0; index <= sampleCount; index += 1) {
+          const fraction = index / sampleCount;
+          const sampleTime = start + fraction * windowLength;
+          const x = refs.inner.x + fraction * refs.inner.w;
+          const y = clamp(ecgYForTime(lead, sampleTime), refs.inner.y + 2, refs.inner.y + refs.inner.h - 2);
+          points.push(`${index === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`);
+        }
+        return points.join(" ");
+      }
+
+      function makeECGPath(lead, tEnd) {
+        const refs = lead.graphRefs;
+        const sampleCount = Math.max(2, Math.ceil(260 * Math.max(tEnd, 0.01)));
+        const points = [];
+        for (let index = 0; index <= sampleCount; index += 1) {
+          const t = (index / sampleCount) * tEnd;
+          const x = refs.inner.x + t * refs.inner.w;
+          const y = clamp(ecgYForTime(lead, t), refs.inner.y + 2, refs.inner.y + refs.inner.h - 2);
+          points.push(`${index === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`);
+        }
+        return points.join(" ");
+      }
+
+      function updateECGGraph(lead, t, currentVector) {
+        const refs = lead.graphRefs;
+        const isRhythmStrip = state.displayMode === "avBlock";
+        const cycleTime = positiveModulo(t, 1);
+        refs.fullTrace.setAttribute("d", isRhythmStrip ? "" : makeECGPath(lead, 1));
+        refs.revealedTrace.setAttribute("d", isRhythmStrip
+          ? makeRhythmPath(lead, t)
+          : makeECGPath(lead, cycleTime));
+
+        const cursorX = isRhythmStrip
+          ? refs.inner.x + refs.inner.w
+          : refs.inner.x + cycleTime * refs.inner.w;
+        setAttributes(refs.cursor, {
+          x1: cursorX,
+          x2: cursorX
+        });
+
+        const projection = calculateProjection(currentVector, lead);
+        refs.projectionLabel.textContent = state.showProjections
+          ? `Projection on ${lead.name}: ${projection.category}`
+          : "";
+        refs.modeSummary.textContent = isRhythmStrip
+          ? conductionModes[state.conductionMode].summary
+          : "";
+      }
+
+      function updateLeadDisplay() {
+        const rhythmMode = state.displayMode === "avBlock";
+        leads.forEach((lead) => {
+          lead.graphRefs.group.setAttribute("display", !rhythmMode || lead.key === "II" ? "inline" : "none");
+        });
+      }
+
+      function rebuildECGGraphs() {
+        clearGroup(layers.graphs);
+        leads[1].graph = state.displayMode === "avBlock"
+          ? { ...rhythmLeadIIGraph }
+          : { ...einthovenLeadIIGraph };
+        leads.forEach((lead) => drawECGGraph(lead));
+        updateLeadDisplay();
+      }
+
+      function updateAnimation(t) {
+        const activityTime = state.displayMode === "einthoven" ? positiveModulo(t, 1) : t;
+        const activity = conductionActivityAt(activityTime);
+        const currentVector = heartVectorAt(activityTime, activity);
+        const phase = phaseForActivity(activity);
+
+        drawWavefronts(activity);
+        drawProjections(currentVector);
+        drawVector(currentVector, phase);
+
+        if (state.displayMode === "avBlock") {
+          updateECGGraph(leads[1], t, currentVector);
+        } else {
+          leads.forEach((lead) => updateECGGraph(lead, activityTime, currentVector));
+        }
+
+        layers.callouts.phaseLabel.textContent = phase.callout;
+      }
+
+      function animationLoop(timestamp) {
+        if (state.lastFrame === null) {
+          state.lastFrame = timestamp;
+        }
+
+        const elapsed = timestamp - state.lastFrame;
+        state.lastFrame = timestamp;
+
+        if (state.playing) {
+          state.time += (elapsed * state.speed) / CYCLE_MS;
+          updateAnimation(state.time);
+        }
+
+        window.requestAnimationFrame(animationLoop);
+      }
+
+      playPauseButton.addEventListener("click", () => {
+        state.playing = !state.playing;
+        playPauseButton.textContent = state.playing ? "Pause" : "Play";
+        playPauseButton.setAttribute("aria-pressed", String(state.playing));
+      });
+
+      resetButton.addEventListener("click", () => {
+        state.time = 0;
+        state.playing = false;
+        state.heartRotation = DEFAULT_HEART_ROTATION;
+        rotationSlider.value = String(DEFAULT_HEART_ROTATION);
+        rotationValue.textContent = `${DEFAULT_HEART_ROTATION}\u00B0`;
+        updateHeartTransform();
+        playPauseButton.textContent = "Play";
+        playPauseButton.setAttribute("aria-pressed", "false");
+        updateAnimation(state.time);
+      });
+
+      speedSlider.addEventListener("input", () => {
+        const displayedSpeed = Number(speedSlider.value);
+        state.speed = displayedSpeed * SPEED_PLAYBACK_SCALE;
+        speedValue.textContent = `${displayedSpeed.toFixed(2)}x`;
+      });
+
+      rotationSlider.addEventListener("input", () => {
+        state.heartRotation = Number(rotationSlider.value);
+        rotationValue.textContent = `${state.heartRotation}\u00B0`;
+        updateHeartTransform();
+        updateAnimation(state.time);
+      });
+
+      displayModeSelect.addEventListener("change", () => {
+        state.displayMode = displayModeSelect.value;
+        state.time = 0;
+        conductionControl.hidden = state.displayMode !== "avBlock";
+        rebuildECGGraphs();
+        updateAnimation(state.time);
+      });
+
+      conductionSelect.addEventListener("change", () => {
+        state.conductionMode = conductionSelect.value;
+        state.time = 0;
+        updateAnimation(state.time);
+      });
+
+      showProjectionToggle.addEventListener("change", () => {
+        state.showProjections = showProjectionToggle.checked;
+        updateAnimation(state.time);
+      });
+
+      initializeScene();
+      window.requestAnimationFrame(animationLoop);
+    })();
+  </script>
+</body>
+</html>

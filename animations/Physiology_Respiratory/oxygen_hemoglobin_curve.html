@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Oxygen-Hemoglobin Dissociation Curve</title>
+  <style>
+.animation-credit {
+  width: 100%;
+  text-align: center;
+  font-weight: bold;
+  font-size: 16px;
+  padding: 8px 0;
+  background: #f3f4f6;
+  color: #111827;
+  border-bottom: 1px solid #d1d5db;
+  box-sizing: border-box;
+}
+    :root {
+      --bg: #f7f9fc;
+      --panel: #ffffff;
+      --ink: #172033;
+      --muted: #5d6b82;
+      --line: #d8e0eb;
+      --curve: #3b4cc0;
+      --lung: #0d8f96;
+      --lung-soft: #e0f7f6;
+      --tissue: #c84b31;
+      --tissue-soft: #fff0eb;
+      --accent: #345c9c;
+      --shadow: 0 18px 45px rgba(36, 49, 74, 0.12);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(180deg, #eef5fb 0%, var(--bg) 280px),
+        var(--bg);
+      color: var(--ink);
+      font-family: "Segoe UI", Arial, sans-serif;
+      line-height: 1.45;
+    }
+
+    main {
+      width: min(1440px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 14px 0 18px;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.65rem, 2.4vw, 2.45rem);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 760px;
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .model-note {
+      width: 100%;
+      margin: 8px 0 0;
+      padding: 6px 2px 0;
+      border-top: 1px solid #dce5f1;
+      color: #31415c;
+      font-size: 0.86rem;
+    }
+
+    .app-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .graph-card,
+    .side-panel,
+    .hb-panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .graph-card {
+      padding: 12px 16px 14px;
+    }
+
+    .graph-topline {
+      display: flex;
+      justify-content: flex-end;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .section-title {
+      margin: 0;
+      font-size: 1.08rem;
+      font-weight: 750;
+    }
+
+    .shift-indicator {
+      min-width: 166px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: #eef3fb;
+      color: #243552;
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.88rem;
+      border: 1px solid #d3deed;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      width: 100%;
+      height: min(58vh, 560px);
+      min-height: 390px;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border-radius: 6px;
+      background: #fbfdff;
+    }
+
+    .side-panel {
+      padding: 14px;
+    }
+
+    .controls {
+      display: grid;
+      gap: 10px;
+    }
+
+    .control {
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e7edf5;
+    }
+
+    .control:last-of-type {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .control-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+      margin-bottom: 4px;
+    }
+
+    label {
+      font-weight: 740;
+      color: #243149;
+    }
+
+    .value {
+      color: #263a5c;
+      font-variant-numeric: tabular-nums;
+      font-weight: 780;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .hint {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .summary {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid #dfe7f1;
+    }
+
+    .summary-grid {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .metric {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: baseline;
+      padding: 8px 0;
+      border-bottom: 1px solid #edf1f6;
+    }
+
+    .metric:last-child {
+      border-bottom: 0;
+    }
+
+    .metric span:first-child {
+      color: #48576d;
+      font-size: 0.93rem;
+    }
+
+    .metric strong {
+      font-size: 0.98rem;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .released strong {
+      color: #8c3524;
+      font-size: 1.08rem;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 14px;
+      border: 0;
+      border-radius: 7px;
+      padding: 11px 14px;
+      background: #243552;
+      color: white;
+      font-size: 0.98rem;
+      font-weight: 760;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #18263d;
+    }
+
+    button:focus-visible,
+    input:focus-visible {
+      outline: 3px solid rgba(13, 143, 150, 0.32);
+      outline-offset: 2px;
+    }
+
+    .hb-section {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .hb-panel {
+      padding: 14px;
+      overflow: hidden;
+    }
+
+    .hb-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .hb-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      font-size: 1.06rem;
+    }
+
+    .swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .swatch.lung {
+      background: var(--lung);
+    }
+
+    .swatch.tissue {
+      background: var(--tissue);
+    }
+
+    .occupied-label {
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .hb-grid {
+      display: grid;
+      grid-template-columns: repeat(10, minmax(28px, 1fr));
+      gap: 8px;
+      padding: 10px;
+      border-radius: 7px;
+      background: #f8fbff;
+      border: 1px solid #e2eaf4;
+    }
+
+    .hb-icon {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1.12 / 1;
+      min-height: 25px;
+    }
+
+    .site {
+      position: absolute;
+      width: 45%;
+      height: 45%;
+      border-radius: 50%;
+      border: 2px solid #aab6c8;
+      background: #ffffff;
+      transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+    }
+
+    .site:nth-child(1) {
+      top: 5%;
+      left: 9%;
+    }
+
+    .site:nth-child(2) {
+      top: 5%;
+      right: 9%;
+    }
+
+    .site:nth-child(3) {
+      bottom: 5%;
+      left: 9%;
+    }
+
+    .site:nth-child(4) {
+      right: 9%;
+      bottom: 5%;
+    }
+
+    .site.bound {
+      border-color: color-mix(in srgb, var(--bind-color), #1e2c45 12%);
+      background: var(--bind-color);
+      transform: scale(1.04);
+    }
+
+    .site.empty {
+      background: #ffffff;
+    }
+
+    .hb-panel[data-kind="lung"] {
+      border-top: 5px solid var(--lung);
+    }
+
+    .hb-panel[data-kind="tissue"] {
+      border-top: 5px solid var(--tissue);
+    }
+
+    .hb-panel[data-kind="lung"] .hb-grid {
+      background: var(--lung-soft);
+    }
+
+    .hb-panel[data-kind="tissue"] .hb-grid {
+      background: var(--tissue-soft);
+    }
+
+    @supports not (color: color-mix(in srgb, #000, #fff)) {
+      .site.bound {
+        border-color: #34445f;
+      }
+    }
+
+    @media (max-width: 1120px) {
+      header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .app-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .side-panel {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(300px, 0.72fr);
+        gap: 14px;
+      }
+
+      .summary {
+        margin-top: 0;
+        padding-top: 0;
+        border-top: 0;
+        border-left: 1px solid #dfe7f1;
+        padding-left: 18px;
+      }
+    }
+
+    @media (max-width: 820px) {
+      main {
+        width: min(100vw - 20px, 720px);
+        padding-top: 10px;
+      }
+
+      .canvas-wrap {
+        min-height: 360px;
+        height: 430px;
+      }
+
+      .hb-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .side-panel,
+      .hb-section {
+        grid-template-columns: 1fr;
+      }
+
+      .summary {
+        border-left: 0;
+        border-top: 1px solid #dfe7f1;
+        padding-left: 0;
+        padding-top: 16px;
+      }
+
+      .hb-grid {
+        grid-template-columns: repeat(5, minmax(34px, 1fr));
+      }
+    }
+
+    @media (max-width: 520px) {
+      .graph-card,
+      .side-panel,
+      .hb-panel {
+        padding: 12px;
+      }
+
+      .canvas-wrap {
+        min-height: 340px;
+        height: 390px;
+      }
+
+      .metric {
+        grid-template-columns: 1fr;
+        gap: 2px;
+      }
+
+      .metric strong {
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="animation-credit">
+  Animation Prompted by Jerred Seveyka for his biology class
+</div>
+  <main>
+    <header>
+      <div>
+        <h1>Oxygen-Hemoglobin Dissociation Curve</h1>
+        <p class="subtitle">Explore how PO2, pH, CO2, and hemoglobin concentration change saturation and oxygen content in human blood.</p>
+      </div>
+    </header>
+
+    <div class="app-grid">
+      <section class="graph-card" aria-label="Oxygen hemoglobin dissociation graph">
+        <div class="graph-topline">
+          <div class="shift-indicator" id="shiftIndicator">Normal affinity</div>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="curveCanvas" aria-label="Graph of PO2 versus hemoglobin saturation and oxygen content"></canvas>
+        </div>
+
+        <div class="hb-section">
+          <section class="hb-panel" data-kind="lung" aria-label="Lung hemoglobin oxygen occupancy">
+            <div class="hb-head">
+              <h2 class="hb-title"><span class="swatch lung"></span>Lungs</h2>
+              <div class="occupied-label" id="lungOccupied">O2 binding sites occupied: --%</div>
+            </div>
+            <div class="hb-grid" id="lungHbGrid" aria-hidden="true"></div>
+          </section>
+
+          <section class="hb-panel" data-kind="tissue" aria-label="Tissue hemoglobin oxygen occupancy">
+            <div class="hb-head">
+              <h2 class="hb-title"><span class="swatch tissue"></span>Tissues</h2>
+              <div class="occupied-label" id="tissueOccupied">O2 binding sites occupied: --%</div>
+            </div>
+            <div class="hb-grid" id="tissueHbGrid" aria-hidden="true"></div>
+          </section>
+        </div>
+      </section>
+
+      <aside class="side-panel">
+        <section class="controls" aria-label="Simulation controls">
+          <h2 class="section-title">Controls</h2>
+
+          <div class="control">
+            <div class="control-head">
+              <label for="lungPO2">Lung PO2</label>
+              <span class="value" id="lungPO2Value">100 mmHg</span>
+            </div>
+            <input id="lungPO2" type="range" min="60" max="110" step="1" value="100">
+          </div>
+
+          <div class="control">
+            <div class="control-head">
+              <label for="tissuePO2">Tissue PO2</label>
+              <span class="value" id="tissuePO2Value">40 mmHg</span>
+            </div>
+            <input id="tissuePO2" type="range" min="10" max="60" step="1" value="40">
+          </div>
+
+          <div class="control">
+            <div class="control-head">
+              <label for="bloodPH">Blood pH</label>
+              <span class="value" id="bloodPHValue">7.40</span>
+            </div>
+            <input id="bloodPH" type="range" min="7.20" max="7.60" step="0.01" value="7.40">
+            <p class="hint">Lower pH = right shift = lower Hb affinity for O2.</p>
+          </div>
+
+          <div class="control">
+            <div class="control-head">
+              <label for="bloodCO2">Blood CO2 / PCO2</label>
+              <span class="value" id="bloodCO2Value">40 mmHg</span>
+            </div>
+            <input id="bloodCO2" type="range" min="20" max="70" step="1" value="40">
+            <p class="hint">Higher CO2 = right shift = lower Hb affinity for O2.</p>
+          </div>
+
+          <div class="control">
+            <div class="control-head">
+              <label for="hemoglobin">Hemoglobin</label>
+              <span class="value" id="hemoglobinValue">15.0 g/dL</span>
+            </div>
+            <input id="hemoglobin" type="range" min="6" max="20" step="0.1" value="15">
+            <p class="hint">Changing hemoglobin changes oxygen-carrying capacity, not the percent saturation curve.</p>
+          </div>
+        </section>
+
+        <section class="summary" aria-label="Current simulation summary">
+          <h2 class="section-title">Summary</h2>
+          <div class="summary-grid">
+            <div class="metric"><span>Lung PO2</span><strong id="summaryLungPO2">--</strong></div>
+            <div class="metric"><span>Tissue PO2</span><strong id="summaryTissuePO2">--</strong></div>
+            <div class="metric"><span>Lung Hb saturation</span><strong id="summaryLungSat">--</strong></div>
+            <div class="metric"><span>Tissue Hb saturation</span><strong id="summaryTissueSat">--</strong></div>
+            <div class="metric"><span>Oxygen content in lungs</span><strong id="summaryLungContent">--</strong></div>
+            <div class="metric"><span>Oxygen content in tissues</span><strong id="summaryTissueContent">--</strong></div>
+            <div class="metric released"><span>Oxygen released to tissues</span><strong id="summaryReleased">--</strong></div>
+          </div>
+          <button id="resetButton" type="button">Reset</button>
+        </section>
+      </aside>
+    </div>
+    <p class="model-note">* Simplified educational model: assumes normal temperature and normal 2,3-BPG. pH and CO2 shift affinity; they do not change the number of hemoglobin molecules.</p>
+  </main>
+
+  <script>
+    const NORMAL_P50 = 26.6;
+    const HILL_N = 2.7;
+    const LUNG_COLOR = "#0d8f96";
+    const TISSUE_COLOR = "#c84b31";
+    const CURVE_COLOR = "#3b4cc0";
+    const BASELINE_CURVE_COLOR = "#6f7d95";
+
+    const defaults = {
+      lungPO2: 100,
+      tissuePO2: 40,
+      pH: 7.40,
+      pco2: 40,
+      hb: 15
+    };
+
+    const controls = {
+      lungPO2: document.getElementById("lungPO2"),
+      tissuePO2: document.getElementById("tissuePO2"),
+      bloodPH: document.getElementById("bloodPH"),
+      bloodCO2: document.getElementById("bloodCO2"),
+      hemoglobin: document.getElementById("hemoglobin"),
+      resetButton: document.getElementById("resetButton")
+    };
+
+    const labels = {
+      lungPO2Value: document.getElementById("lungPO2Value"),
+      tissuePO2Value: document.getElementById("tissuePO2Value"),
+      bloodPHValue: document.getElementById("bloodPHValue"),
+      bloodCO2Value: document.getElementById("bloodCO2Value"),
+      hemoglobinValue: document.getElementById("hemoglobinValue"),
+      shiftIndicator: document.getElementById("shiftIndicator"),
+      summaryLungPO2: document.getElementById("summaryLungPO2"),
+      summaryTissuePO2: document.getElementById("summaryTissuePO2"),
+      summaryLungSat: document.getElementById("summaryLungSat"),
+      summaryTissueSat: document.getElementById("summaryTissueSat"),
+      summaryLungContent: document.getElementById("summaryLungContent"),
+      summaryTissueContent: document.getElementById("summaryTissueContent"),
+      summaryReleased: document.getElementById("summaryReleased"),
+      lungOccupied: document.getElementById("lungOccupied"),
+      tissueOccupied: document.getElementById("tissueOccupied")
+    };
+
+    const canvas = document.getElementById("curveCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let animationFrame = null;
+    let previousDrawState = null;
+    let targetDrawState = null;
+    let animationStart = 0;
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function lerp(start, end, amount) {
+      return start + (end - start) * amount;
+    }
+
+    // Bohr shift model: lower pH and higher CO2 increase P50, reducing O2 affinity.
+    function calculateP50(pH, pco2) {
+      const pHFactor = Math.pow(10, 0.48 * (7.40 - pH));
+      const co2Factor = Math.pow(pco2 / 40, 0.10);
+      return NORMAL_P50 * pHFactor * co2Factor;
+    }
+
+    // Hill equation for fractional hemoglobin saturation at a given PO2.
+    function saturationAtPO2(po2, pH, pco2) {
+      const safePO2 = Math.max(0, po2);
+      const p50 = calculateP50(pH, pco2);
+      const po2Power = Math.pow(safePO2, HILL_N);
+      const p50Power = Math.pow(p50, HILL_N);
+      if (po2Power + p50Power === 0) {
+        return 0;
+      }
+      return clamp(po2Power / (po2Power + p50Power), 0, 1);
+    }
+
+    // Standard blood oxygen content equation: bound O2 plus dissolved O2.
+    function oxygenContent(po2, hb, saturationFraction) {
+      return (1.34 * hb * saturationFraction) + (0.003 * po2);
+    }
+
+    function getControlState() {
+      return {
+        lungPO2: Number(controls.lungPO2.value),
+        tissuePO2: Number(controls.tissuePO2.value),
+        pH: Number(controls.bloodPH.value),
+        pco2: Number(controls.bloodCO2.value),
+        hb: Number(controls.hemoglobin.value)
+      };
+    }
+
+    function setCanvasSize() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const width = Math.max(320, Math.floor(rect.width));
+      const height = Math.max(300, Math.floor(rect.height));
+      const pixelWidth = Math.round(width * dpr);
+      const pixelHeight = Math.round(height * dpr);
+      if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+        canvas.width = pixelWidth;
+        canvas.height = pixelHeight;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      return { width, height };
+    }
+
+    function roundedRectPath(context, x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      context.beginPath();
+      context.moveTo(x + r, y);
+      context.lineTo(x + width - r, y);
+      context.quadraticCurveTo(x + width, y, x + width, y + r);
+      context.lineTo(x + width, y + height - r);
+      context.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+      context.lineTo(x + r, y + height);
+      context.quadraticCurveTo(x, y + height, x, y + height - r);
+      context.lineTo(x, y + r);
+      context.quadraticCurveTo(x, y, x + r, y);
+      context.closePath();
+    }
+
+    function drawTextPill(context, text, x, y, options = {}) {
+      const paddingX = options.paddingX || 8;
+      const paddingY = options.paddingY || 5;
+      context.save();
+      context.font = options.font || "700 12px Segoe UI, Arial, sans-serif";
+      const metrics = context.measureText(text);
+      const width = metrics.width + paddingX * 2;
+      const height = 24 + (paddingY - 5) * 2;
+      const align = options.align || "left";
+      const left = align === "right" ? x - width : align === "center" ? x - width / 2 : x;
+      roundedRectPath(context, left, y - height / 2, width, height, 6);
+      context.fillStyle = options.fill || "rgba(255, 255, 255, 0.92)";
+      context.strokeStyle = options.stroke || "#d9e2ee";
+      context.lineWidth = 1;
+      context.fill();
+      context.stroke();
+      context.fillStyle = options.color || "#243149";
+      context.textBaseline = "middle";
+      context.fillText(text, left + paddingX, y);
+      context.restore();
+    }
+
+    function drawRotatedAxisLabel(context, text, x, y, side) {
+      context.save();
+      context.translate(x, y);
+      context.rotate(side === "left" ? -Math.PI / 2 : Math.PI / 2);
+      context.fillStyle = "#41506a";
+      context.font = "800 16px Segoe UI, Arial, sans-serif";
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillText(text, 0, 0);
+      context.restore();
+    }
+
+    function drawPoint(context, point, color, label, plot) {
+      const x = plot.xForPO2(point.po2);
+      const y = plot.yForSat(point.sat);
+      context.save();
+
+      context.setLineDash([7, 7]);
+      context.strokeStyle = color;
+      context.globalAlpha = 0.74;
+      context.lineWidth = 1.5;
+      context.beginPath();
+      context.moveTo(plot.left, y);
+      context.lineTo(x, y);
+      context.stroke();
+
+      context.globalAlpha = 0.35;
+      context.beginPath();
+      context.moveTo(x, y);
+      context.lineTo(x, plot.bottom);
+      context.stroke();
+      context.setLineDash([]);
+
+      context.globalAlpha = 1;
+      context.fillStyle = color;
+      context.strokeStyle = "#ffffff";
+      context.lineWidth = 3;
+      context.beginPath();
+      context.arc(x, y, 7.5, 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+
+      const yOffset = label === "Lungs" ? -24 : 26;
+      const align = x > plot.left + plot.width * 0.76 ? "right" : "left";
+      const labelX = align === "right" ? x - 10 : x + 10;
+      drawTextPill(
+        context,
+        `${label}: ${Math.round(point.sat * 100)}%`,
+        labelX,
+        clamp(y + yOffset, plot.top + 16, plot.bottom - 16),
+        {
+          align,
+          fill: label === "Lungs" ? "rgba(224, 247, 246, 0.96)" : "rgba(255, 240, 235, 0.96)",
+          stroke: color,
+          color
+        }
+      );
+
+      context.restore();
+    }
+
+    function drawCurve(context, plot, state, options = {}) {
+      context.save();
+      context.strokeStyle = options.color || CURVE_COLOR;
+      context.globalAlpha = options.opacity ?? 1;
+      context.lineWidth = options.lineWidth || 4;
+      context.lineCap = "round";
+      context.lineJoin = "round";
+      context.beginPath();
+      for (let po2 = 0; po2 <= 120; po2 += 1) {
+        const sat = saturationAtPO2(po2, state.pH, state.pco2);
+        const x = plot.xForPO2(po2);
+        const y = plot.yForSat(sat);
+        if (po2 === 0) {
+          context.moveTo(x, y);
+        } else {
+          context.lineTo(x, y);
+        }
+      }
+      context.stroke();
+      context.restore();
+    }
+
+    function drawAxes(context, plot, state) {
+      const rightAxisMax = oxygenContent(100, state.hb, 1);
+      context.save();
+      context.fillStyle = "#fbfdff";
+      context.fillRect(0, 0, plot.canvasWidth, plot.canvasHeight);
+
+      context.strokeStyle = "#dce5f1";
+      context.lineWidth = 1;
+      context.font = "13px Segoe UI, Arial, sans-serif";
+      context.fillStyle = "#5a6780";
+
+      for (let satTick = 0; satTick <= 100; satTick += 20) {
+        const y = plot.yForSat(satTick / 100);
+        context.beginPath();
+        context.moveTo(plot.left, y);
+        context.lineTo(plot.right, y);
+        context.stroke();
+
+        context.fillStyle = "#4e5d73";
+        context.textAlign = "right";
+        context.textBaseline = "middle";
+        context.fillText(`${satTick}`, plot.left - 10, y);
+
+        context.textAlign = "left";
+        context.fillText(`${(rightAxisMax * satTick / 100).toFixed(1)}`, plot.right + 10, y);
+      }
+
+      for (let po2Tick = 0; po2Tick <= 120; po2Tick += 20) {
+        const x = plot.xForPO2(po2Tick);
+        context.strokeStyle = po2Tick === 0 ? "#8d9ab0" : "#edf2f7";
+        context.beginPath();
+        context.moveTo(x, plot.top);
+        context.lineTo(x, plot.bottom);
+        context.stroke();
+
+        context.fillStyle = "#4e5d73";
+        context.textAlign = "center";
+        context.textBaseline = "top";
+        context.fillText(`${po2Tick}`, x, plot.bottom + 10);
+      }
+
+      context.strokeStyle = "#7b879a";
+      context.lineWidth = 1.5;
+      context.beginPath();
+      context.moveTo(plot.left, plot.top);
+      context.lineTo(plot.left, plot.bottom);
+      context.lineTo(plot.right, plot.bottom);
+      context.moveTo(plot.right, plot.top);
+      context.lineTo(plot.right, plot.bottom);
+      context.stroke();
+
+      context.fillStyle = "#2b3b55";
+      context.font = "800 17px Segoe UI, Arial, sans-serif";
+      context.textAlign = "center";
+      context.textBaseline = "top";
+      context.fillText("PO2 (mmHg)", plot.left + plot.width / 2, plot.bottom + 36);
+
+      drawRotatedAxisLabel(context, "Hemoglobin saturation (%)", 18, plot.top + plot.height / 2, "left");
+      drawRotatedAxisLabel(context, "Oxygen content (mL O2 / 100 mL blood)", plot.canvasWidth - 18, plot.top + plot.height / 2, "right");
+
+      context.restore();
+    }
+
+    function drawGraphFrame(state) {
+      const { width, height } = setCanvasSize();
+      const plot = {
+        canvasWidth: width,
+        canvasHeight: height,
+        left: width < 560 ? 58 : 68,
+        right: width - (width < 560 ? 58 : 74),
+        top: 24,
+        bottom: height - 60
+      };
+      plot.width = plot.right - plot.left;
+      plot.height = plot.bottom - plot.top;
+      plot.xForPO2 = (po2) => plot.left + clamp(po2, 0, 120) / 120 * plot.width;
+      plot.yForSat = (sat) => plot.bottom - clamp(sat, 0, 1) * plot.height;
+
+      drawAxes(ctx, plot, state);
+      // The faded reference curve is always the normal pH/CO2 curve.
+      drawCurve(ctx, plot, { ...state, pH: defaults.pH, pco2: defaults.pco2 }, {
+        color: BASELINE_CURVE_COLOR,
+        lineWidth: 2.5,
+        opacity: 0.32
+      });
+      drawCurve(ctx, plot, state);
+
+      const lungSat = saturationAtPO2(state.lungPO2, state.pH, state.pco2);
+      const tissueSat = saturationAtPO2(state.tissuePO2, state.pH, state.pco2);
+      drawPoint(ctx, { po2: state.lungPO2, sat: lungSat }, LUNG_COLOR, "Lungs", plot);
+      drawPoint(ctx, { po2: state.tissuePO2, sat: tissueSat }, TISSUE_COLOR, "Tissues", plot);
+    }
+
+    function blendState(start, end, amount) {
+      return {
+        lungPO2: lerp(start.lungPO2, end.lungPO2, amount),
+        tissuePO2: lerp(start.tissuePO2, end.tissuePO2, amount),
+        pH: lerp(start.pH, end.pH, amount),
+        pco2: lerp(start.pco2, end.pco2, amount),
+        hb: lerp(start.hb, end.hb, amount)
+      };
+    }
+
+    function drawGraph(state) {
+      targetDrawState = { ...state };
+      if (!previousDrawState) {
+        previousDrawState = { ...state };
+        drawGraphFrame(state);
+        return;
+      }
+
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+
+      const startState = { ...previousDrawState };
+      animationStart = performance.now();
+
+      const animate = (now) => {
+        const progress = clamp((now - animationStart) / 210, 0, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const frameState = blendState(startState, targetDrawState, eased);
+        drawGraphFrame(frameState);
+        if (progress < 1) {
+          animationFrame = requestAnimationFrame(animate);
+        } else {
+          previousDrawState = { ...targetDrawState };
+          animationFrame = null;
+        }
+      };
+
+      animationFrame = requestAnimationFrame(animate);
+    }
+
+    function drawHemoglobinPanel(kind, saturationFraction) {
+      const grid = document.getElementById(kind === "lung" ? "lungHbGrid" : "tissueHbGrid");
+      const label = kind === "lung" ? labels.lungOccupied : labels.tissueOccupied;
+      const color = kind === "lung" ? LUNG_COLOR : TISSUE_COLOR;
+      const totalSites = 20 * 4;
+      const filledSites = Math.round(clamp(saturationFraction, 0, 1) * totalSites);
+      let siteCounter = 0;
+      let html = "";
+
+      for (let icon = 0; icon < 20; icon += 1) {
+        html += `<div class="hb-icon" style="--bind-color: ${color}">`;
+        for (let site = 0; site < 4; site += 1) {
+          const isBound = siteCounter < filledSites;
+          html += `<span class="site ${isBound ? "bound" : "empty"}"></span>`;
+          siteCounter += 1;
+        }
+        html += "</div>";
+      }
+
+      grid.innerHTML = html;
+      label.textContent = `O2 binding sites occupied: ${Math.round(saturationFraction * 100)}%`;
+    }
+
+    function updateTissueSliderLimit(lungPO2) {
+      const maxTissue = Math.max(10, Math.min(60, lungPO2 - 1));
+      controls.tissuePO2.max = String(maxTissue);
+      if (Number(controls.tissuePO2.value) >= lungPO2) {
+        controls.tissuePO2.value = String(maxTissue);
+      }
+      if (Number(controls.tissuePO2.value) > maxTissue) {
+        controls.tissuePO2.value = String(maxTissue);
+      }
+    }
+
+    function updateShiftIndicator(p50) {
+      const delta = p50 - NORMAL_P50;
+      if (Math.abs(delta) < 0.2) {
+        labels.shiftIndicator.textContent = "Normal affinity";
+        labels.shiftIndicator.style.background = "#eef3fb";
+        labels.shiftIndicator.style.borderColor = "#d3deed";
+        labels.shiftIndicator.style.color = "#243552";
+      } else if (delta > 0) {
+        labels.shiftIndicator.textContent = "Right shift";
+        labels.shiftIndicator.style.background = "#fff0eb";
+        labels.shiftIndicator.style.borderColor = "#f0c9bd";
+        labels.shiftIndicator.style.color = "#8c3524";
+      } else {
+        labels.shiftIndicator.textContent = "Left shift";
+        labels.shiftIndicator.style.background = "#e0f7f6";
+        labels.shiftIndicator.style.borderColor = "#b8dfdf";
+        labels.shiftIndicator.style.color = "#056d73";
+      }
+    }
+
+    function updateUI() {
+      updateTissueSliderLimit(Number(controls.lungPO2.value));
+      const state = getControlState();
+      const p50 = calculateP50(state.pH, state.pco2);
+      const lungSat = saturationAtPO2(state.lungPO2, state.pH, state.pco2);
+      const tissueSat = saturationAtPO2(state.tissuePO2, state.pH, state.pco2);
+      const lungContent = oxygenContent(state.lungPO2, state.hb, lungSat);
+      const tissueContent = oxygenContent(state.tissuePO2, state.hb, tissueSat);
+      const released = Math.max(0, lungContent - tissueContent);
+
+      labels.lungPO2Value.textContent = `${state.lungPO2.toFixed(0)} mmHg`;
+      labels.tissuePO2Value.textContent = `${state.tissuePO2.toFixed(0)} mmHg`;
+      labels.bloodPHValue.textContent = state.pH.toFixed(2);
+      labels.bloodCO2Value.textContent = `${state.pco2.toFixed(0)} mmHg`;
+      labels.hemoglobinValue.textContent = `${state.hb.toFixed(1)} g/dL`;
+
+      labels.summaryLungPO2.textContent = `${state.lungPO2.toFixed(0)} mmHg`;
+      labels.summaryTissuePO2.textContent = `${state.tissuePO2.toFixed(0)} mmHg`;
+      labels.summaryLungSat.textContent = `${(lungSat * 100).toFixed(1)}%`;
+      labels.summaryTissueSat.textContent = `${(tissueSat * 100).toFixed(1)}%`;
+      labels.summaryLungContent.textContent = `${lungContent.toFixed(1)} mL O2 / 100 mL`;
+      labels.summaryTissueContent.textContent = `${tissueContent.toFixed(1)} mL O2 / 100 mL`;
+      labels.summaryReleased.textContent = `${released.toFixed(1)} mL O2 / 100 mL`;
+
+      updateShiftIndicator(p50);
+      drawGraph(state);
+      drawHemoglobinPanel("lung", lungSat);
+      drawHemoglobinPanel("tissue", tissueSat);
+    }
+
+    function resetControls() {
+      controls.lungPO2.value = defaults.lungPO2;
+      controls.tissuePO2.value = defaults.tissuePO2;
+      controls.bloodPH.value = defaults.pH.toFixed(2);
+      controls.bloodCO2.value = defaults.pco2;
+      controls.hemoglobin.value = defaults.hb;
+      updateUI();
+    }
+
+    Object.values(controls).forEach((control) => {
+      if (control instanceof HTMLInputElement) {
+        control.addEventListener("input", updateUI);
+      }
+    });
+
+    controls.resetButton.addEventListener("click", resetControls);
+    window.addEventListener("resize", () => {
+      previousDrawState = null;
+      updateUI();
+    });
+
+    updateUI();
+  </script>
+</body>
+</html>

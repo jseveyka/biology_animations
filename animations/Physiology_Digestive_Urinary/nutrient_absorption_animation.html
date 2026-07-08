@@ -1,0 +1,2137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nutrient Absorption Animation</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1f2a33;
+      --muted: #526271;
+      --panel: #ffffff;
+      --line: #c9d7e6;
+      --lumen: #eaf8ff;
+      --cell: #ffe6c9;
+      --cell-deep: #ffd7a3;
+      --interstitial: #eef8f1;
+      --capillary: #ffe4e9;
+      --lacteal: #e8f8e7;
+      --na: #ffd447;
+      --glucose: #3d9bf5;
+      --aa: #8c5bd6;
+      --water: #8bdcff;
+      --fructose: #ff9d35;
+      --lipid: #56c46b;
+      --k: #ff7eb3;
+      --cl: #52b86b;
+      --dash-duration: 1.55s;
+      --arrow-duration: 2.2s;
+      --glow-duration: 4.4s;
+      --lipid-glow-duration: 5.2s;
+      --pump-duration: 1.45s;
+      --atp-duration: 1.15s;
+      --lipid-sequence-duration: 12s;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: #f5f8fb;
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      min-width: 320px;
+    }
+
+    .app {
+      width: min(1400px, 100%);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 9px clamp(10px, 2vw, 22px) 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .credit {
+      margin: 0;
+      text-align: center;
+      font-size: clamp(12px, 1.1vw, 15px);
+      font-weight: 700;
+      line-height: 1.15;
+      color: #52606d;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 8px 10px;
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(28, 42, 58, 0.08);
+    }
+
+    .title-block {
+      min-width: 260px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(20px, 2.1vw, 31px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: clamp(13px, 1.2vw, 16px);
+      font-weight: 700;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .mode-switch {
+      display: inline-flex;
+      padding: 3px;
+      gap: 3px;
+      border: 1px solid #bac9d8;
+      border-radius: 8px;
+      background: #eef4f8;
+    }
+
+    button,
+    .toggle-label,
+    .speed-control {
+      min-height: 34px;
+      border-radius: 7px;
+      border: 1px solid #a9b9c9;
+      background: #ffffff;
+      color: var(--ink);
+      font: 700 14px/1 Arial, Helvetica, sans-serif;
+    }
+
+    button {
+      cursor: pointer;
+      padding: 8px 11px;
+      transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      border-color: #6d91b5;
+      background: #f7fbff;
+    }
+
+    button[aria-pressed="true"] {
+      background: #1e5f96;
+      border-color: #1e5f96;
+      color: #ffffff;
+    }
+
+    .toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 10px;
+      white-space: nowrap;
+    }
+
+    .toggle-label input {
+      width: 16px;
+      height: 16px;
+      accent-color: #1e5f96;
+    }
+
+    .speed-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      white-space: nowrap;
+    }
+
+    .speed-control input {
+      width: 104px;
+      accent-color: #1e5f96;
+    }
+
+    .speed-control span {
+      min-width: 34px;
+      text-align: right;
+      color: #1e5f96;
+      font-weight: 900;
+    }
+
+    .scenario-control,
+    .pathway-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 34px;
+      padding: 4px 7px;
+      border: 1px solid #a9b9c9;
+      border-radius: 7px;
+      background: #ffffff;
+    }
+
+    .scenario-title,
+    .pathway-title {
+      color: #34495a;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .scenario-switch,
+    .pathway-switch {
+      display: inline-flex;
+      gap: 3px;
+    }
+
+    .scenario-switch button,
+    .pathway-switch button {
+      min-height: 28px;
+      padding: 6px 8px;
+      font-size: 12px;
+    }
+
+    .scenario-note {
+      max-width: 320px;
+      margin: 0;
+      padding: 7px 9px;
+      border: 1px solid #c8d8e8;
+      border-radius: 7px;
+      background: #f6fbff;
+      color: #34495a;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .animation-wrap {
+      flex: 1;
+      min-height: 540px;
+      overflow: hidden;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 12px 34px rgba(28, 42, 58, 0.1);
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 540px;
+    }
+
+    .region-label {
+      font-size: 25px;
+      font-weight: 900;
+      fill: #24313d;
+    }
+
+    .sub-label,
+    .vessel-label,
+    .structure-label {
+      font-size: 17px;
+      font-weight: 800;
+      fill: #364858;
+    }
+
+    .small-structure-label {
+      font-size: 14px;
+      font-weight: 800;
+      fill: #3f5263;
+    }
+
+    .lumen-bg {
+      fill: var(--lumen);
+    }
+
+    .interstitial-bg {
+      fill: var(--interstitial);
+    }
+
+    .basement-line {
+      stroke: #7f9c89;
+      stroke-width: 3;
+      stroke-dasharray: 8 8;
+      opacity: 0.8;
+    }
+
+    .cell {
+      fill: url(#cellGradient);
+      stroke: #9c7d57;
+      stroke-width: 2.5;
+    }
+
+    .cell-boundary {
+      stroke: #b28a66;
+      stroke-width: 2;
+      stroke-dasharray: 7 7;
+      opacity: 0.72;
+    }
+
+    .nucleus {
+      fill: #f3c0dd;
+      stroke: #a86493;
+      stroke-width: 2;
+      opacity: 0.85;
+    }
+
+    .microvillus {
+      fill: #ffdcb4;
+      stroke: #bd8752;
+      stroke-width: 1.6;
+    }
+
+    .microvillus-base {
+      fill: none;
+      stroke: #bd8752;
+      stroke-width: 4;
+      stroke-linecap: round;
+    }
+
+    .capillary-wall {
+      fill: url(#capillaryGradient);
+      stroke: #bb4f62;
+      stroke-width: 3;
+    }
+
+    .lacteal-wall {
+      fill: url(#lactealGradient);
+      stroke: #4d9e68;
+      stroke-width: 3;
+    }
+
+    .rbc {
+      fill: #d84a5e;
+      stroke: #9f2739;
+      stroke-width: 1.5;
+      opacity: 0.9;
+    }
+
+    .lymph-dot {
+      fill: #70cf84;
+      stroke: #2d8645;
+      stroke-width: 1.3;
+      opacity: 0.9;
+    }
+
+    .transporter {
+      stroke: #25475e;
+      stroke-width: 2.5;
+      filter: url(#softShadow);
+    }
+
+    .apical-port {
+      fill: #aee6ff;
+    }
+
+    .glucose-port {
+      fill: #82cffd;
+    }
+
+    .aa-port {
+      fill: #c7a2ff;
+    }
+
+    .basal-port {
+      fill: #b9f0d0;
+    }
+
+    .capillary-port {
+      fill: #d2f8df;
+    }
+
+    .aa-basal-port,
+    .capillary-aa-port {
+      fill: #dac7ff;
+    }
+
+    .fructose-port {
+      fill: #ffd2a3;
+    }
+
+    .pump-body {
+      fill: #fff3b0;
+      stroke: #9c6b00;
+      stroke-width: 3.5;
+      filter: url(#softShadow);
+      animation: pumpPulse 1.45s ease-in-out infinite;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+
+    .pump-label,
+    .transporter-label {
+      font-size: 13px;
+      font-weight: 900;
+      fill: #263440;
+      text-anchor: middle;
+      pointer-events: none;
+    }
+
+    .pump-small .pump-label {
+      font-size: 9.5px;
+    }
+
+    .process-note {
+      font-size: 12px;
+      font-weight: 900;
+      fill: #355064;
+      text-anchor: middle;
+    }
+
+    .label-pill {
+      fill: rgba(255, 255, 255, 0.82);
+      stroke: #b6c8d8;
+      stroke-width: 1.5;
+    }
+
+    .low-na-bracket {
+      fill: none;
+      stroke: #c79600;
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .low-na-bracket-text {
+      fill: #5e4b00;
+      font-size: 18px;
+      font-weight: 900;
+      text-anchor: middle;
+    }
+
+    .flow-arrow {
+      fill: none;
+      stroke-width: 4.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 10 12;
+      opacity: 0.78;
+      animation: dashFlow var(--dash-duration) linear infinite, arrowPulse var(--arrow-duration) ease-in-out infinite;
+    }
+
+    .na-arrow {
+      stroke: #e6a900;
+    }
+
+    .glucose-arrow {
+      stroke: var(--glucose);
+    }
+
+    .aa-arrow {
+      stroke: var(--aa);
+    }
+
+    .water-arrow {
+      stroke: var(--water);
+      stroke-width: 3.8;
+      opacity: 0.68;
+    }
+
+    .fructose-arrow {
+      stroke: var(--fructose);
+    }
+
+    .lipid-arrow {
+      stroke: var(--lipid);
+    }
+
+    .post-dock-flow {
+      opacity: 0;
+      animation: dashFlow var(--dash-duration) linear infinite, postDockLine var(--lipid-sequence-duration) linear infinite;
+    }
+
+    .k-arrow {
+      stroke: var(--k);
+    }
+
+    .cl-arrow {
+      stroke: var(--cl);
+    }
+
+    .cl-channel {
+      fill: #bdeec7;
+      stroke: #247e3c;
+    }
+
+    .scenario-label {
+      fill: #294052;
+      font-size: 13px;
+      font-weight: 900;
+      text-anchor: middle;
+    }
+
+    .ort-transporter-glow {
+      fill: none;
+      stroke: #0c84d6;
+      stroke-width: 6;
+      opacity: 0.65;
+      animation: transporterGlow var(--glow-duration) ease-in-out infinite;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+
+    .glow-port {
+      animation: transporterGlow var(--glow-duration) ease-in-out infinite;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+
+    .aa-port {
+      animation-delay: 1.2s;
+    }
+
+    .fructose-port.glow-port {
+      animation-delay: 0.7s;
+    }
+
+    .callout rect {
+      fill: rgba(255, 255, 255, 0.92);
+      stroke: #b7c9db;
+      stroke-width: 1.8;
+      rx: 8;
+    }
+
+    .callout-title {
+      fill: #263440;
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .callout-text {
+      fill: #3b4d5d;
+      font-size: 13.5px;
+      font-weight: 700;
+    }
+
+    .particle-label {
+      font-family: Arial, Helvetica, sans-serif;
+      font-weight: 900;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      pointer-events: none;
+    }
+
+    .particle {
+      filter: url(#particleShadow);
+    }
+
+    .static-particle {
+      opacity: 0.88;
+    }
+
+    .moving-particle {
+      opacity: 0.96;
+    }
+
+    .atp-badge circle {
+      fill: #fff8cc;
+      stroke: #c49700;
+      stroke-width: 2;
+      animation: atpPulse var(--atp-duration) ease-in-out infinite;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+
+    .atp-badge text {
+      fill: #6d5200;
+      font-size: 15px;
+      font-weight: 900;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+
+    .atp-small text {
+      font-size: 9px;
+    }
+
+    .micelle {
+      fill: #d9f7a5;
+      stroke: #4da756;
+      stroke-width: 1.5;
+    }
+
+    .chylomicron-static ellipse {
+      fill: #a6eeb3;
+      stroke: #268240;
+      stroke-width: 2.5;
+      filter: url(#softShadow);
+    }
+
+    .chylomicron-static text {
+      fill: #164f2a;
+      font-size: 12px;
+      font-weight: 900;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+
+    .smooth-er {
+      fill: none;
+      stroke: #9a6a32;
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      opacity: 0.9;
+    }
+
+    .smooth-er-shadow {
+      fill: none;
+      stroke: rgba(154, 106, 50, 0.18);
+      stroke-width: 18;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .lipid-process-label {
+      fill: #284052;
+      font-size: 14px;
+      font-weight: 900;
+      text-anchor: middle;
+    }
+
+    .lipid-small-label {
+      fill: #365061;
+      font-size: 12px;
+      font-weight: 900;
+      text-anchor: middle;
+    }
+
+    .bile-salt {
+      fill: #d6ce4a;
+      stroke: #8b8523;
+      stroke-width: 1.2;
+    }
+
+    .lacteal-fill {
+      fill: #effdef;
+      stroke: none;
+    }
+
+    .lacteal-segment {
+      fill: none;
+      stroke: #4d9e68;
+      stroke-width: 9;
+      stroke-linecap: round;
+    }
+
+    .vesicle-ring {
+      fill: rgba(122, 213, 140, 0.1);
+      stroke: #3f9f56;
+      stroke-width: 3;
+      stroke-dasharray: 6 5;
+    }
+
+    .lipid-chain {
+      fill: none;
+      stroke: #278747;
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .glycerol-backbone {
+      stroke: #2a7280;
+      stroke-width: 5;
+      stroke-linecap: round;
+    }
+
+    .steroid-ring {
+      fill: #fff1bd;
+      stroke: #9a6a32;
+      stroke-width: 2.3;
+      stroke-linejoin: round;
+    }
+
+    .protein-fold {
+      fill: none;
+      stroke: #7660c9;
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .protein-fold-fill {
+      fill: #d8ceff;
+      stroke: #7660c9;
+      stroke-width: 2;
+    }
+
+    .lipid-stage-dot {
+      fill: rgba(255, 255, 255, 0.7);
+      stroke: #c9d7e6;
+      stroke-width: 1.5;
+    }
+
+    .lipid-bottom-note {
+      fill: #314b5d;
+      font-size: 13px;
+      font-weight: 900;
+      text-anchor: middle;
+    }
+
+    .add-chain-arrow {
+      fill: none;
+      stroke: #56c46b;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-dasharray: 6 6;
+      marker-end: url(#arrowLipid);
+    }
+
+    .lipid-legend rect {
+      fill: rgba(255, 255, 255, 0.9);
+      stroke: #bdd1c2;
+      stroke-width: 1.8;
+      rx: 8;
+    }
+
+    .lipid-legend-title {
+      fill: #284052;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .lipid-legend-text {
+      fill: #365061;
+      font-size: 12.5px;
+      font-weight: 800;
+    }
+
+    body:not([data-mode="pct"]) .pct-only,
+    body:not([data-mode="intestinal"]) .carb-only,
+    body:not([data-mode="lipid"]) .lipid-only,
+    body[data-mode="lipid"] .solute-only {
+      display: none !important;
+    }
+
+    body:not([data-scenario="normal"]) .normal-only,
+    body:not([data-scenario="cholera"]) .cholera-only,
+    body:not([data-scenario="ort"]) .ort-only,
+    body[data-scenario="cholera"] .absorptive-water {
+      display: none !important;
+    }
+
+    body:not([data-pathway="all"]) .pathway-all-only,
+    body:not([data-pathway="glucose"]) .pathway-glucose-only,
+    body:not([data-pathway="aa"]) .pathway-aa-only,
+    body:not([data-pathway="fructose"]) .pathway-fructose-only,
+    body[data-pathway="all"] .pathway-simplified-only,
+    body[data-mode="intestinal"][data-pathway="glucose"] .path-aa,
+    body[data-mode="intestinal"][data-pathway="glucose"] .path-fructose,
+    body[data-mode="intestinal"][data-pathway="aa"] .path-glucose,
+    body[data-mode="intestinal"][data-pathway="aa"] .path-fructose,
+    body[data-mode="intestinal"][data-pathway="aa"] .glucose-scenario-control,
+    body[data-mode="intestinal"][data-pathway="aa"] .cholera-only,
+    body[data-mode="intestinal"][data-pathway="aa"] .ort-only,
+    body[data-mode="intestinal"][data-pathway="fructose"] .path-glucose,
+    body[data-mode="intestinal"][data-pathway="fructose"] .path-aa,
+    body[data-mode="intestinal"][data-pathway="fructose"] .na-gradient-visual,
+    body[data-mode="intestinal"][data-pathway="fructose"] .glucose-scenario-control,
+    body[data-mode="intestinal"][data-pathway="fructose"] .cholera-only,
+    body[data-mode="intestinal"][data-pathway="fructose"] .ort-only {
+      display: none !important;
+    }
+
+    body[data-mode="intestinal"][data-pathway="glucose"] .lane-aa,
+    body[data-mode="intestinal"][data-pathway="glucose"] .lane-fructose,
+    body[data-mode="intestinal"][data-pathway="aa"] .lane-glucose,
+    body[data-mode="intestinal"][data-pathway="aa"] .lane-fructose,
+    body[data-mode="intestinal"][data-pathway="fructose"] .lane-glucose,
+    body[data-mode="intestinal"][data-pathway="fructose"] .lane-aa {
+      opacity: 0.22;
+    }
+
+    body[data-mode="intestinal"][data-pathway="all"] .scenario-note,
+    body[data-mode="intestinal"][data-pathway="glucose"] .scenario-note {
+      display: none !important;
+    }
+
+    body.labels-off .explain {
+      display: none !important;
+    }
+
+    body.is-paused .flow-arrow,
+    body.is-paused .pump-body,
+    body.is-paused .glow-port,
+    body.is-paused .atp-badge circle {
+      animation-play-state: paused;
+    }
+
+    @keyframes dashFlow {
+      to {
+        stroke-dashoffset: -44;
+      }
+    }
+
+    @keyframes arrowPulse {
+      0%, 100% {
+        opacity: 0.52;
+      }
+      50% {
+        opacity: 0.98;
+      }
+    }
+
+    @keyframes postDockLine {
+      0%, 42% {
+        opacity: 0;
+      }
+      48%, 100% {
+        opacity: 0.78;
+      }
+    }
+
+    @keyframes transporterGlow {
+      0%, 46%, 100% {
+        filter: url(#softShadow);
+        stroke-width: 2.5;
+      }
+      16%, 26% {
+        filter: url(#glow);
+        stroke-width: 4;
+      }
+    }
+
+    @keyframes pumpPulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.055);
+      }
+    }
+
+    .pump-body {
+      animation-duration: var(--pump-duration);
+    }
+
+    @keyframes atpPulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.16);
+      }
+    }
+
+    @media (max-width: 860px) {
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .controls {
+        justify-content: flex-start;
+      }
+
+      .mode-switch {
+        width: 100%;
+      }
+
+      .mode-switch button {
+        flex: 1;
+      }
+
+      .scenario-control,
+      .pathway-control {
+        width: 100%;
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .scenario-switch,
+      .pathway-switch {
+        width: 100%;
+      }
+
+      .scenario-switch button,
+      .pathway-switch button {
+        flex: 1;
+      }
+
+      button,
+      .toggle-label {
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body data-mode="pct" data-scenario="normal" data-pathway="all">
+  <main class="app" aria-labelledby="mainTitle">
+    <p class="credit">Animation Prompted by Jerred Seveyka for his biology class.</p>
+
+    <header class="topbar">
+      <div class="title-block">
+        <h1 id="mainTitle">Proximal Convoluted Tubule: Reabsorption from filtrate</h1>
+        <p class="subtitle" id="modeSubtitle">Compare epithelial nutrient absorption across kidney and intestine.</p>
+      </div>
+
+      <div class="controls" aria-label="Animation controls">
+        <div class="mode-switch" role="group" aria-label="Choose epithelial system">
+          <button type="button" id="pctMode" aria-pressed="true">PCT absorption</button>
+          <button type="button" id="intestinalMode" aria-pressed="false">Intestinal carbohydrate + amino acid absorption</button>
+          <button type="button" id="lipidMode" aria-pressed="false">Intestinal lipid absorption</button>
+        </div>
+        <div class="scenario-control carb-only glucose-scenario-control" aria-label="Intestinal glucose transport scenario">
+          <span class="scenario-title">Intestinal glucose transport scenario</span>
+          <div class="scenario-switch" role="group">
+            <button type="button" id="normalScenario" aria-pressed="true">Normal absorption</button>
+            <button type="button" id="choleraScenario" aria-pressed="false">Cholera</button>
+            <button type="button" id="ortScenario" aria-pressed="false">Oral rehydration therapy</button>
+          </div>
+        </div>
+        <div class="pathway-control carb-only" aria-label="Show pathway">
+          <span class="pathway-title">Show pathway</span>
+          <div class="pathway-switch" role="group">
+            <button type="button" id="allPathway" aria-pressed="true">All</button>
+            <button type="button" id="glucosePathway" aria-pressed="false">Glucose</button>
+            <button type="button" id="aaPathway" aria-pressed="false">Amino acid</button>
+            <button type="button" id="fructosePathway" aria-pressed="false">Fructose</button>
+          </div>
+        </div>
+        <p class="scenario-note carb-only">Cholera and ORT comparisons use the glucose/Na+ pathway.</p>
+        <label class="speed-control">
+          Animation speed
+          <input type="range" id="animationSpeed" min="0.5" max="3" step="0.25" value="1">
+          <span id="speedReadout">1.0x</span>
+        </label>
+        <button type="button" id="playPause">Pause</button>
+        <button type="button" id="resetAnimation">Reset</button>
+        <label class="toggle-label">
+          <input type="checkbox" id="showLabels" checked>
+          Show explanation labels
+        </label>
+      </div>
+    </header>
+
+    <section class="animation-wrap" aria-label="Interactive nutrient absorption animation">
+      <svg id="scene" viewBox="0 0 1200 760" role="img" aria-labelledby="svgTitle svgDesc">
+        <title id="svgTitle">Nutrient absorption across epithelial cells</title>
+        <desc id="svgDesc">Animated cross-section with three modes: PCT nutrient reabsorption, intestinal carbohydrate and amino acid absorption, and intestinal lipid absorption into a lacteal.</desc>
+
+        <defs>
+          <linearGradient id="cellGradient" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#ffe9cf"></stop>
+            <stop offset="100%" stop-color="#ffd6a3"></stop>
+          </linearGradient>
+          <linearGradient id="capillaryGradient" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stop-color="#ffd7df"></stop>
+            <stop offset="50%" stop-color="#fff1f3"></stop>
+            <stop offset="100%" stop-color="#ffc9d4"></stop>
+          </linearGradient>
+          <linearGradient id="lactealGradient" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stop-color="#dbf7dd"></stop>
+            <stop offset="100%" stop-color="#f2fff2"></stop>
+          </linearGradient>
+          <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#2a4054" flood-opacity="0.22"></feDropShadow>
+          </filter>
+          <filter id="particleShadow" x="-40%" y="-40%" width="180%" height="180%">
+            <feDropShadow dx="0" dy="1.4" stdDeviation="1.2" flood-color="#1f2a33" flood-opacity="0.22"></feDropShadow>
+          </filter>
+          <filter id="glow" x="-70%" y="-70%" width="240%" height="240%">
+            <feGaussianBlur stdDeviation="5" result="blur"></feGaussianBlur>
+            <feFlood flood-color="#ffffff" flood-opacity="0.95" result="white"></feFlood>
+            <feComposite in="white" in2="blur" operator="in" result="glowFill"></feComposite>
+            <feMerge>
+              <feMergeNode in="glowFill"></feMergeNode>
+              <feMergeNode in="SourceGraphic"></feMergeNode>
+            </feMerge>
+          </filter>
+
+          <marker id="arrowNa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#e6a900"></path>
+          </marker>
+          <marker id="arrowGlucose" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#3d9bf5"></path>
+          </marker>
+          <marker id="arrowAA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#8c5bd6"></path>
+          </marker>
+          <marker id="arrowWater" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#8bdcff"></path>
+          </marker>
+          <marker id="arrowFructose" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#ff9d35"></path>
+          </marker>
+          <marker id="arrowLipid" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#56c46b"></path>
+          </marker>
+          <marker id="arrowK" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#ff7eb3"></path>
+          </marker>
+          <marker id="arrowCl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#52b86b"></path>
+          </marker>
+        </defs>
+
+        <rect width="1200" height="760" fill="#ffffff"></rect>
+        <rect class="lumen-bg" x="0" y="0" width="1200" height="152"></rect>
+        <rect class="interstitial-bg" x="0" y="505" width="1200" height="96"></rect>
+        <rect x="0" y="601" width="1200" height="159" fill="#fbfdff"></rect>
+        <line class="basement-line" x1="130" y1="505" x2="880" y2="505"></line>
+
+        <g id="epithelium">
+          <g class="pct-only">
+            <rect class="cell" x="160" y="155" width="690" height="350" rx="20"></rect>
+            <ellipse class="nucleus" cx="505" cy="346" rx="34" ry="22"></ellipse>
+          </g>
+          <g class="carb-only">
+            <rect class="cell lane-glucose" x="160" y="155" width="230" height="350" rx="18"></rect>
+            <rect class="cell lane-aa" x="390" y="155" width="230" height="350" rx="18"></rect>
+            <rect class="cell lane-fructose" x="620" y="155" width="230" height="350" rx="18"></rect>
+            <line class="cell-boundary" x1="390" y1="160" x2="390" y2="500"></line>
+            <line class="cell-boundary" x1="620" y1="160" x2="620" y2="500"></line>
+            <ellipse class="nucleus lane-glucose" cx="210" cy="338" rx="29" ry="19"></ellipse>
+            <ellipse class="nucleus lane-aa" cx="438" cy="338" rx="29" ry="19"></ellipse>
+            <ellipse class="nucleus lane-fructose" cx="668" cy="338" rx="29" ry="19"></ellipse>
+          </g>
+          <g class="lipid-only">
+            <rect class="cell" x="225" y="155" width="615" height="350" rx="22"></rect>
+            <ellipse class="nucleus" cx="285" cy="348" rx="31" ry="20"></ellipse>
+          </g>
+        </g>
+
+        <g id="microvilli"></g>
+
+        <g id="vessels">
+          <g class="solute-only">
+            <rect class="capillary-wall" x="155" y="622" width="560" height="82" rx="41"></rect>
+            <ellipse class="rbc" cx="225" cy="664" rx="30" ry="17"></ellipse>
+            <ellipse class="rbc" cx="330" cy="648" rx="28" ry="16"></ellipse>
+            <ellipse class="rbc" cx="463" cy="673" rx="31" ry="17"></ellipse>
+            <ellipse class="rbc" cx="602" cy="653" rx="30" ry="17"></ellipse>
+          </g>
+          <g class="lipid-only">
+            <rect class="capillary-wall" x="145" y="628" width="300" height="64" rx="32"></rect>
+            <ellipse class="rbc" cx="215" cy="660" rx="24" ry="13"></ellipse>
+            <ellipse class="rbc" cx="330" cy="673" rx="25" ry="13"></ellipse>
+
+            <rect class="lacteal-fill" x="720" y="618" width="230" height="88" rx="44"></rect>
+            <path class="lacteal-segment" d="M732 626 H786"></path>
+            <path class="lacteal-segment" d="M818 626 H864"></path>
+            <path class="lacteal-segment" d="M896 626 H938"></path>
+            <path class="lacteal-segment" d="M732 698 H938"></path>
+            <path class="lacteal-segment" d="M724 636 C704 660 706 684 724 696"></path>
+            <path class="lacteal-segment" d="M946 636 C966 660 964 684 946 696"></path>
+            <circle class="lymph-dot" cx="776" cy="668" r="10"></circle>
+            <circle class="lymph-dot" cx="850" cy="650" r="9"></circle>
+            <circle class="lymph-dot" cx="890" cy="680" r="10"></circle>
+          </g>
+        </g>
+
+        <g class="solute-only na-gradient-visual" id="lowNaBracket">
+          <path class="low-na-bracket" d="M132 155 H112 V505 H132"></path>
+          <text class="low-na-bracket-text" x="82" y="330" transform="rotate(-90 82 330)">Low intracellular Na+</text>
+        </g>
+
+        <g id="flowArrows" class="solute-only">
+          <path class="flow-arrow na-arrow carb-only path-glucose" marker-end="url(#arrowNa)" d="M314 88 C314 116 314 146 314 174 C314 205 314 236 314 268"></path>
+          <path class="flow-arrow glucose-arrow carb-only path-glucose" marker-end="url(#arrowGlucose)" d="M336 88 C336 116 336 146 336 174 C336 205 336 236 336 268"></path>
+          <path class="flow-arrow na-arrow carb-only path-aa" marker-end="url(#arrowNa)" d="M506 88 C506 116 506 146 506 174 C506 205 506 236 506 268"></path>
+          <path class="flow-arrow aa-arrow carb-only path-aa" marker-end="url(#arrowAA)" d="M528 88 C528 116 528 146 528 174 C528 205 528 236 528 268"></path>
+          <path class="flow-arrow fructose-arrow carb-only path-fructose" marker-end="url(#arrowFructose)" d="M698 88 C698 122 698 160 698 202 C698 248 698 294 698 340"></path>
+
+          <path class="flow-arrow glucose-arrow carb-only path-glucose" marker-end="url(#arrowGlucose)" d="M336 286 C336 356 336 430 336 500 C331 552 315 594 300 636"></path>
+          <path class="flow-arrow aa-arrow carb-only path-aa" marker-end="url(#arrowAA)" d="M528 286 C528 356 528 430 528 500 C523 552 513 596 506 636"></path>
+          <path class="flow-arrow fructose-arrow carb-only path-fructose" marker-end="url(#arrowFructose)" d="M698 340 C698 412 698 462 698 500 C666 558 624 600 608 636"></path>
+          <path class="flow-arrow water-arrow carb-only absorptive-water path-glucose" marker-end="url(#arrowWater)" d="M236 95 C245 178 265 282 286 383 C302 462 302 558 286 635"></path>
+          <path class="flow-arrow water-arrow carb-only absorptive-water path-aa" marker-end="url(#arrowWater)" d="M391 95 C390 187 391 320 391 500 C391 555 400 596 423 635"></path>
+          <path class="flow-arrow water-arrow carb-only absorptive-water pathway-fructose-only" marker-end="url(#arrowWater)" d="M742 95 C740 185 734 306 722 418 C710 510 672 592 610 635"></path>
+
+          <path class="flow-arrow na-arrow carb-only na-gradient-visual path-glucose" marker-end="url(#arrowNa)" d="M223 438 C223 477 223 512 223 550"></path>
+          <path class="flow-arrow k-arrow carb-only na-gradient-visual path-glucose" marker-end="url(#arrowK)" d="M255 552 C245 512 237 477 233 438"></path>
+          <path class="flow-arrow na-arrow carb-only na-gradient-visual path-aa" marker-end="url(#arrowNa)" d="M592 438 C592 477 592 512 592 550"></path>
+          <path class="flow-arrow k-arrow carb-only na-gradient-visual path-aa" marker-end="url(#arrowK)" d="M624 552 C614 512 606 477 602 438"></path>
+          <path class="flow-arrow na-arrow carb-only na-gradient-visual path-fructose" marker-end="url(#arrowNa)" d="M811 438 C811 477 811 512 811 550"></path>
+          <path class="flow-arrow k-arrow carb-only na-gradient-visual path-fructose" marker-end="url(#arrowK)" d="M843 552 C833 512 825 477 821 438"></path>
+        </g>
+
+        <g id="pctFlowArrows" class="pct-only">
+          <path class="flow-arrow na-arrow" marker-end="url(#arrowNa)" d="M334 88 C334 142 334 204 334 270"></path>
+          <path class="flow-arrow glucose-arrow" marker-end="url(#arrowGlucose)" d="M358 88 C358 142 358 204 358 270"></path>
+          <path class="flow-arrow na-arrow" marker-end="url(#arrowNa)" d="M642 88 C642 142 642 204 642 270"></path>
+          <path class="flow-arrow aa-arrow" marker-end="url(#arrowAA)" d="M666 88 C666 142 666 204 666 270"></path>
+          <path class="flow-arrow glucose-arrow" marker-end="url(#arrowGlucose)" d="M358 290 C358 360 358 430 358 500 C358 552 342 594 326 636"></path>
+          <path class="flow-arrow aa-arrow" marker-end="url(#arrowAA)" d="M666 290 C666 360 666 430 666 500 C655 552 620 594 586 636"></path>
+          <path class="flow-arrow water-arrow" marker-end="url(#arrowWater)" d="M470 96 C470 194 470 318 470 500 C470 556 448 600 426 636"></path>
+          <path class="flow-arrow na-arrow" marker-end="url(#arrowNa)" d="M785 438 C785 477 785 512 785 550"></path>
+          <path class="flow-arrow k-arrow" marker-end="url(#arrowK)" d="M817 552 C807 512 799 477 795 438"></path>
+        </g>
+
+        <g id="transporters" class="solute-only">
+          <rect class="transporter apical-port glucose-port glow-port pct-only" x="306" y="103" width="56" height="58" rx="14"></rect>
+          <rect class="transporter apical-port aa-port glow-port pct-only" x="614" y="103" width="56" height="58" rx="14"></rect>
+          <rect class="transporter apical-port glucose-port glow-port carb-only path-glucose" x="286" y="103" width="56" height="58" rx="14"></rect>
+          <rect class="transporter apical-port aa-port glow-port carb-only path-aa" x="484" y="103" width="56" height="58" rx="14"></rect>
+          <rect class="transporter fructose-port glow-port carb-only path-fructose" x="670" y="103" width="56" height="58" rx="14"></rect>
+
+          <rect class="transporter basal-port pct-only" x="332" y="477" width="52" height="52" rx="12"></rect>
+          <rect class="transporter aa-basal-port pct-only" x="632" y="477" width="58" height="52" rx="12"></rect>
+          <rect class="transporter basal-port carb-only path-glucose" x="327" y="477" width="52" height="52" rx="12"></rect>
+          <rect class="transporter aa-basal-port carb-only path-aa" x="505" y="477" width="58" height="52" rx="12"></rect>
+          <rect class="transporter basal-port carb-only path-fructose" x="672" y="477" width="52" height="52" rx="12"></rect>
+          <rect class="transporter capillary-port pct-only" x="298" y="608" width="56" height="32" rx="9"></rect>
+          <rect class="transporter capillary-aa-port pct-only" x="555" y="608" width="62" height="32" rx="9"></rect>
+          <rect class="transporter capillary-port carb-only path-glucose" x="273" y="608" width="56" height="32" rx="9"></rect>
+          <rect class="transporter capillary-aa-port carb-only path-aa" x="478" y="608" width="62" height="32" rx="9"></rect>
+          <rect class="transporter capillary-port carb-only path-fructose" x="580" y="608" width="56" height="32" rx="9"></rect>
+
+          <g class="pump-small pct-only">
+            <rect class="pump-body" x="756" y="476" width="58" height="38" rx="11"></rect>
+            <text class="pump-label" x="785" y="491">Na+/K+</text>
+            <text class="pump-label" x="785" y="504">ATPase</text>
+          </g>
+          <g class="pump-small carb-only na-gradient-visual path-glucose">
+            <rect class="pump-body" x="194" y="476" width="58" height="38" rx="11"></rect>
+            <text class="pump-label" x="223" y="491">Na+/K+</text>
+            <text class="pump-label" x="223" y="504">ATPase</text>
+          </g>
+          <g class="pump-small carb-only na-gradient-visual path-aa">
+            <rect class="pump-body" x="565" y="476" width="54" height="38" rx="11"></rect>
+            <text class="pump-label" x="592" y="491">Na+/K+</text>
+            <text class="pump-label" x="592" y="504">ATPase</text>
+          </g>
+          <g class="pump-small carb-only na-gradient-visual path-fructose">
+            <rect class="pump-body" x="782" y="476" width="58" height="38" rx="11"></rect>
+            <text class="pump-label" x="811" y="491">Na+/K+</text>
+            <text class="pump-label" x="811" y="504">ATPase</text>
+          </g>
+
+          <g class="atp-badge atp-small pct-only">
+            <circle cx="775" cy="476" r="15"></circle>
+            <text x="775" y="476">ATP</text>
+          </g>
+          <g class="atp-badge atp-small carb-only na-gradient-visual path-glucose">
+            <circle cx="263" cy="476" r="15"></circle>
+            <text x="263" y="476">ATP</text>
+          </g>
+          <g class="atp-badge atp-small carb-only na-gradient-visual path-aa">
+            <circle cx="634" cy="476" r="15"></circle>
+            <text x="634" y="476">ATP</text>
+          </g>
+          <g class="atp-badge atp-small carb-only na-gradient-visual path-fructose">
+            <circle cx="855" cy="476" r="15"></circle>
+            <text x="855" y="476">ATP</text>
+          </g>
+        </g>
+
+        <g id="choleraLayer" class="carb-only cholera-only path-glucose">
+          <rect class="transporter cl-channel glow-port" x="775" y="103" width="56" height="58" rx="14"></rect>
+          <text class="transporter-label" x="803" y="82">Cl- channel</text>
+          <path class="flow-arrow cl-arrow" marker-end="url(#arrowCl)" d="M803 270 C803 218 803 158 803 88"></path>
+          <path class="flow-arrow na-arrow" marker-end="url(#arrowNa)" d="M620 548 C620 438 620 300 620 90"></path>
+          <path class="flow-arrow water-arrow" marker-end="url(#arrowWater)" d="M470 660 C466 582 440 510 420 420 C402 320 394 202 394 88"></path>
+          <path class="flow-arrow water-arrow" marker-end="url(#arrowWater)" d="M548 660 C540 578 518 500 500 406 C482 302 470 190 470 88"></path>
+          <text class="scenario-label" x="790" y="214">Increased Cl- secretion into lumen</text>
+          <text class="scenario-label" x="690" y="340">Na+ follows Cl- into lumen</text>
+          <text class="scenario-label" x="445" y="410">Water follows salt into lumen</text>
+          <text class="scenario-label" x="650" y="38">More water in lumen</text>
+        </g>
+
+        <g id="ortLayer" class="carb-only ort-only path-glucose">
+          <rect class="ort-transporter-glow" x="282" y="99" width="64" height="66" rx="17"></rect>
+          <path class="flow-arrow na-arrow" marker-end="url(#arrowNa)" d="M306 88 C306 142 306 206 306 270"></path>
+          <path class="flow-arrow glucose-arrow" marker-end="url(#arrowGlucose)" d="M344 88 C344 142 344 206 344 270"></path>
+          <path class="flow-arrow water-arrow" marker-end="url(#arrowWater)" d="M270 94 C280 184 300 300 314 420 C322 510 316 582 300 636"></path>
+          <path class="flow-arrow water-arrow" marker-end="url(#arrowWater)" d="M390 94 C390 184 390 304 390 420 C390 512 406 584 430 636"></path>
+          <text class="scenario-label" x="320" y="226">Increased Na+/Glucose co-transport</text>
+          <text class="scenario-label" x="354" y="410">Water follows Na+ and glucose into blood</text>
+        </g>
+
+        <g id="lipidModeStructures" class="lipid-only">
+          <path class="flow-arrow lipid-arrow post-dock-flow" marker-end="url(#arrowLipid)" d="M408 132 C386 180 346 222 314 264"></path>
+          <path class="flow-arrow lipid-arrow post-dock-flow" marker-end="url(#arrowLipid)" d="M330 306 C372 310 414 310 455 306"></path>
+          <path class="flow-arrow lipid-arrow post-dock-flow" marker-end="url(#arrowLipid)" d="M520 308 C556 306 592 306 626 310"></path>
+          <path class="flow-arrow lipid-arrow post-dock-flow" marker-end="url(#arrowLipid)" d="M485 414 C552 426 646 430 724 430"></path>
+          <path class="flow-arrow lipid-arrow post-dock-flow" marker-end="url(#arrowLipid)" d="M704 324 C728 356 742 389 750 418"></path>
+          <path class="flow-arrow lipid-arrow post-dock-flow" marker-end="url(#arrowLipid)" d="M755 452 C770 492 770 515 790 540 C820 586 844 618 880 676"></path>
+
+          <g transform="translate(308 242)">
+            <text class="lipid-small-label" x="0" y="-42">Fatty acid</text>
+            <path class="lipid-chain" d="M-48 4 C-32 -18 -18 -6 -3 -24 C13 -40 30 -18 48 -30"></path>
+          </g>
+
+          <g transform="translate(314 316)">
+            <text class="lipid-small-label" x="0" y="-58">Monoglyceride</text>
+            <line class="glycerol-backbone" x1="-28" y1="-28" x2="-28" y2="26"></line>
+            <path class="lipid-chain" d="M-28 -10 C-4 -30 16 -14 40 -28"></path>
+          </g>
+
+          <g transform="translate(472 304)">
+            <text class="lipid-process-label" x="0" y="-62">Smooth ER</text>
+            <path class="smooth-er-shadow" d="M-70 -28 C-34 -54 26 -48 62 -20 C24 -5 -22 6 -62 26 C-20 48 34 38 72 10"></path>
+            <path class="smooth-er" d="M-70 -28 C-34 -54 26 -48 62 -20"></path>
+            <path class="smooth-er" d="M62 -20 C24 -5 -22 6 -62 26"></path>
+            <path class="smooth-er" d="M-62 26 C-20 48 34 38 72 10"></path>
+          </g>
+
+          <g transform="translate(462 412)">
+            <text class="lipid-small-label" x="0" y="-42">Steroid</text>
+            <polygon class="steroid-ring" points="-42,-6 -29,-28 -4,-28 9,-6 -4,16 -29,16"></polygon>
+            <polygon class="steroid-ring" points="-4,-28 22,-28 35,-6 22,16 -4,16 9,-6"></polygon>
+            <polygon class="steroid-ring" points="22,-28 48,-28 61,-6 48,16 22,16 35,-6"></polygon>
+            <polygon class="steroid-ring" points="48,16 67,8 78,25 64,42 42,34"></polygon>
+          </g>
+
+          <g transform="translate(630 314)">
+            <text class="lipid-small-label" x="0" y="-58">Triglyceride</text>
+            <line class="glycerol-backbone" x1="-36" y1="-32" x2="-36" y2="34"></line>
+            <path class="lipid-chain" d="M-36 -20 C-10 -42 16 -24 46 -42"></path>
+            <path class="lipid-chain" d="M-36 0 C-8 -14 18 -2 52 -16"></path>
+            <path class="lipid-chain" d="M-36 22 C-6 44 22 26 54 42"></path>
+          </g>
+
+          <g transform="translate(710 318)">
+            <text class="lipid-small-label" x="0" y="-52">Protein</text>
+            <path class="protein-fold" d="M-48 -6 C-32 -34 -8 -30 -12 -7 C-16 15 16 17 18 -4 C20 -28 48 -18 42 12"></path>
+            <path class="protein-fold" d="M-30 38 C-8 16 20 20 10 42 C2 58 36 60 46 34"></path>
+            <ellipse class="protein-fold-fill" cx="4" cy="14" rx="14" ry="9"></ellipse>
+          </g>
+
+          <circle class="vesicle-ring" cx="755" cy="430" r="48"></circle>
+
+          <g class="particle">
+            <animateMotion path="M118 96 C218 90 310 98 410 124" dur="12s" begin="0s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;0.42;1" calcMode="linear" data-base-dur="12" data-base-begin="0"></animateMotion>
+            <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.43;0.52;1" dur="12s" begin="0s" repeatCount="indefinite" data-base-dur="12" data-base-begin="0"></animate>
+            <circle cx="0" cy="0" r="48" fill="#dff6a2" stroke="#4da756" stroke-width="2.5"></circle>
+            <circle class="bile-salt" cx="-45" cy="-6" r="6"></circle>
+            <circle class="bile-salt" cx="-32" cy="-34" r="6"></circle>
+            <circle class="bile-salt" cx="0" cy="-48" r="6"></circle>
+            <circle class="bile-salt" cx="34" cy="-32" r="6"></circle>
+            <circle class="bile-salt" cx="46" cy="4" r="6"></circle>
+            <circle class="bile-salt" cx="26" cy="38" r="6"></circle>
+            <circle class="bile-salt" cx="-18" cy="44" r="6"></circle>
+            <path d="M-26 4 C-16 -18 -2 -24 12 -8" fill="none" stroke="#56c46b" stroke-width="5" stroke-linecap="round"></path>
+            <circle cx="19" cy="12" r="8" fill="#57b7c7" stroke="#1c7584" stroke-width="1.4"></circle>
+            <polygon points="-5,-4 9,-12 23,-3 18,13 1,15 -10,5" fill="#ffb04d" stroke="#a75c10" stroke-width="1.4"></polygon>
+            <text class="particle-label" x="0" y="-17" fill="#174b25" font-size="10">Micelle</text>
+            <text class="particle-label" x="0" y="-2" fill="#174b25" font-size="6.2">Fatty acid</text>
+            <text class="particle-label" x="0" y="11" fill="#174b25" font-size="6.2">Monoglyceride</text>
+            <text class="particle-label" x="0" y="24" fill="#174b25" font-size="6.2">Steroid</text>
+            <text class="particle-label" x="0" y="-62" fill="#605b14" font-size="8.5">Bile salts</text>
+          </g>
+
+          <circle class="bile-salt" cx="398" cy="100" r="6"></circle>
+          <circle class="bile-salt" cx="430" cy="94" r="6"></circle>
+          <circle class="bile-salt" cx="458" cy="104" r="6"></circle>
+          <text class="lipid-small-label" x="432" y="80">Bile salts remain in lumen</text>
+
+          <g class="chylomicron-static">
+            <ellipse cx="755" cy="430" rx="62" ry="31"></ellipse>
+            <text x="755" y="430">Chylomicron</text>
+          </g>
+
+          <text class="lipid-bottom-note" x="535" y="486">Monoglyceride + 2 fatty acids + steroid -> triglyceride, then protein packaging forms a chylomicron</text>
+        </g>
+
+        <g id="staticParticles"></g>
+        <g id="movingParticles"></g>
+
+        <g id="labels">
+          <text class="region-label" x="44" y="39">Lumen</text>
+          <text class="sub-label pct-only" x="44" y="68">Tubular filtrate</text>
+          <text class="sub-label carb-only" x="44" y="68">Intestinal lumen</text>
+          <text class="sub-label lipid-only" x="44" y="68">Intestinal lumen</text>
+
+          <text class="region-label" x="42" y="548">Interstitial fluid</text>
+          <text class="vessel-label pct-only" x="435" y="670" text-anchor="middle">Peritubular capillary</text>
+          <text class="vessel-label carb-only" x="435" y="670" text-anchor="middle">Blood capillary</text>
+          <text class="vessel-label lipid-only" x="295" y="664" text-anchor="middle">Blood capillary</text>
+          <text class="vessel-label lipid-only" x="835" y="668" text-anchor="middle">Lacteal / lymphatic</text>
+
+          <text class="transporter-label pct-only" x="334" y="70">
+            <tspan x="334" dy="0">Na+/Glucose</tspan>
+            <tspan x="334" dy="15">co-transporter</tspan>
+          </text>
+          <text class="transporter-label carb-only path-glucose" x="314" y="70">
+            <tspan x="314" dy="0">Na+/Glucose</tspan>
+            <tspan x="314" dy="15">co-transporter</tspan>
+          </text>
+          <text class="process-note pct-only explain" x="334" y="206">Secondary active transport</text>
+          <text class="process-note carb-only explain path-glucose" x="314" y="206">Secondary active transport</text>
+
+          <text class="transporter-label pct-only" x="642" y="70">
+            <tspan x="642" dy="0">Na+/Amino acid</tspan>
+            <tspan x="642" dy="15">co-transporter</tspan>
+          </text>
+          <text class="transporter-label carb-only path-aa" x="512" y="70">
+            <tspan x="512" dy="0">Na+/Amino acid</tspan>
+            <tspan x="512" dy="15">co-transporter</tspan>
+          </text>
+          <text class="process-note pct-only explain" x="642" y="206">Secondary active transport</text>
+          <text class="process-note carb-only explain path-aa" x="512" y="206">Secondary active transport</text>
+
+          <text class="transporter-label carb-only path-fructose" x="698" y="72">
+            <tspan x="698" dy="0">Fructose</tspan>
+            <tspan x="698" dy="15">transporter</tspan>
+          </text>
+          <text class="process-note carb-only explain path-fructose" x="698" y="206">Facilitated diffusion</text>
+
+          <text class="transporter-label pct-only" x="358" y="508">GLUT</text>
+          <text class="transporter-label carb-only path-glucose" x="353" y="508">GLUT</text>
+          <text class="transporter-label carb-only path-fructose" x="698" y="508">GLUT</text>
+          <text class="transporter-label pct-only" x="661" y="508">AA transporter</text>
+          <text class="transporter-label carb-only path-aa" x="534" y="508">AA transporter</text>
+          <text class="transporter-label pct-only" x="326" y="629">GLUT</text>
+          <text class="transporter-label carb-only path-glucose" x="301" y="629">GLUT</text>
+          <text class="transporter-label pct-only" x="586" y="629">AA transporter</text>
+          <text class="transporter-label carb-only path-aa" x="509" y="629">AA transporter</text>
+          <text class="transporter-label carb-only path-fructose" x="608" y="629">GLUT</text>
+
+          <rect class="label-pill solute-only" x="147" y="430" width="230" height="30" rx="8"></rect>
+          <text class="small-structure-label solute-only" x="262" y="451" text-anchor="middle">Water follows solute by osmosis</text>
+
+          <text class="lipid-process-label lipid-only" x="366" y="184">Micelle docks at microvilli</text>
+          <text class="lipid-process-label lipid-only" x="322" y="226">Lipid components diffuse inward</text>
+          <text class="lipid-process-label lipid-only" x="474" y="374">Smooth ER rebuilds triglycerides</text>
+          <text class="lipid-process-label lipid-only" x="724" y="382">Protein joins lipid package</text>
+          <text class="lipid-process-label lipid-only" x="610" y="548">Exocytosis</text>
+          <text class="lipid-process-label lipid-only" x="858" y="590">Gaps between lacteal endothelial cells</text>
+          <path class="flow-arrow lipid-arrow lipid-only" marker-end="url(#arrowLipid)" d="M852 596 C835 607 820 617 804 626"></path>
+          <text class="lipid-process-label lipid-only" x="846" y="726">Chylomicron enters lymph</text>
+
+          <g class="callout explain solute-only na-gradient-visual" transform="translate(900 25)">
+            <rect width="278" height="128"></rect>
+            <text class="callout-title" x="16" y="25">Core mechanism</text>
+            <text class="callout-text" x="16" y="50">
+              <tspan x="16" dy="0">The Na+/K+ ATPase uses ATP</tspan>
+              <tspan x="16" dy="18">to pump Na+ into interstitial fluid</tspan>
+              <tspan x="16" dy="18">and K+ into epithelial cells.</tspan>
+              <tspan x="16" dy="18">That gradient powers secondary</tspan>
+              <tspan x="16" dy="18">active transport at microvilli.</tspan>
+            </text>
+          </g>
+
+          <g class="callout explain pct-only" transform="translate(900 176)">
+            <rect width="278" height="142"></rect>
+            <text class="callout-title" x="16" y="25">PCT labels</text>
+            <text class="callout-text" x="16" y="50">
+              <tspan x="16" dy="0">Most glucose and amino acids</tspan>
+              <tspan x="16" dy="18">are reclaimed here.</tspan>
+              <tspan x="16" dy="22">Water follows Na+ and nutrients.</tspan>
+              <tspan x="16" dy="22">Reabsorbed nutrients enter</tspan>
+              <tspan x="16" dy="18">the peritubular capillary.</tspan>
+            </text>
+          </g>
+
+          <g class="callout explain carb-only normal-only pathway-all-only" transform="translate(900 176)">
+            <rect width="278" height="142"></rect>
+            <text class="callout-title" x="16" y="25">Villus labels</text>
+            <text class="callout-text" x="16" y="50">
+              <tspan x="16" dy="0">Glucose and amino acids use</tspan>
+              <tspan x="16" dy="18">the Na+ gradient.</tspan>
+              <tspan x="16" dy="22">Fructose uses facilitated</tspan>
+              <tspan x="16" dy="18">diffusion through its transporter.</tspan>
+              <tspan x="16" dy="22">Nutrients enter blood capillary.</tspan>
+            </text>
+          </g>
+
+          <g class="callout explain carb-only normal-only pathway-glucose-only" transform="translate(900 176)">
+            <rect width="278" height="128"></rect>
+            <text class="callout-title" x="16" y="25">Glucose pathway</text>
+            <text class="callout-text" x="16" y="50">
+              <tspan x="16" dy="0">Na+ and glucose enter together</tspan>
+              <tspan x="16" dy="18">through the apical co-transporter.</tspan>
+              <tspan x="16" dy="22">Glucose exits by GLUT, then</tspan>
+              <tspan x="16" dy="18">passes into the blood capillary.</tspan>
+            </text>
+          </g>
+
+          <g class="callout explain carb-only normal-only pathway-aa-only" transform="translate(900 176)">
+            <rect width="278" height="128"></rect>
+            <text class="callout-title" x="16" y="25">Amino acid pathway</text>
+            <text class="callout-text" x="16" y="50">
+              <tspan x="16" dy="0">Na+ and amino acids enter</tspan>
+              <tspan x="16" dy="18">through the apical co-transporter.</tspan>
+              <tspan x="16" dy="22">Amino acids use AA transporters,</tspan>
+              <tspan x="16" dy="18">not GLUT, to enter blood.</tspan>
+            </text>
+          </g>
+
+          <g class="callout explain carb-only normal-only pathway-fructose-only" transform="translate(900 176)">
+            <rect width="278" height="128"></rect>
+            <text class="callout-title" x="16" y="25">Fructose pathway</text>
+            <text class="callout-text" x="16" y="50">
+              <tspan x="16" dy="0">Fructose enters by facilitated</tspan>
+              <tspan x="16" dy="18">diffusion at the microvilli.</tspan>
+              <tspan x="16" dy="22">It exits through GLUT, then</tspan>
+              <tspan x="16" dy="18">passes into the blood capillary.</tspan>
+            </text>
+          </g>
+
+          <g class="callout explain carb-only cholera-only" transform="translate(900 176)">
+            <rect width="278" height="142"></rect>
+            <text class="callout-title" x="16" y="25">Cholera outcome</text>
+            <text class="callout-text" x="16" y="50">
+              <tspan x="16" dy="0">Increased Cl- secretion into lumen.</tspan>
+              <tspan x="16" dy="22">Na+ follows Cl- into lumen.</tspan>
+              <tspan x="16" dy="22">Water follows salt into lumen.</tspan>
+              <tspan x="16" dy="22">The Na+/Glucose co-transporter</tspan>
+              <tspan x="16" dy="18">remains present and functional.</tspan>
+            </text>
+          </g>
+
+          <g class="callout explain carb-only ort-only" transform="translate(900 176)">
+            <rect width="278" height="142"></rect>
+            <text class="callout-title" x="16" y="25">ORT outcome</text>
+            <text class="callout-text" x="16" y="50">
+              <tspan x="16" dy="0">More Na+ and glucose enter</tspan>
+              <tspan x="16" dy="18">through their co-transporter.</tspan>
+              <tspan x="16" dy="22">GLUT moves glucose toward blood.</tspan>
+              <tspan x="16" dy="22">Water follows Na+ and glucose</tspan>
+              <tspan x="16" dy="18">into the blood capillary.</tspan>
+            </text>
+          </g>
+
+          <g class="callout explain lipid-only" transform="translate(900 176)">
+            <rect width="278" height="142"></rect>
+            <text class="callout-title" x="16" y="25">Lipid labels</text>
+            <text class="callout-text" x="16" y="50">
+              <tspan x="16" dy="0">Bile salts deliver lipids in</tspan>
+              <tspan x="16" dy="18">micelles but stay in lumen.</tspan>
+              <tspan x="16" dy="22">Lipids are rebuilt, packaged,</tspan>
+              <tspan x="16" dy="18">exocytosed, and routed to lymph.</tspan>
+            </text>
+          </g>
+
+          <g class="callout explain pct-only" transform="translate(900 342)">
+            <rect width="278" height="174"></rect>
+            <text class="callout-title" x="16" y="26">Key idea</text>
+            <text class="callout-text" x="16" y="52">
+              <tspan x="16" dy="0">The proximal convoluted tubule</tspan>
+              <tspan x="16" dy="18">reabsorbs filtered nutrients.</tspan>
+              <tspan x="16" dy="22">The Na+/K+ pump creates a</tspan>
+              <tspan x="16" dy="18">Na+ gradient that drives uptake</tspan>
+              <tspan x="16" dy="18">of glucose and amino acids</tspan>
+              <tspan x="16" dy="18">from the filtrate.</tspan>
+            </text>
+          </g>
+
+          <g class="callout explain carb-only normal-only pathway-all-only" transform="translate(900 342)">
+            <rect width="278" height="204"></rect>
+            <text class="callout-title" x="16" y="26">Key idea</text>
+            <text class="callout-text" x="16" y="52">
+              <tspan x="16" dy="0">Enterocytes absorb digested</tspan>
+              <tspan x="16" dy="18">carbohydrates and amino acids.</tspan>
+              <tspan x="16" dy="22">Na+ drives glucose and AA</tspan>
+              <tspan x="16" dy="18">uptake, while fructose uses</tspan>
+              <tspan x="16" dy="18">facilitated diffusion.</tspan>
+              <tspan x="16" dy="24">Use Show pathway to isolate one</tspan>
+              <tspan x="16" dy="18">transport route at a time.</tspan>
+            </text>
+          </g>
+
+          <g class="callout explain carb-only normal-only pathway-glucose-only" transform="translate(900 342)">
+            <rect width="278" height="156"></rect>
+            <text class="callout-title" x="16" y="26">Key idea</text>
+            <text class="callout-text" x="16" y="52">
+              <tspan x="16" dy="0">The Na+/K+ pump keeps Na+</tspan>
+              <tspan x="16" dy="18">low inside the cell.</tspan>
+              <tspan x="16" dy="22">That gradient pulls Na+ and</tspan>
+              <tspan x="16" dy="18">glucose inward together, and</tspan>
+              <tspan x="16" dy="18">water follows toward blood.</tspan>
+            </text>
+          </g>
+
+          <g class="callout explain carb-only normal-only pathway-aa-only" transform="translate(900 342)">
+            <rect width="278" height="156"></rect>
+            <text class="callout-title" x="16" y="26">Key idea</text>
+            <text class="callout-text" x="16" y="52">
+              <tspan x="16" dy="0">The Na+ gradient also powers</tspan>
+              <tspan x="16" dy="18">amino acid uptake.</tspan>
+              <tspan x="16" dy="22">Amino acids exit by AA</tspan>
+              <tspan x="16" dy="18">transporters and then move</tspan>
+              <tspan x="16" dy="18">into the blood capillary.</tspan>
+            </text>
+          </g>
+
+          <g class="callout explain carb-only normal-only pathway-fructose-only" transform="translate(900 342)">
+            <rect width="278" height="156"></rect>
+            <text class="callout-title" x="16" y="26">Key idea</text>
+            <text class="callout-text" x="16" y="52">
+              <tspan x="16" dy="0">Fructose does not use the</tspan>
+              <tspan x="16" dy="18">Na+/Glucose co-transporter.</tspan>
+              <tspan x="16" dy="22">It uses facilitated diffusion</tspan>
+              <tspan x="16" dy="18">into the cell and GLUT to</tspan>
+              <tspan x="16" dy="18">exit toward blood.</tspan>
+            </text>
+          </g>
+
+          <g class="callout explain carb-only cholera-only" transform="translate(900 342)">
+            <rect width="278" height="174"></rect>
+            <text class="callout-title" x="16" y="26">Key idea</text>
+            <text class="callout-text" x="16" y="52">
+              <tspan x="16" dy="0">Cholera increases Cl- secretion</tspan>
+              <tspan x="16" dy="18">into the intestinal lumen.</tspan>
+              <tspan x="16" dy="22">Na+ and water follow, causing</tspan>
+              <tspan x="16" dy="18">excess water to remain in</tspan>
+              <tspan x="16" dy="18">the lumen.</tspan>
+            </text>
+          </g>
+
+          <g class="callout explain carb-only ort-only" transform="translate(900 342)">
+            <rect width="278" height="192"></rect>
+            <text class="callout-title" x="16" y="26">Key idea</text>
+            <text class="callout-text" x="16" y="52">
+              <tspan x="16" dy="0">ORT supplies glucose and Na+.</tspan>
+              <tspan x="16" dy="22">The Na+/Glucose co-transporter</tspan>
+              <tspan x="16" dy="18">remains active, pulling both</tspan>
+              <tspan x="16" dy="18">into enterocytes.</tspan>
+              <tspan x="16" dy="22">Water follows into the blood.</tspan>
+              <tspan x="16" dy="22">ORT does not directly stop</tspan>
+              <tspan x="16" dy="18">Cl- secretion.</tspan>
+            </text>
+          </g>
+
+          <g class="callout explain carb-only" transform="translate(900 552)">
+            <rect width="278" height="92"></rect>
+            <text class="callout-title" x="16" y="25">Clarity note</text>
+            <text class="callout-text" x="16" y="50">
+              <tspan x="16" dy="0">For clarity, each simplified view</tspan>
+              <tspan x="16" dy="18">emphasizes one pathway. In reality,</tspan>
+              <tspan x="16" dy="18">absorptive cells can contain multiple</tspan>
+              <tspan x="16" dy="18">relevant transporters.</tspan>
+            </text>
+          </g>
+
+          <g class="callout explain lipid-only" transform="translate(900 342)">
+            <rect width="278" height="174"></rect>
+            <text class="callout-title" x="16" y="26">Key idea</text>
+            <text class="callout-text" x="16" y="52">
+              <tspan x="16" dy="0">Micelles dock at microvilli.</tspan>
+              <tspan x="16" dy="22">Fatty acids, monoglycerides,</tspan>
+              <tspan x="16" dy="18">and steroids diffuse in.</tspan>
+              <tspan x="16" dy="22">The smooth ER rebuilds fats,</tspan>
+              <tspan x="16" dy="18">then chylomicrons enter lymph.</tspan>
+            </text>
+          </g>
+        </g>
+      </svg>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const SVG_NS = "http://www.w3.org/2000/svg";
+      const body = document.body;
+      const root = document.documentElement;
+      const scene = document.getElementById("scene");
+      const pctButton = document.getElementById("pctMode");
+      const intestinalButton = document.getElementById("intestinalMode");
+      const lipidButton = document.getElementById("lipidMode");
+      const normalScenarioButton = document.getElementById("normalScenario");
+      const choleraScenarioButton = document.getElementById("choleraScenario");
+      const ortScenarioButton = document.getElementById("ortScenario");
+      const allPathwayButton = document.getElementById("allPathway");
+      const glucosePathwayButton = document.getElementById("glucosePathway");
+      const aaPathwayButton = document.getElementById("aaPathway");
+      const fructosePathwayButton = document.getElementById("fructosePathway");
+      const playPauseButton = document.getElementById("playPause");
+      const resetButton = document.getElementById("resetAnimation");
+      const showLabels = document.getElementById("showLabels");
+      const speedInput = document.getElementById("animationSpeed");
+      const speedReadout = document.getElementById("speedReadout");
+      const title = document.getElementById("mainTitle");
+      const subtitle = document.getElementById("modeSubtitle");
+      const staticLayer = document.getElementById("staticParticles");
+      const movingLayer = document.getElementById("movingParticles");
+      const microvilliLayer = document.getElementById("microvilli");
+
+      const state = {
+        mode: "pct",
+        scenario: "normal",
+        pathway: "all",
+        paused: false,
+        speed: 1
+      };
+
+      const cssDurations = {
+        "--dash-duration": 1.55,
+        "--arrow-duration": 2.2,
+        "--glow-duration": 4.4,
+        "--lipid-glow-duration": 5.2,
+        "--pump-duration": 1.45,
+        "--atp-duration": 1.15,
+        "--lipid-sequence-duration": 12
+      };
+
+      const modeText = {
+        pct: {
+          title: "PCT Absorption: Reabsorption from filtrate",
+          subtitle: "Tubular filtrate loses nutrients and water to the interstitial fluid and peritubular capillary."
+        },
+        intestinal: {
+          title: "Intestinal Carbohydrate + Amino Acid Absorption",
+          subtitle: "Na+ gradients drive glucose and amino-acid uptake; fructose uses facilitated diffusion."
+        },
+        lipid: {
+          title: "Intestinal Lipid Absorption",
+          subtitle: "Micelles deliver lipids to enterocytes, which package chylomicrons for lymphatic transport."
+        }
+      };
+
+      const particles = {
+        na: { label: "Na+", shape: "circle", r: 12, fill: "#ffd447", stroke: "#b88400", text: "#3e3100", font: 8.5 },
+        glucose: { label: "Glucose", shape: "hex", r: 20, fill: "#4aa7ff", stroke: "#1466ad", text: "#062f55", font: 7.4 },
+        aa: { label: "AA", shape: "triangle", r: 18, fill: "#a27be6", stroke: "#5f3aa5", text: "#ffffff", font: 9 },
+        water: { label: "H2O", shape: "drop", r: 15, fill: "#9ce4ff", stroke: "#3f9ec4", text: "#07526e", font: 7.5 },
+        fructose: { label: "Fructose", shape: "circle", r: 18, fill: "#ffad4d", stroke: "#bd6413", text: "#552500", font: 6.8 },
+        lipid: { label: "Lipid", shape: "drop", r: 17, fill: "#67ce76", stroke: "#247d3b", text: "#103d1d", font: 8 },
+        k: { label: "K+", shape: "circle", r: 12, fill: "#ff8cbd", stroke: "#b23d75", text: "#4f0e2d", font: 8.5 },
+        cl: { label: "Cl-", shape: "circle", r: 13, fill: "#70d185", stroke: "#247e3c", text: "#123f20", font: 8.2 },
+        fattyAcid: { label: "Fatty acid", shape: "custom", text: "#103d1d", font: 5.8 },
+        monoglyceride: { label: "Monoglyceride", shape: "custom", text: "#073f48", font: 4.9 },
+        steroid: { label: "Steroid", shape: "custom", text: "#4f2300", font: 6.6 },
+        protein: { label: "Protein", shape: "custom", text: "#443400", font: 7.2 },
+        triglyceride: { label: "Triglyceride", shape: "custom", text: "#114b27", font: 9 },
+        chylomicron: { label: "Chylomicron", shape: "ellipse", rx: 43, ry: 23, fill: "#a8efb6", stroke: "#2b8744", text: "#114b27", font: 7.6 }
+      };
+
+      function svgEl(name, attributes = {}) {
+        const element = document.createElementNS(SVG_NS, name);
+        Object.entries(attributes).forEach(([key, value]) => {
+          element.setAttribute(key, value);
+        });
+        return element;
+      }
+
+      function addBrushBorder(startX, endX, modeClass, spacing = 32) {
+        const group = svgEl("g", { class: modeClass });
+        group.appendChild(svgEl("path", {
+          class: "microvillus-base",
+          d: `M${startX} 155 H${endX}`
+        }));
+
+        const sparse = spacing > 40;
+        const startOffset = sparse ? 10 : 6;
+        const endOffset = sparse ? 26 : 20;
+        const villusWidth = sparse ? 24 : 22;
+
+        for (let x = startX + startOffset; x <= endX - endOffset; x += spacing) {
+          const height = (sparse ? 44 : 46) + ((x / spacing) % 3) * 7;
+          const villus = svgEl("rect", {
+            class: "microvillus",
+            x,
+            y: 155 - height,
+            width: villusWidth,
+            height,
+            rx: 10
+          });
+          group.appendChild(villus);
+        }
+        microvilliLayer.appendChild(group);
+      }
+
+      function addMicrovilli() {
+        addBrushBorder(160, 850, "pct-only");
+        addBrushBorder(160, 390, "carb-only lane-glucose");
+        addBrushBorder(390, 620, "carb-only lane-aa");
+        addBrushBorder(620, 850, "carb-only lane-fructose");
+        addBrushBorder(225, 840, "lipid-only", 110);
+      }
+
+      function addCustomLipidParticle(group, type, label) {
+        if (!["fattyAcid", "monoglyceride", "steroid", "protein", "triglyceride"].includes(type)) {
+          return false;
+        }
+
+        const labelText = svgEl("text", {
+          class: "particle-label",
+          x: 0,
+          y: 24,
+          fill: "#164f2a",
+          "font-size": type === "monoglyceride" ? 4.8 : 6.2
+        });
+        labelText.textContent = label;
+
+        if (type === "fattyAcid") {
+          group.appendChild(svgEl("path", {
+            class: "lipid-chain",
+            d: "M-22 2 C-12 -12 -2 -4 8 -16 C18 -28 28 -10 38 -18"
+          }));
+        } else if (type === "monoglyceride") {
+          group.appendChild(svgEl("line", {
+            class: "glycerol-backbone",
+            x1: -20,
+            y1: -20,
+            x2: -20,
+            y2: 14
+          }));
+          group.appendChild(svgEl("path", {
+            class: "lipid-chain",
+            d: "M-20 -6 C-4 -22 12 -8 30 -18"
+          }));
+        } else if (type === "triglyceride") {
+          group.appendChild(svgEl("line", {
+            class: "glycerol-backbone",
+            x1: -24,
+            y1: -22,
+            x2: -24,
+            y2: 20
+          }));
+          group.appendChild(svgEl("path", {
+            class: "lipid-chain",
+            d: "M-24 -14 C-6 -30 12 -16 32 -28"
+          }));
+          group.appendChild(svgEl("path", {
+            class: "lipid-chain",
+            d: "M-24 0 C-4 -12 14 -2 36 -12"
+          }));
+          group.appendChild(svgEl("path", {
+            class: "lipid-chain",
+            d: "M-24 14 C-4 28 14 16 36 26"
+          }));
+          labelText.textContent = "TG";
+        } else if (type === "steroid") {
+          [
+            "-34,-6 -23,-22 -4,-22 7,-6 -4,10 -23,10",
+            "-4,-22 16,-22 27,-6 16,10 -4,10 7,-6",
+            "16,-22 36,-22 47,-6 36,10 16,10 27,-6",
+            "36,10 50,4 60,18 49,31 31,25"
+          ].forEach((points) => {
+            group.appendChild(svgEl("polygon", {
+              class: "steroid-ring",
+              points
+            }));
+          });
+        } else {
+          group.appendChild(svgEl("path", {
+            class: "protein-fold",
+            d: "M-30 -3 C-20 -24 -4 -20 -7 -3 C-10 14 12 15 14 -2 C16 -22 32 -12 28 10"
+          }));
+          group.appendChild(svgEl("path", {
+            class: "protein-fold",
+            d: "M-18 22 C-6 10 12 12 7 25 C2 38 24 36 30 20"
+          }));
+          group.appendChild(svgEl("ellipse", {
+            class: "protein-fold-fill",
+            cx: 0,
+            cy: 9,
+            rx: 10,
+            ry: 7
+          }));
+        }
+
+        group.appendChild(labelText);
+        return true;
+      }
+
+      function addParticleShape(group, type, overrideLabel) {
+        const config = particles[type];
+        const label = overrideLabel || config.label;
+        let shape;
+
+        if (addCustomLipidParticle(group, type, label)) {
+          return;
+        }
+
+        if (config.shape === "circle") {
+          shape = svgEl("circle", {
+            cx: 0,
+            cy: 0,
+            r: config.r,
+            fill: config.fill,
+            stroke: config.stroke,
+            "stroke-width": 1.7
+          });
+        } else if (config.shape === "hex") {
+          const r = config.r;
+          const points = Array.from({ length: 6 }, (_, index) => {
+            const angle = Math.PI / 6 + index * Math.PI / 3;
+            return `${Math.cos(angle) * r},${Math.sin(angle) * r}`;
+          }).join(" ");
+          shape = svgEl("polygon", {
+            points,
+            fill: config.fill,
+            stroke: config.stroke,
+            "stroke-width": 1.8
+          });
+        } else if (config.shape === "triangle") {
+          const r = config.r;
+          shape = svgEl("polygon", {
+            points: `0,${-r} ${r * 0.9},${r * 0.75} ${-r * 0.9},${r * 0.75}`,
+            fill: config.fill,
+            stroke: config.stroke,
+            "stroke-width": 1.8
+          });
+        } else if (config.shape === "drop") {
+          const r = config.r;
+          shape = svgEl("path", {
+            d: `M0,${-r} C${r * 0.7},${-r * 0.25} ${r * 0.88},${r * 0.48} ${r * 0.25},${r * 0.82} C${-r * 0.42},${r * 1.2} ${-r * 0.95},${r * 0.45} ${-r * 0.75},${-r * 0.08} C${-r * 0.55},${-r * 0.48} ${-r * 0.23},${-r * 0.73} 0,${-r} Z`,
+            fill: config.fill,
+            stroke: config.stroke,
+            "stroke-width": 1.7
+          });
+        } else {
+          shape = svgEl("ellipse", {
+            cx: 0,
+            cy: 0,
+            rx: config.rx,
+            ry: config.ry,
+            fill: config.fill,
+            stroke: config.stroke,
+            "stroke-width": 2
+          });
+        }
+
+        const text = svgEl("text", {
+          class: "particle-label",
+          x: 0,
+          y: config.shape === "drop" ? 3 : 1,
+          fill: config.text,
+          "font-size": config.font
+        });
+        text.textContent = label;
+
+        group.appendChild(shape);
+        group.appendChild(text);
+      }
+
+      function addStaticParticle(type, x, y, modeClass = "", scale = 1) {
+        const group = svgEl("g", {
+          class: `particle static-particle ${modeClass}`,
+          transform: `translate(${x} ${y}) scale(${scale})`
+        });
+        addParticleShape(group, type);
+        staticLayer.appendChild(group);
+      }
+
+      function formatSeconds(seconds) {
+        return `${Number(seconds).toFixed(3).replace(/\.?0+$/, "")}s`;
+      }
+
+      function scaledSeconds(seconds) {
+        return formatSeconds(seconds / state.speed);
+      }
+
+      function addMovingParticle(type, path, duration, begin, modeClass = "", scale = 1, label) {
+        const group = svgEl("g", {
+          class: `particle moving-particle ${modeClass}`,
+          transform: `scale(${scale})`
+        });
+        addParticleShape(group, type, label);
+        const motion = svgEl("animateMotion", {
+          path,
+          dur: scaledSeconds(duration),
+          begin: scaledSeconds(begin),
+          repeatCount: "indefinite"
+        });
+        motion.dataset.baseDur = String(duration);
+        motion.dataset.baseBegin = String(begin);
+        group.appendChild(motion);
+        movingLayer.appendChild(group);
+      }
+
+      function buildStaticParticles() {
+        [
+          [246, 72, "path-glucose"], [296, 113, "path-glucose"], [438, 82, "path-aa"],
+          [476, 116, "path-aa"], [585, 92, "path-aa"], [636, 124, "na-gradient-visual path-fructose"], [690, 72, "na-gradient-visual path-fructose"], [742, 118, "na-gradient-visual path-fructose"], [836, 84, "na-gradient-visual path-fructose"]
+        ].forEach(([x, y, pathwayClass]) => addStaticParticle("na", x, y, `solute-only ${pathwayClass}`));
+
+        [
+          [96, 542], [154, 570], [248, 530], [336, 586], [450, 544], [612, 570],
+          [664, 528], [724, 575], [792, 548], [852, 585]
+        ].forEach(([x, y]) => addStaticParticle("na", x, y, "pct-only"));
+
+        [
+          [248, 530, "path-glucose"], [450, 544, "path-aa"], [724, 575, "na-gradient-visual path-fructose"]
+        ].forEach(([x, y, pathwayClass]) => addStaticParticle("na", x, y, `carb-only ${pathwayClass}`, 0.86));
+
+        [
+          [432, 300, "path-glucose"], [548, 424, "path-aa"], [696, 356, "na-gradient-visual path-fructose"]
+        ].forEach(([x, y, pathwayClass]) => addStaticParticle("na", x, y, `solute-only ${pathwayClass}`, 0.86));
+
+        [
+          [414, 52], [610, 55]
+        ].forEach(([x, y]) => addStaticParticle("glucose", x, y, "solute-only path-glucose", 0.88));
+
+        [
+          [225, 100], [534, 50], [644, 96]
+        ].forEach(([x, y]) => addStaticParticle("aa", x, y, "solute-only path-aa", 0.86));
+
+        [
+          [210, 132], [374, 42], [588, 126], [754, 45]
+        ].forEach(([x, y]) => addStaticParticle("water", x, y, "solute-only", 0.82));
+
+        [
+          [320, 548], [520, 588], [690, 555]
+        ].forEach(([x, y]) => addStaticParticle("water", x, y, "pct-only", 0.82));
+
+        [
+          [520, 588]
+        ].forEach(([x, y]) => addStaticParticle("water", x, y, "carb-only", 0.76));
+
+        [
+          [716, 542], [780, 585], [846, 530]
+        ].forEach(([x, y]) => addStaticParticle("k", x, y, "pct-only", 0.9));
+
+        [
+          [780, 585]
+        ].forEach(([x, y]) => addStaticParticle("k", x, y, "carb-only na-gradient-visual path-fructose", 0.86));
+
+        [
+          [805, 492]
+        ].forEach(([x, y]) => addStaticParticle("k", x, y, "solute-only na-gradient-visual path-fructose", 0.9));
+
+        [
+          [450, 52], [666, 44]
+        ].forEach(([x, y]) => addStaticParticle("fructose", x, y, "carb-only path-fructose", 0.82));
+
+        [
+          [548, 38], [612, 92], [704, 116], [786, 46], [838, 112]
+        ].forEach(([x, y]) => addStaticParticle("water", x, y, "carb-only cholera-only path-glucose", 0.9));
+
+        [
+          [760, 70], [820, 94]
+        ].forEach(([x, y]) => addStaticParticle("cl", x, y, "carb-only cholera-only path-glucose", 0.88));
+
+        [
+          [260, 72], [298, 46]
+        ].forEach(([x, y]) => addStaticParticle("na", x, y, "carb-only ort-only path-glucose", 0.9));
+
+        [
+          [330, 72], [366, 45]
+        ].forEach(([x, y]) => addStaticParticle("glucose", x, y, "carb-only ort-only path-glucose", 0.82));
+
+      }
+
+      function addPumpCycle(x, modeClass, offset = 0, pumpParticleDuration = 2.6) {
+        const naPath = `M${x} 438 C${x} 477 ${x} 512 ${x} 550`;
+        const naPathTwo = `M${x - 9} 438 C${x - 9} 477 ${x - 9} 512 ${x - 9} 550`;
+        const naPathThree = `M${x + 9} 438 C${x + 9} 477 ${x + 9} 512 ${x + 9} 550`;
+        const kPath = `M${x + 32} 552 C${x + 22} 512 ${x + 14} 477 ${x + 10} 438`;
+        const kPathTwo = `M${x + 18} 552 C${x + 12} 512 ${x + 8} 477 ${x + 5} 438`;
+        const step = pumpParticleDuration / 7.6;
+
+        addMovingParticle("na", naPath, pumpParticleDuration, offset, modeClass, 0.8);
+        addMovingParticle("na", naPathTwo, pumpParticleDuration, offset + step, modeClass, 0.8);
+        addMovingParticle("na", naPathThree, pumpParticleDuration, offset + step * 2, modeClass, 0.8);
+        addMovingParticle("k", kPath, pumpParticleDuration, offset + step * 0.45, modeClass, 0.8);
+        addMovingParticle("k", kPathTwo, pumpParticleDuration, offset + step * 1.55, modeClass, 0.8);
+      }
+
+      function buildMovingParticles() {
+        const sgltNa = "M314 86 C314 116 314 146 314 176 C314 206 314 238 314 268";
+        const sgltGlucose = "M336 86 C336 116 336 146 336 176 C336 206 336 238 336 268";
+        const aaNa = "M506 86 C506 116 506 146 506 176 C506 206 506 238 506 268";
+        const aaPath = "M528 86 C528 116 528 146 528 176 C528 206 528 238 528 268";
+        const glucoseExit = "M336 286 C336 356 336 430 336 500 C331 552 315 594 300 636";
+        const aaExit = "M528 286 C528 356 528 430 528 500 C523 552 513 596 506 636";
+        const waterThrough = "M236 95 C245 178 265 282 286 383 C302 462 302 558 286 635";
+        const waterBetween = "M391 95 C390 187 391 320 391 500 C391 555 400 596 423 635";
+        const fructoseIn = "M698 86 C698 122 698 160 698 202 C698 248 698 294 698 340";
+        const fructoseExit = "M698 340 C698 412 698 462 698 500 C666 558 624 600 608 636";
+        const choleraClOut = "M803 270 C803 218 803 158 803 88";
+        const choleraNaOut = "M620 548 C620 438 620 300 620 90";
+        const choleraWaterOut = "M470 660 C466 582 440 510 420 420 C402 320 394 202 394 88";
+        const choleraWaterOutTwo = "M548 660 C540 578 518 500 500 406 C482 302 470 190 470 88";
+        const pctSgltNa = "M334 86 C334 142 334 204 334 270";
+        const pctSgltGlucose = "M358 86 C358 142 358 204 358 270";
+        const pctAaNa = "M642 86 C642 142 642 204 642 270";
+        const pctAaPath = "M666 86 C666 142 666 204 666 270";
+        const pctGlucoseExit = "M358 290 C358 360 358 430 358 500 C358 552 342 594 326 636";
+        const pctAaExit = "M666 290 C666 360 666 430 666 500 C655 552 620 594 586 636";
+        const pctWaterPath = "M470 96 C470 194 470 318 470 500 C470 556 448 600 426 636";
+
+        addMovingParticle("na", pctSgltNa, 4.6, 0, "pct-only");
+        addMovingParticle("glucose", pctSgltGlucose, 4.6, 0.12, "pct-only", 0.88);
+        addMovingParticle("na", pctSgltNa, 4.6, 2.2, "pct-only", 0.9);
+        addMovingParticle("glucose", pctSgltGlucose, 4.6, 2.32, "pct-only", 0.78);
+        addMovingParticle("na", pctAaNa, 5.2, 0.7, "pct-only");
+        addMovingParticle("aa", pctAaPath, 5.2, 0.82, "pct-only", 0.9);
+        addMovingParticle("na", pctAaNa, 5.2, 3.1, "pct-only", 0.9);
+        addMovingParticle("aa", pctAaPath, 5.2, 3.22, "pct-only", 0.78);
+        addMovingParticle("glucose", pctGlucoseExit, 5.8, 1.0, "pct-only", 0.86);
+        addMovingParticle("aa", pctAaExit, 6, 1.45, "pct-only", 0.85);
+        addMovingParticle("water", pctWaterPath, 5.6, 0.4, "pct-only", 0.82);
+        addMovingParticle("water", pctWaterPath, 5.6, 2.8, "pct-only", 0.72);
+
+        addMovingParticle("na", sgltNa, 4.6, 0, "carb-only path-glucose");
+        addMovingParticle("glucose", sgltGlucose, 4.6, 0.12, "carb-only path-glucose", 0.88);
+        addMovingParticle("na", sgltNa, 4.6, 2.2, "carb-only path-glucose", 0.9);
+        addMovingParticle("glucose", sgltGlucose, 4.6, 2.32, "carb-only path-glucose", 0.78);
+
+        addMovingParticle("na", aaNa, 5.2, 0.7, "carb-only path-aa");
+        addMovingParticle("aa", aaPath, 5.2, 0.82, "carb-only path-aa", 0.9);
+        addMovingParticle("na", aaNa, 5.2, 3.1, "carb-only path-aa", 0.9);
+        addMovingParticle("aa", aaPath, 5.2, 3.22, "carb-only path-aa", 0.78);
+
+        addMovingParticle("glucose", glucoseExit, 5.8, 1.0, "carb-only path-glucose", 0.86);
+        addMovingParticle("glucose", glucoseExit, 5.8, 3.9, "carb-only path-glucose", 0.74);
+        addMovingParticle("aa", aaExit, 6, 1.45, "carb-only path-aa", 0.85);
+        addMovingParticle("aa", aaExit, 6, 4.2, "carb-only path-aa", 0.75);
+
+        addMovingParticle("water", waterThrough, 5.6, 0.4, "carb-only absorptive-water path-glucose", 0.82);
+        addMovingParticle("water", waterThrough, 5.6, 2.8, "carb-only absorptive-water path-glucose", 0.72);
+        addMovingParticle("water", waterBetween, 5.2, 0.9, "carb-only absorptive-water path-aa", 0.82);
+        addMovingParticle("water", waterBetween, 5.2, 3.2, "carb-only absorptive-water path-aa", 0.72);
+
+        addMovingParticle("fructose", fructoseIn, 5, 0.35, "carb-only path-fructose", 0.83);
+        addMovingParticle("fructose", fructoseExit, 5.8, 2.25, "carb-only path-fructose", 0.8);
+        addMovingParticle("water", "M742 95 C740 185 734 306 722 418 C710 510 672 592 610 635", 5.7, 0.65, "carb-only absorptive-water pathway-fructose-only", 0.78);
+
+        addMovingParticle("cl", choleraClOut, 4.4, 0.2, "carb-only cholera-only path-glucose", 0.88);
+        addMovingParticle("cl", choleraClOut, 4.4, 1.5, "carb-only cholera-only path-glucose", 0.82);
+        addMovingParticle("cl", choleraClOut, 4.4, 2.8, "carb-only cholera-only path-glucose", 0.76);
+        addMovingParticle("na", choleraNaOut, 5.2, 0.8, "carb-only cholera-only path-glucose", 0.86);
+        addMovingParticle("na", choleraNaOut, 5.2, 3.0, "carb-only cholera-only path-glucose", 0.78);
+        addMovingParticle("water", choleraWaterOut, 5.6, 0.5, "carb-only cholera-only path-glucose", 0.92);
+        addMovingParticle("water", choleraWaterOutTwo, 5.6, 1.6, "carb-only cholera-only path-glucose", 0.88);
+        addMovingParticle("water", choleraWaterOut, 5.6, 3.2, "carb-only cholera-only path-glucose", 0.82);
+
+        addMovingParticle("na", sgltNa, 4.1, 0.45, "carb-only ort-only path-glucose", 0.9);
+        addMovingParticle("glucose", sgltGlucose, 4.1, 0.55, "carb-only ort-only path-glucose", 0.86);
+        addMovingParticle("na", sgltNa, 4.1, 1.85, "carb-only ort-only path-glucose", 0.82);
+        addMovingParticle("glucose", sgltGlucose, 4.1, 1.95, "carb-only ort-only path-glucose", 0.78);
+        addMovingParticle("glucose", glucoseExit, 4.8, 1.1, "carb-only ort-only path-glucose", 0.82);
+        addMovingParticle("glucose", glucoseExit, 4.8, 3.0, "carb-only ort-only path-glucose", 0.74);
+        addMovingParticle("water", waterThrough, 4.7, 0.3, "carb-only ort-only path-glucose", 0.9);
+        addMovingParticle("water", waterThrough, 4.7, 1.8, "carb-only ort-only path-glucose", 0.82);
+        addMovingParticle("water", waterBetween, 4.5, 0.7, "carb-only ort-only path-glucose", 0.88);
+        addMovingParticle("water", waterBetween, 4.5, 2.2, "carb-only ort-only path-glucose", 0.78);
+
+        addPumpCycle(785, "pct-only", 0.2);
+        addPumpCycle(223, "carb-only na-gradient-visual path-glucose", 0, 5.2);
+        addPumpCycle(592, "carb-only na-gradient-visual path-aa", 0.6, 5.2);
+        addPumpCycle(811, "carb-only na-gradient-visual path-fructose", 1.2, 5.2);
+
+        addMovingParticle("fattyAcid", "M408 132 C386 180 346 222 314 264 C354 292 405 303 455 306", 12, 5.4, "lipid-only", 0.76);
+        addMovingParticle("monoglyceride", "M398 132 C366 184 332 248 314 316 C360 315 414 312 455 306", 12, 5.8, "lipid-only", 0.78);
+        addMovingParticle("steroid", "M400 132 C428 224 450 335 462 412 C540 426 646 430 724 430", 12, 6.1, "lipid-only", 0.68);
+        addMovingParticle("triglyceride", "M520 308 C556 306 592 306 626 310 C672 330 722 378 755 430", 12, 7.6, "lipid-only", 0.72);
+        addMovingParticle("protein", "M704 324 C728 356 742 389 750 418", 12, 8.1, "lipid-only", 0.66);
+        addMovingParticle("chylomicron", "M755 452 C770 492 770 515 790 540 C820 586 844 618 880 676", 12, 8.8, "lipid-only", 0.72);
+      }
+
+      function resetAnimation() {
+        scene.setCurrentTime(0);
+        if (state.paused) {
+          scene.pauseAnimations();
+        } else {
+          scene.unpauseAnimations();
+        }
+      }
+
+      function setPaused(paused) {
+        state.paused = paused;
+        body.classList.toggle("is-paused", paused);
+        playPauseButton.textContent = paused ? "Play" : "Pause";
+        playPauseButton.setAttribute("aria-pressed", String(paused));
+        if (paused) {
+          scene.pauseAnimations();
+        } else {
+          scene.unpauseAnimations();
+        }
+      }
+
+      function setMode(mode) {
+        state.mode = mode;
+        body.dataset.mode = mode;
+        title.textContent = modeText[mode].title;
+        subtitle.textContent = modeText[mode].subtitle;
+        pctButton.setAttribute("aria-pressed", String(mode === "pct"));
+        intestinalButton.setAttribute("aria-pressed", String(mode === "intestinal"));
+        lipidButton.setAttribute("aria-pressed", String(mode === "lipid"));
+        resetAnimation();
+      }
+
+      function setScenario(scenario) {
+        state.scenario = scenario;
+        body.dataset.scenario = scenario;
+        normalScenarioButton.setAttribute("aria-pressed", String(scenario === "normal"));
+        choleraScenarioButton.setAttribute("aria-pressed", String(scenario === "cholera"));
+        ortScenarioButton.setAttribute("aria-pressed", String(scenario === "ort"));
+        resetAnimation();
+      }
+
+      function setPathway(pathway) {
+        state.pathway = pathway;
+        body.dataset.pathway = pathway;
+        allPathwayButton.setAttribute("aria-pressed", String(pathway === "all"));
+        glucosePathwayButton.setAttribute("aria-pressed", String(pathway === "glucose"));
+        aaPathwayButton.setAttribute("aria-pressed", String(pathway === "aa"));
+        fructosePathwayButton.setAttribute("aria-pressed", String(pathway === "fructose"));
+
+        if ((pathway === "aa" || pathway === "fructose") && state.scenario !== "normal") {
+          setScenario("normal");
+          return;
+        }
+
+        resetAnimation();
+      }
+
+      function setLabelVisibility() {
+        body.classList.toggle("labels-off", !showLabels.checked);
+      }
+
+      function updateSpeed() {
+        state.speed = Number(speedInput.value);
+        speedReadout.textContent = `${state.speed.toFixed(1)}x`;
+        Object.entries(cssDurations).forEach(([name, base]) => {
+          root.style.setProperty(name, scaledSeconds(base));
+        });
+
+        scene.querySelectorAll("[data-base-dur]").forEach((animation) => {
+          const baseDur = Number(animation.dataset.baseDur);
+          const baseBegin = Number(animation.dataset.baseBegin || 0);
+          animation.setAttribute("dur", scaledSeconds(baseDur));
+          animation.setAttribute("begin", scaledSeconds(baseBegin));
+        });
+
+        if (state.paused) {
+          scene.pauseAnimations();
+        }
+      }
+
+      pctButton.addEventListener("click", () => setMode("pct"));
+      intestinalButton.addEventListener("click", () => setMode("intestinal"));
+      lipidButton.addEventListener("click", () => setMode("lipid"));
+      normalScenarioButton.addEventListener("click", () => setScenario("normal"));
+      choleraScenarioButton.addEventListener("click", () => setScenario("cholera"));
+      ortScenarioButton.addEventListener("click", () => setScenario("ort"));
+      allPathwayButton.addEventListener("click", () => setPathway("all"));
+      glucosePathwayButton.addEventListener("click", () => setPathway("glucose"));
+      aaPathwayButton.addEventListener("click", () => setPathway("aa"));
+      fructosePathwayButton.addEventListener("click", () => setPathway("fructose"));
+      playPauseButton.addEventListener("click", () => setPaused(!state.paused));
+      resetButton.addEventListener("click", resetAnimation);
+      showLabels.addEventListener("change", setLabelVisibility);
+      speedInput.addEventListener("input", updateSpeed);
+
+      addMicrovilli();
+      buildStaticParticles();
+      buildMovingParticles();
+      updateSpeed();
+      setLabelVisibility();
+      setPathway("all");
+      setScenario("normal");
+      setMode("pct");
+    })();
+  </script>
+</body>
+</html>

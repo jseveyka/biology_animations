@@ -1,0 +1,1326 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blood Pressure Control and Blood Pressure Drugs</title>
+  <style>
+    :root {
+      --ink: #102a43;
+      --muted: #526b82;
+      --paper: #f5f9fc;
+      --card: #ffffff;
+      --line: #cfdae4;
+      --blue: #1971c2;
+      --blue-dark: #14518c;
+      --cyan: #22a6b3;
+      --red: #d9485f;
+      --red-dark: #a6283d;
+      --amber: #e88916;
+      --green: #1d8f67;
+      --purple: #7357c7;
+      --shadow: 0 12px 32px rgba(29, 55, 80, .10);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 0%, rgba(34, 166, 179, .12), transparent 25rem),
+        radial-gradient(circle at 92% 12%, rgba(115, 87, 199, .10), transparent 24rem),
+        var(--paper);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.45;
+    }
+
+    button, select { font: inherit; }
+
+    .page {
+      width: min(1500px, 100%);
+      margin: 0 auto;
+      padding: 20px clamp(14px, 2.4vw, 36px) 32px;
+    }
+
+    .attribution {
+      margin: 0 0 7px;
+      text-align: center;
+      color: var(--blue-dark);
+      font-size: clamp(.87rem, 1.3vw, 1rem);
+      font-weight: 700;
+      letter-spacing: .01em;
+    }
+
+    h1 {
+      margin: 0;
+      text-align: center;
+      font-size: clamp(1.75rem, 3.5vw, 3.15rem);
+      line-height: 1.06;
+      letter-spacing: -.035em;
+    }
+
+    .deck {
+      max-width: 760px;
+      margin: 10px auto 18px;
+      text-align: center;
+      color: var(--muted);
+      font-size: clamp(.96rem, 1.3vw, 1.08rem);
+    }
+
+    .control-bar {
+      display: flex;
+      align-items: end;
+      gap: 14px;
+      max-width: 920px;
+      margin: 0 auto 18px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, .88);
+      box-shadow: 0 8px 24px rgba(29, 55, 80, .07);
+      backdrop-filter: blur(8px);
+    }
+
+    .select-wrap { flex: 1; }
+
+    label {
+      display: block;
+      margin: 0 0 5px;
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+
+    select {
+      width: 100%;
+      min-height: 48px;
+      padding: 0 44px 0 14px;
+      color: var(--ink);
+      border: 2px solid #b9cad8;
+      border-radius: 12px;
+      background: #fff;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    select:focus-visible, button:focus-visible {
+      outline: 4px solid rgba(25, 113, 194, .22);
+      outline-offset: 2px;
+    }
+
+    .mode-chip {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 180px;
+      min-height: 48px;
+      padding: 0 14px;
+      border: 1px solid #c9d6e1;
+      border-radius: 12px;
+      background: #f4f8fb;
+      color: var(--blue-dark);
+      font-weight: 800;
+    }
+
+    .mode-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 5px rgba(29, 143, 103, .14);
+    }
+
+    .stage {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 290px;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .diagram {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .organ-card, .side-panel, .raas, .explanation {
+      border: 1px solid var(--line);
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+
+    .organ-card {
+      position: relative;
+      min-height: 414px;
+      overflow: hidden;
+      border-radius: 22px;
+    }
+
+    .organ-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15px 16px 8px;
+    }
+
+    .organ-head h2 {
+      margin: 0;
+      font-size: 1.25rem;
+      letter-spacing: -.02em;
+    }
+
+    .organ-num {
+      display: grid;
+      place-items: center;
+      width: 29px;
+      height: 29px;
+      border-radius: 50%;
+      background: #e8f2fa;
+      color: var(--blue-dark);
+      font-size: .85rem;
+      font-weight: 900;
+    }
+
+    .organ-visual {
+      position: relative;
+      display: grid;
+      place-items: center;
+      height: 188px;
+    }
+
+    .heart-svg {
+      width: 126px;
+      filter: drop-shadow(0 10px 12px rgba(169, 40, 61, .18));
+      transform-origin: 50% 55%;
+      will-change: transform;
+    }
+
+    .heart-glow {
+      position: absolute;
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: rgba(217, 72, 95, .10);
+      transform: scale(1);
+    }
+
+    .kidney-svg {
+      width: 132px;
+      filter: drop-shadow(0 10px 12px rgba(115, 50, 110, .15));
+    }
+
+    .urine-stream {
+      position: absolute;
+      left: calc(50% + 33px);
+      top: 122px;
+      width: 24px;
+      height: 100px;
+    }
+
+    .drop {
+      position: absolute;
+      top: 0;
+      left: 5px;
+      width: 13px;
+      height: 17px;
+      border-radius: 65% 35% 65% 35%;
+      background: #2f9ed6;
+      transform: rotate(45deg);
+      opacity: 0;
+      will-change: transform, opacity;
+    }
+
+    .urine-cup {
+      position: absolute;
+      left: calc(50% + 13px);
+      bottom: 0;
+      width: 66px;
+      height: 48px;
+      overflow: hidden;
+      border: 4px solid #7c93a7;
+      border-top-width: 2px;
+      border-radius: 4px 4px 12px 12px;
+      background: rgba(255,255,255,.78);
+    }
+
+    .urine-cup::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: var(--urine-fill, 38%);
+      background: #ffd666;
+      transition: height .3s linear;
+    }
+
+    .cup-label {
+      position: absolute;
+      right: 11px;
+      bottom: 4px;
+      color: #536a7e;
+      font-size: .68rem;
+      font-weight: 800;
+    }
+
+    .vessel-visual {
+      padding: 0 18px;
+    }
+
+    .vessel-shell {
+      position: relative;
+      width: 100%;
+      height: 112px;
+      overflow: hidden;
+      border: 11px solid #c64d61;
+      border-radius: 32px;
+      background: #f5a5ad;
+      box-shadow: inset 0 0 0 5px #e87887, 0 10px 16px rgba(169, 40, 61, .13);
+    }
+
+    .lumen {
+      position: absolute;
+      top: 50%;
+      left: -2px;
+      right: -2px;
+      height: var(--lumen, 52px);
+      transform: translateY(-50%);
+      border-radius: 24px;
+      background: linear-gradient(180deg, #9edcf2, #eaf8fc 52%, #83cde9);
+      box-shadow: inset 0 4px 8px rgba(25, 113, 194, .18);
+    }
+
+    .blood-cell {
+      position: absolute;
+      top: 50%;
+      width: 26px;
+      height: 13px;
+      border: 4px solid #d8495f;
+      border-radius: 50%;
+      transform: translateY(-50%);
+      opacity: .82;
+    }
+
+    .blood-cell:nth-child(1) { left: 13%; }
+    .blood-cell:nth-child(2) { left: 44%; transform: translateY(-50%) scale(.8); }
+    .blood-cell:nth-child(3) { left: 75%; transform: translateY(-50%) scale(.9); }
+
+    .vessel-caption {
+      margin-top: 13px;
+      color: var(--muted);
+      text-align: center;
+      font-size: .83rem;
+      font-weight: 750;
+    }
+
+    .signal-box {
+      margin: 3px 12px 12px;
+      padding: 10px;
+      border: 1px solid #d7e1e9;
+      border-radius: 14px;
+      background: #f8fbfd;
+    }
+
+    .signal-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: .71rem;
+      font-weight: 850;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .nerve-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--amber);
+      box-shadow: 0 0 0 4px rgba(232, 137, 22, .13);
+    }
+
+    .signal-lane {
+      position: relative;
+      height: 46px;
+      margin-bottom: 8px;
+    }
+
+    .signal-lane::before {
+      content: "";
+      position: absolute;
+      top: 20px;
+      left: 26px;
+      right: 34px;
+      height: 3px;
+      border-radius: 2px;
+      background: #c8d5df;
+    }
+
+    .terminal {
+      position: absolute;
+      top: 11px;
+      left: 2px;
+      width: 26px;
+      height: 22px;
+      border-radius: 60% 40% 45% 55%;
+      background: var(--amber);
+    }
+
+    .receptor {
+      position: absolute;
+      top: 4px;
+      right: 1px;
+      display: grid;
+      place-items: center;
+      width: 43px;
+      height: 35px;
+      border: 3px solid var(--purple);
+      border-radius: 10px 10px 4px 4px;
+      background: #f0ecfc;
+      color: #49358e;
+      font-size: .72rem;
+      font-weight: 900;
+    }
+
+    .receptor::before {
+      content: "";
+      position: absolute;
+      top: -6px;
+      width: 15px;
+      height: 8px;
+      border-radius: 0 0 8px 8px;
+      background: #fff;
+      border: 2px solid var(--purple);
+      border-top: 0;
+    }
+
+    .particle {
+      position: absolute;
+      z-index: 5;
+      display: grid;
+      place-items: center;
+      min-width: 27px;
+      height: 27px;
+      padding: 0 5px;
+      border: 2px solid #a95a00;
+      border-radius: 50%;
+      background: #ffd487;
+      color: #6a3700;
+      font-size: .62rem;
+      font-weight: 950;
+      box-shadow: 0 3px 7px rgba(102, 57, 0, .18);
+      will-change: transform, opacity;
+    }
+
+    .drug-block {
+      position: absolute;
+      z-index: 7;
+      right: -4px;
+      top: -7px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 50px;
+      height: 24px;
+      transform: rotate(-12deg);
+      border: 2px solid #14518c;
+      border-radius: 14px;
+      background: linear-gradient(90deg, #d5efff 50%, #5ab6e6 50%);
+      color: #0c456f;
+      font-size: .54rem;
+      font-weight: 950;
+      box-shadow: 0 3px 8px rgba(20, 81, 140, .22);
+    }
+
+    .drug-block.visible { display: flex; }
+
+    .drug-block.kidney-drug {
+      right: calc(50% - 73px);
+      top: 42px;
+      width: 56px;
+    }
+
+    .micro-copy {
+      min-height: 34px;
+      margin: 0;
+      color: var(--muted);
+      font-size: .76rem;
+      line-height: 1.28;
+    }
+
+    .stat-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      padding: 0 12px 13px;
+    }
+
+    .stat {
+      padding: 8px 9px;
+      border-radius: 11px;
+      background: #eef5fa;
+    }
+
+    .stat-name {
+      display: block;
+      color: var(--muted);
+      font-size: .64rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .stat-value {
+      display: block;
+      color: var(--blue-dark);
+      font-size: .91rem;
+      font-weight: 900;
+    }
+
+    .channel-row {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .channel {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 9px;
+      border: 2px solid #3b8c71;
+      border-radius: 9px;
+      background: #e5f5ef;
+      color: #176347;
+      font-size: .67rem;
+      font-weight: 900;
+    }
+
+    .channel .drug-block { right: -8px; top: -12px; }
+
+    .vessel-inputs {
+      margin: 3px 12px 10px;
+      padding: 10px;
+      border: 2px solid #c9d9e5;
+      border-radius: 15px;
+      background: #f8fbfd;
+    }
+
+    .vessel-inputs h3 {
+      margin: 0 0 5px;
+      color: var(--blue-dark);
+      font-size: .72rem;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .vascular-input {
+      display: grid;
+      grid-template-columns: 78px minmax(0, 1fr);
+      gap: 6px;
+      align-items: center;
+      min-height: 54px;
+      padding: 5px 0;
+      border-top: 1px solid #dbe5ec;
+    }
+
+    .input-label strong,
+    .input-label small { display: block; }
+    .input-label strong { font-size: .69rem; }
+    .input-label small { color: var(--muted); font-size: .58rem; line-height: 1.2; }
+
+    .vascular-input .signal-lane {
+      height: 38px;
+      margin: 0;
+    }
+
+    .vascular-input .signal-lane::before { top: 17px; }
+    .vascular-input .terminal { top: 7px; }
+    .vascular-input .receptor,
+    .vascular-input .channel {
+      position: absolute;
+      top: 1px;
+      right: 0;
+      width: 45px;
+      height: 34px;
+      justify-content: center;
+      padding: 0 4px;
+    }
+
+    .vascular-input .channel { display: flex; }
+
+    .input-source {
+      position: absolute;
+      top: 7px;
+      left: 0;
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 24px;
+      border-radius: 8px;
+      background: #e8f2fa;
+      color: var(--blue-dark);
+      font-size: .55rem;
+      font-weight: 950;
+    }
+
+    .receptor.at1-receptor {
+      border-color: #b4533a;
+      background: #fff0ea;
+      color: #7b321e;
+    }
+
+    .receptor.at1-receptor::before { border-color: #b4533a; }
+    .particle.epinephrine { border-color: #1971c2; background: #dceffc; color: #14518c; }
+    .particle.angiotensin { border-color: #9b492f; background: #ffc9b8; color: #74311d; }
+    .particle.calcium { border-color: #27735a; background: #cceee2; color: #176347; }
+
+    .vessel-signal-summary {
+      min-height: 34px;
+      margin: 6px 0 0;
+      padding-top: 6px;
+      border-top: 1px dashed #c9d9e5;
+      color: var(--muted);
+      font-size: .69rem;
+      font-weight: 750;
+      line-height: 1.25;
+    }
+
+    .side-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      padding: 16px;
+      border-radius: 22px;
+    }
+
+    .side-panel h2 {
+      margin: 0;
+      font-size: 1.12rem;
+    }
+
+    .map-meter {
+      display: grid;
+      grid-template-columns: 64px 1fr;
+      gap: 14px;
+      min-height: 275px;
+      padding: 14px;
+      border: 1px solid #d5e0e8;
+      border-radius: 18px;
+      background: #f7fafc;
+    }
+
+    .meter-track {
+      position: relative;
+      width: 52px;
+      height: 230px;
+      margin: auto;
+      border: 4px solid #fff;
+      border-radius: 28px;
+      background: linear-gradient(to top, #4e9bd1 0 30%, #4daf88 30% 67%, #e66b65 67% 100%);
+      box-shadow: 0 0 0 1px #b7c8d6, inset 0 2px 7px rgba(16, 42, 67, .18);
+    }
+
+    .meter-marker {
+      position: absolute;
+      left: -9px;
+      right: -9px;
+      bottom: var(--meter, 50%);
+      height: 8px;
+      transform: translateY(50%);
+      border: 3px solid #102a43;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 2px 5px rgba(16, 42, 67, .25);
+      will-change: bottom;
+    }
+
+    .meter-info {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .meter-number {
+      color: var(--ink);
+      font-size: 2.6rem;
+      font-weight: 950;
+      line-height: 1;
+      letter-spacing: -.05em;
+    }
+
+    .meter-unit {
+      margin: 4px 0 18px;
+      color: var(--muted);
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .meter-status {
+      align-self: flex-start;
+      padding: 5px 9px;
+      border-radius: 99px;
+      background: #dff3ea;
+      color: #176347;
+      font-size: .71rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .meter-scale {
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: .72rem;
+      line-height: 1.45;
+    }
+
+    .equations {
+      display: grid;
+      gap: 9px;
+    }
+
+    .equation {
+      padding: 11px;
+      border-left: 4px solid var(--blue);
+      border-radius: 8px;
+      background: #eaf3fa;
+      font-size: .79rem;
+      font-weight: 850;
+      line-height: 1.35;
+    }
+
+    .equation strong { color: var(--blue-dark); }
+
+    .co-readout {
+      display: flex;
+      justify-content: space-between;
+      padding: 9px 11px;
+      border-radius: 10px;
+      background: #f1eefb;
+      color: #4c3d85;
+      font-size: .75rem;
+      font-weight: 800;
+    }
+
+    .co-readout output { font-weight: 950; }
+
+    .raas {
+      grid-column: 1 / -1;
+      margin-top: 0;
+      padding: 14px 15px 16px;
+      border-radius: 20px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: baseline;
+      gap: 9px;
+      margin-bottom: 11px;
+    }
+
+    .section-title h2 {
+      margin: 0;
+      font-size: 1.07rem;
+    }
+
+    .section-title span {
+      color: var(--muted);
+      font-size: .74rem;
+      font-weight: 700;
+    }
+
+    .raas-flow {
+      display: grid;
+      grid-template-columns: 1fr 26px 1fr 26px 1fr 26px 1fr 26px 1.2fr;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .raas-node {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 78px;
+      padding: 9px;
+      overflow: visible;
+      border: 2px solid #c8d7e2;
+      border-radius: 13px;
+      background: #f8fbfd;
+      text-align: center;
+    }
+
+    .raas-node b { font-size: .78rem; }
+    .raas-node small { color: var(--muted); font-size: .65rem; }
+    .raas-arrow { color: #8097a9; text-align: center; font-size: 1.25rem; font-weight: 900; }
+    .raas-node.ace { border-color: #cfb967; background: #fff9df; }
+    .raas-node.ang2 { border-color: #d58b72; background: #fff1ea; }
+    .raas-node.route { border-color: #b4533a; background: #fff0ea; }
+
+    .raas-node.route::before {
+      content: "";
+      position: absolute;
+      top: -34px;
+      left: 50%;
+      height: 31px;
+      border-left: 3px dashed #b4533a;
+    }
+
+    .raas-node.route::after {
+      content: "▲";
+      position: absolute;
+      top: -46px;
+      left: calc(50% - 7px);
+      color: #b4533a;
+      font-size: .8rem;
+    }
+
+    .route-tag {
+      color: #8a3b27;
+      font-size: .56rem;
+      font-weight: 950;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .raas-particle {
+      position: absolute;
+      z-index: 6;
+      top: -11px;
+      left: -6px;
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 24px;
+      border: 2px solid #9b492f;
+      border-radius: 14px;
+      background: #ffc9b8;
+      color: #74311d;
+      font-size: .56rem;
+      font-weight: 950;
+      box-shadow: 0 3px 7px rgba(116, 49, 29, .15);
+      will-change: transform, opacity;
+    }
+
+    .raas-particle.angi { border-color: #9c7900; background: #ffe797; color: #684e00; }
+
+    .raas-node .drug-block {
+      right: -8px;
+      top: -10px;
+    }
+
+    .explanation {
+      display: grid;
+      grid-template-columns: minmax(210px, .9fr) minmax(0, 1.8fr);
+      gap: 18px;
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 22px;
+    }
+
+    .explanation-kicker {
+      margin-bottom: 3px;
+      color: var(--blue-dark);
+      font-size: .69rem;
+      font-weight: 900;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+
+    .explanation h2 {
+      margin: 0 0 5px;
+      font-size: 1.42rem;
+      letter-spacing: -.025em;
+    }
+
+    .mechanism {
+      margin: 0;
+      color: var(--muted);
+      font-size: .92rem;
+    }
+
+    .effects-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      align-self: center;
+    }
+
+    .effect {
+      min-height: 78px;
+      padding: 10px;
+      border-radius: 13px;
+      background: #f2f6f9;
+    }
+
+    .effect b {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--blue-dark);
+      font-size: .7rem;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .effect span { font-size: .78rem; font-weight: 750; line-height: 1.25; }
+
+    .footer-note {
+      margin: 13px 0 0;
+      color: #6f8293;
+      text-align: center;
+      font-size: .72rem;
+    }
+
+    @media (max-width: 1080px) {
+      .stage { grid-template-columns: 1fr; }
+      .side-panel { display: grid; grid-template-columns: 1.15fr 1fr; }
+      .side-panel > h2 { grid-column: 1 / -1; }
+      .map-meter { min-height: 250px; }
+    }
+
+    @media (max-width: 850px) {
+      .diagram { grid-template-columns: 1fr 1fr; }
+      .organ-card:last-of-type { grid-column: 1 / -1; }
+      .organ-card:last-of-type .organ-visual { max-width: 540px; margin: auto; width: 100%; }
+      .raas-flow { grid-template-columns: 1fr 20px 1fr 20px 1fr; }
+      .raas-flow > .raas-arrow:nth-child(6) { display: none; }
+      .raas-node.ang2 { grid-column: 1 / 3; }
+      .raas-flow > .raas-arrow:nth-child(8) { grid-column: 3; }
+      .raas-node.route { grid-column: 4 / 6; }
+      .explanation { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 620px) {
+      .page { padding-inline: 10px; }
+      .control-bar { align-items: stretch; flex-direction: column; }
+      .mode-chip { min-width: 0; }
+      .diagram { grid-template-columns: 1fr; }
+      .organ-card:last-of-type { grid-column: auto; }
+      .side-panel { display: flex; }
+      .effects-grid { grid-template-columns: 1fr 1fr; }
+      .raas-flow { grid-template-columns: 1fr; }
+      .raas-arrow { transform: rotate(90deg); }
+      .raas-node.ang2, .raas-node.route { grid-column: auto; }
+      .raas-flow > .raas-arrow:nth-child(6) { display: block; }
+      .raas-flow > .raas-arrow:nth-child(8) { grid-column: auto; }
+      .section-title { display: block; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <p class="attribution">&ldquo;Animation Prompted by Jerred Seveyka for his biology class.&rdquo;</p>
+    <h1>Blood Pressure Control and Blood Pressure Drugs</h1>
+    <p class="deck">Explore how the heart, kidneys, blood vessels, sympathetic nerves, and RAAS work together to set mean arterial pressure.</p>
+
+    <section class="control-bar" aria-label="Animation controls">
+      <div class="select-wrap">
+        <label for="drug-select">Choose drug or condition.</label>
+        <select id="drug-select">
+          <option value="normal">No drug / normal regulation</option>
+          <option value="alpha">Alpha blocker</option>
+          <option value="beta">Beta blocker</option>
+          <option value="ccb">Calcium channel blocker</option>
+          <option value="diuretic">Diuretic</option>
+          <option value="arb">Angiotensin II receptor blocker (ARB)</option>
+          <option value="ace">ACE inhibitor</option>
+        </select>
+      </div>
+      <div class="mode-chip" aria-live="polite"><span class="mode-dot"></span><span id="mode-chip-text">Normal regulation</span></div>
+    </section>
+
+    <section class="stage">
+      <div class="diagram">
+        <article class="organ-card" id="heart-card">
+          <header class="organ-head"><h2>Heart</h2><span class="organ-num">1</span></header>
+          <div class="organ-visual">
+            <div class="heart-glow" id="heart-glow"></div>
+            <svg class="heart-svg" id="heart" viewBox="0 0 160 150" aria-label="Beating heart illustration" role="img">
+              <path fill="#d9485f" stroke="#a6283d" stroke-width="6" d="M80 135C48 109 18 85 18 50 18 26 46 13 65 28 73 34 78 42 80 49c2-7 7-15 15-21 19-15 47-2 47 22 0 35-30 59-62 85z"/>
+              <path fill="none" stroke="#f59aa8" stroke-width="7" stroke-linecap="round" d="M42 54c2-12 14-19 25-13"/>
+              <path fill="none" stroke="#8e2336" stroke-width="7" stroke-linecap="round" d="M80 48V15m0 2c-11 0-18-5-21-12m21 13c12 0 20-5 24-13"/>
+            </svg>
+          </div>
+          <div class="signal-box">
+            <div class="signal-title"><span class="nerve-dot"></span>Sympathetic nerve releases NE</div>
+            <div class="signal-lane" id="beta-lane">
+              <span class="terminal" title="Sympathetic nerve ending"></span>
+              <span class="particle" id="ne-beta">NE</span>
+              <span class="receptor">&beta;1<span class="drug-block" id="beta-drug">Drug</span></span>
+            </div>
+            <p class="micro-copy" id="heart-signal-copy">NE docks at &beta;1: heart rate and pump strength rise.</p>
+          </div>
+          <div class="stat-row">
+            <div class="stat"><span class="stat-name">Heart rate</span><span class="stat-value" id="heart-rate-label">Normal</span></div>
+            <div class="stat"><span class="stat-name">Pump strength</span><span class="stat-value" id="pump-label">Normal</span></div>
+          </div>
+        </article>
+
+        <article class="organ-card" id="kidney-card">
+          <header class="organ-head"><h2>Kidney</h2><span class="organ-num">2</span></header>
+          <div class="organ-visual">
+            <svg class="kidney-svg" viewBox="0 0 150 175" aria-label="Kidney and urine output illustration" role="img">
+              <path fill="#a84d83" stroke="#6f315c" stroke-width="6" d="M78 14c-37 0-61 28-61 69 0 43 25 76 60 76 21 0 34-14 34-34 0-19-16-25-16-43 0-20 25-24 25-44 0-14-15-24-42-24z"/>
+              <path fill="#d27cac" d="M54 35C34 48 30 79 41 101c7 14 17 14 24 7 11-11 8-30 19-43 8-9 15-18 8-27-7-10-24-12-38-3z"/>
+              <path fill="none" stroke="#e7a4c9" stroke-width="7" stroke-linecap="round" d="M47 124c8 10 18 13 29 10"/>
+              <path fill="none" stroke="#e88916" stroke-width="6" stroke-linecap="round" d="M106 91c24 22 19 42 19 64"/>
+            </svg>
+            <span class="drug-block kidney-drug" id="diuretic-drug">Drug</span>
+            <div class="urine-stream" aria-hidden="true">
+              <span class="drop"></span><span class="drop"></span><span class="drop"></span><span class="drop"></span>
+            </div>
+            <div class="urine-cup" id="urine-cup" aria-label="Urine output container"></div>
+            <span class="cup-label">urine</span>
+          </div>
+          <div class="signal-box">
+            <div class="signal-title"><span class="nerve-dot" style="background:var(--blue)"></span>Fluid balance</div>
+            <p class="micro-copy" id="kidney-copy">Normal urine output maintains normal blood volume.</p>
+          </div>
+          <div class="stat-row">
+            <div class="stat"><span class="stat-name">Urine output</span><span class="stat-value" id="urine-label">Normal</span></div>
+            <div class="stat"><span class="stat-name">Blood volume</span><span class="stat-value" id="volume-label">Normal</span></div>
+          </div>
+        </article>
+
+        <article class="organ-card" id="vessel-card">
+          <header class="organ-head"><h2>Blood vessel</h2><span class="organ-num">3</span></header>
+          <div class="organ-visual vessel-visual">
+            <div class="vessel-shell" id="vessel">
+              <div class="lumen"><i class="blood-cell"></i><i class="blood-cell"></i><i class="blood-cell"></i></div>
+            </div>
+            <p class="vessel-caption" id="vessel-caption">Normal tone / slight vasoconstriction</p>
+          </div>
+          <div class="vessel-inputs" aria-label="Three inputs controlling the blood vessel wall">
+            <h3>Vessel wall control center</h3>
+            <div class="vascular-input">
+              <div class="input-label"><strong>&alpha;1 receptor</strong><small>NE or E &rarr; constrict</small></div>
+              <div class="signal-lane" id="alpha-lane">
+                <span class="terminal" title="Sympathetic nerve ending"></span>
+                <span class="particle" id="ne-alpha">NE</span>
+                <span class="particle epinephrine" id="e-alpha" title="Circulating epinephrine">E</span>
+                <span class="receptor">&alpha;1<span class="drug-block" id="alpha-drug">Drug</span></span>
+              </div>
+            </div>
+            <div class="vascular-input at1-input">
+              <div class="input-label"><strong>AT1 receptor</strong><small>Ang II &rarr; constrict</small></div>
+              <div class="signal-lane" id="at1-lane">
+                <span class="input-source">RAAS</span>
+                <span class="particle angiotensin" id="angii-vessel">Ang II</span>
+                <span class="receptor at1-receptor" id="at1-receptor">AT1<span class="drug-block" id="arb-drug">Drug</span></span>
+              </div>
+            </div>
+            <div class="vascular-input calcium-input">
+              <div class="input-label"><strong>Ca<sup>2+</sup> channel</strong><small>Ca<sup>2+</sup> entry &rarr; contract</small></div>
+              <div class="signal-lane" id="calcium-lane">
+                <span class="input-source">Ca<sup>2+</sup></span>
+                <span class="particle calcium" id="calcium-particle">Ca<sup>2+</sup></span>
+                <span class="channel">Channel<span class="drug-block" id="ccb-drug">Drug</span></span>
+              </div>
+            </div>
+            <p class="vessel-signal-summary" id="vessel-signal-copy">NE/E at &alpha;1, Ang II at AT1, and Ca<sup>2+</sup> entry all support contraction.</p>
+          </div>
+          <div class="stat-row">
+            <div class="stat"><span class="stat-name">Diameter</span><span class="stat-value" id="diameter-label">Normal</span></div>
+            <div class="stat"><span class="stat-name">Resistance</span><span class="stat-value" id="resistance-label">Normal</span></div>
+          </div>
+        </article>
+
+        <section class="raas" aria-labelledby="raas-title">
+          <div class="section-title"><h2 id="raas-title">RAAS pathway</h2><span>Renin&ndash;angiotensin&ndash;aldosterone system (simplified)</span></div>
+          <div class="raas-flow" id="raas-flow">
+            <div class="raas-node"><b>Kidney</b><small>releases renin</small></div>
+            <div class="raas-arrow">&rarr;</div>
+            <div class="raas-node"><b>Angiotensin I</b><small>formed with renin</small><span class="raas-particle angi" id="angi-particle">Ang I</span></div>
+            <div class="raas-arrow">&rarr;</div>
+            <div class="raas-node ace"><b>ACE</b><small>conversion step</small><span class="drug-block" id="ace-drug">Drug</span></div>
+            <div class="raas-arrow">&rarr;</div>
+            <div class="raas-node ang2"><b>Angiotensin II</b><small>signal is produced</small><span class="raas-particle" id="angii-source-particle">Ang II</span></div>
+            <div class="raas-arrow">&rarr;</div>
+            <div class="raas-node route"><span class="route-tag">Direct vessel route</span><b>Blood vessel wall</b><small id="raas-route-copy">Ang II travels up to AT1 above</small></div>
+          </div>
+        </section>
+      </div>
+
+      <aside class="side-panel" aria-labelledby="map-title">
+        <h2 id="map-title">Mean Arterial Pressure</h2>
+        <div class="map-meter">
+          <div class="meter-track" id="meter-track"><div class="meter-marker"></div></div>
+          <div class="meter-info">
+            <output class="meter-number" id="map-number">100</output>
+            <span class="meter-unit">relative MAP</span>
+            <span class="meter-status" id="map-status">Normal range</span>
+            <span class="meter-scale">Higher<br>Normal<br>Lower</span>
+          </div>
+        </div>
+        <div class="equations">
+          <div class="equation"><strong>MAP</strong> = Cardiac Output &times; Blood Vessel Resistance</div>
+          <div class="equation"><strong>Cardiac Output</strong> = Heart Rate &times; Pump Strength</div>
+          <div class="co-readout"><span>Cardiac output</span><output id="co-number">100%</output></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="explanation" aria-live="polite">
+      <div>
+        <div class="explanation-kicker">Selected mechanism</div>
+        <h2 id="explanation-title">No drug / normal regulation</h2>
+        <p class="mechanism" id="mechanism">Normal sympathetic and RAAS signals help maintain vascular tone, cardiac output, and blood volume.</p>
+      </div>
+      <div class="effects-grid">
+        <div class="effect"><b>Heart</b><span id="effect-heart">Normal rate and pump strength</span></div>
+        <div class="effect"><b>Blood vessel</b><span id="effect-vessel">Normal tone</span></div>
+        <div class="effect"><b>Kidney</b><span id="effect-kidney">Normal urine output</span></div>
+        <div class="effect"><b>MAP</b><span id="effect-map">Maintained in middle range</span></div>
+      </div>
+    </section>
+    <p class="footer-note">This is a simplified teaching model; values show direction of change, not clinical dosing or patient-specific responses.</p>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const MODES = {
+        normal: {
+          name: "No drug / normal regulation", chip: "Normal regulation",
+          mechanism: "Normal sympathetic and RAAS signals help maintain vascular tone, cardiac output, and blood volume.",
+          effects: ["Normal rate and pump strength", "Normal tone", "Normal urine output", "Maintained in middle range"],
+          heartRate: 1, pumpStrength: 1, vesselResistance: 1, urineOutput: 1, bloodVolume: 1,
+          blocks: [], heartSignal: "NE docks at β1: heart rate and pump strength rise.",
+          vesselSignal: "NE/E at α1, Ang II at AT1, and Ca²⁺ entry all support contraction.",
+          kidney: "Normal urine output maintains normal blood volume."
+        },
+        alpha: {
+          name: "Alpha blocker", chip: "α1 receptor blocked",
+          mechanism: "The drug occupies vessel-wall α1 receptors, so neither sympathetic NE nor circulating epinephrine can activate them. The vessel relaxes.",
+          effects: ["Mostly unchanged", "Dilates as α1 signal is blocked", "Mostly unchanged", "Decreases"],
+          heartRate: 1, pumpStrength: 1, vesselResistance: .72, urineOutput: 1, bloodVolume: 1,
+          blocks: ["alpha"], heartSignal: "NE still docks normally at β1 receptors.",
+          vesselSignal: "Both NE and E reach α1 but bounce away from the blocker.",
+          kidney: "Urine output and blood volume remain near baseline."
+        },
+        beta: {
+          name: "Beta blocker", chip: "β1 receptor blocked",
+          mechanism: "The drug occupies cardiac β1 receptors. NE cannot increase heart rate or pump strength, lowering cardiac output.",
+          effects: ["Slower rate and weaker pump", "Diameter mostly unchanged", "Mostly unchanged", "Decreases"],
+          heartRate: .74, pumpStrength: .82, vesselResistance: 1, urineOutput: 1, bloodVolume: 1,
+          blocks: ["beta"], heartSignal: "NE reaches β1 but cannot dock or activate it.",
+          vesselSignal: "NE signaling at vascular α1 remains active.",
+          kidney: "Urine output and blood volume remain near baseline."
+        },
+        ccb: {
+          name: "Calcium channel blocker", chip: "Ca²⁺ entry blocked",
+          mechanism: "The drug blocks calcium entry into vascular smooth muscle. The muscle relaxes, widening the vessel without blocking NE receptors.",
+          effects: ["Mildly less pump strength", "Dilates as Ca²⁺ entry falls", "Mostly unchanged", "Decreases"],
+          heartRate: .96, pumpStrength: .92, vesselResistance: .70, urineOutput: 1, bloodVolume: 1,
+          blocks: ["ccb"], heartSignal: "Cardiac signaling continues; pump strength may fall mildly.",
+          vesselSignal: "NE/E and Ang II can dock, but Ca²⁺ cannot enter the smooth muscle.",
+          kidney: "Urine output and blood volume remain near baseline."
+        },
+        diuretic: {
+          name: "Diuretic", chip: "Urine output increased",
+          mechanism: "The drug makes the kidney excrete more salt and water. Blood volume and heart filling fall, reducing cardiac output.",
+          effects: ["Less filling; slightly less output", "Receptor activity unchanged", "More urine; lower blood volume", "Decreases"],
+          heartRate: .98, pumpStrength: .91, vesselResistance: .96, urineOutput: 1.72, bloodVolume: .78,
+          blocks: ["diuretic"], heartSignal: "Sympathetic receptor signaling remains active.",
+          vesselSignal: "Vascular receptor activity remains near normal.",
+          kidney: "More urine leaves the body, so blood volume falls."
+        },
+        arb: {
+          name: "Angiotensin II receptor blocker", chip: "ARB: AT1 blocked",
+          mechanism: "Angiotensin II is still made and reaches the vessel, but the drug occupies vessel-wall AT1 receptors. Ang II cannot cause vasoconstriction.",
+          effects: ["Mostly unchanged", "Dilates; AT1 cannot activate", "Moderately more urine", "Decreases"],
+          heartRate: .99, pumpStrength: .96, vesselResistance: .74, urineOutput: 1.38, bloodVolume: .86,
+          blocks: ["arb"], heartSignal: "Cardiac β1 signaling remains active.",
+          vesselSignal: "Ang II reaches vessel-wall AT1 but bounces away; α1 and calcium inputs remain.",
+          kidney: "Less Ang II water retention means more urine and lower blood volume."
+        },
+        ace: {
+          name: "ACE inhibitor", chip: "ACE step blocked",
+          mechanism: "The drug blocks ACE, so less Angiotensin II is formed. With less Ang II, vessels dilate and the kidney retains less water.",
+          effects: ["Mostly unchanged", "Dilates; less Ang II is made", "Moderately more urine", "Decreases"],
+          heartRate: .99, pumpStrength: .96, vesselResistance: .75, urineOutput: 1.36, bloodVolume: .87,
+          blocks: ["ace"], heartSignal: "Cardiac β1 signaling remains active.",
+          vesselSignal: "ACE blockade leaves little Ang II to reach vessel-wall AT1.",
+          kidney: "Less Ang II water retention means more urine and lower blood volume."
+        }
+      };
+
+      const $ = id => document.getElementById(id);
+      const select = $("drug-select");
+      const heart = $("heart");
+      const heartGlow = $("heart-glow");
+      const vessel = $("vessel");
+      const meterTrack = $("meter-track");
+      const drops = [...document.querySelectorAll(".drop")];
+      const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      const state = {
+        heartRate: 1, pumpStrength: 1, vesselResistance: 1,
+        urineOutput: 1, bloodVolume: 1, MAP: 1
+      };
+      let target = { ...state };
+      let modeKey = "normal";
+      let lastTime = performance.now();
+
+      function relativeWord(value, highWord, lowWord) {
+        if (value > 1.12) return highWord;
+        if (value < .9) return lowWord;
+        return "Normal";
+      }
+
+      function setMode(key) {
+        modeKey = key;
+        const m = MODES[key];
+        target = {
+          heartRate: m.heartRate, pumpStrength: m.pumpStrength,
+          vesselResistance: m.vesselResistance, urineOutput: m.urineOutput,
+          bloodVolume: m.bloodVolume, MAP: state.MAP
+        };
+
+        $("mode-chip-text").textContent = m.chip;
+        $("explanation-title").textContent = m.name;
+        $("mechanism").textContent = m.mechanism;
+        ["heart", "vessel", "kidney", "map"].forEach((part, i) => $("effect-" + part).textContent = m.effects[i]);
+        $("heart-signal-copy").textContent = m.heartSignal;
+        $("vessel-signal-copy").textContent = m.vesselSignal;
+        $("kidney-copy").textContent = m.kidney;
+
+        ["alpha", "beta", "ccb", "diuretic", "arb", "ace"].forEach(block => {
+          $(block + "-drug").classList.toggle("visible", m.blocks.includes(block));
+        });
+        $("raas-route-copy").textContent = m.blocks.includes("ace")
+          ? "ACE blocked: very little Ang II reaches vessel AT1"
+          : m.blocks.includes("arb")
+            ? "Ang II reaches the vessel, but AT1 is blocked"
+            : "Ang II travels up to AT1 on the vessel wall";
+      }
+
+      function signalParticle(el, lane, phase, blocked, visible = true) {
+        const width = Math.max(110, lane.clientWidth - 57);
+        let p = phase % 1;
+        let opacity = 1;
+        let x;
+        if (blocked && p > .72) {
+          const bounce = (p - .72) / .28;
+          x = width * (.72 - bounce * .24);
+          opacity = 1 - bounce * .65;
+        } else {
+          x = width * Math.min(p / .92, 1);
+          opacity = p > .92 ? (1 - p) / .08 : Math.min(1, p * 9);
+        }
+        const y = Math.sin(p * Math.PI * 4) * 3;
+        opacity *= visible ? 1 : .04;
+        el.style.transform = `translate(${x + 19}px, ${9 + y}px)`;
+        el.style.opacity = opacity.toFixed(2);
+      }
+
+      function raasParticle(el, phase, blocked, visible = true) {
+        let p = phase % 1;
+        let opacity = visible ? 1 : .05;
+        let x = p * 75;
+        if (blocked && p > .65) {
+          const bounce = (p - .65) / .35;
+          x = 49 - bounce * 25;
+          opacity *= 1 - bounce * .7;
+        } else if (p > .88) {
+          opacity *= (1 - p) / .12;
+        }
+        el.style.transform = `translate(${x}px, ${Math.sin(p * Math.PI * 2) * 3}px)`;
+        el.style.opacity = Math.max(0, opacity).toFixed(2);
+      }
+
+      function animate(time) {
+        const dt = Math.min(.05, Math.max(.001, (time - lastTime) / 1000));
+        lastTime = time;
+        const smoothing = reduceMotion ? 1 : 1 - Math.exp(-dt * 3.4);
+
+        for (const key of ["heartRate", "pumpStrength", "vesselResistance", "urineOutput", "bloodVolume"]) {
+          state[key] += (target[key] - state[key]) * smoothing;
+        }
+        const volumeFactor = .62 + .38 * state.bloodVolume;
+        const cardiacOutput = state.heartRate * state.pumpStrength * volumeFactor;
+        const calculatedMAP = cardiacOutput * state.vesselResistance;
+        state.MAP += (calculatedMAP - state.MAP) * smoothing;
+
+        const seconds = time / 1000;
+        const beatPhase = seconds * state.heartRate * 1.22 * Math.PI * 2;
+        const systole = Math.pow(Math.max(0, Math.sin(beatPhase)), 4);
+        const heartScale = 1 + systole * .115 * state.pumpStrength;
+        heart.style.transform = `scale(${heartScale.toFixed(3)})`;
+        heartGlow.style.transform = `scale(${(1 + systole * .2).toFixed(3)})`;
+        heartGlow.style.opacity = (.45 + systole * .45).toFixed(2);
+
+        const lumen = 46 + (1.08 - state.vesselResistance) * 60;
+        vessel.style.setProperty("--lumen", `${Math.max(37, Math.min(74, lumen))}px`);
+
+        drops.forEach((drop, i) => {
+          const speed = .48 + state.urineOutput * .44;
+          const p = (seconds * speed + i / drops.length) % 1;
+          drop.style.transform = `translateY(${p * 80}px) rotate(45deg) scale(${.72 + state.urineOutput * .18})`;
+          drop.style.opacity = (p < .08 || p > .91 ? .12 : Math.min(1, state.urineOutput * .78)).toFixed(2);
+        });
+        $("urine-cup").style.setProperty("--urine-fill", `${Math.min(77, 25 + state.urineOutput * 22)}%`);
+
+        const mapDisplay = Math.round(state.MAP * 100);
+        const meterPct = Math.max(8, Math.min(92, 50 + (state.MAP - 1) * 91));
+        meterTrack.style.setProperty("--meter", `${meterPct}%`);
+        $("map-number").textContent = mapDisplay;
+        $("co-number").textContent = `${Math.round(cardiacOutput * 100)}%`;
+
+        $("heart-rate-label").textContent = relativeWord(state.heartRate, "Faster", "Slower");
+        $("pump-label").textContent = relativeWord(state.pumpStrength, "Stronger", "Weaker");
+        $("urine-label").textContent = relativeWord(state.urineOutput, "Increased", "Reduced");
+        $("volume-label").textContent = relativeWord(state.bloodVolume, "Higher", "Lower");
+        $("diameter-label").textContent = state.vesselResistance < .88 ? "Dilated" : "Normal";
+        $("resistance-label").textContent = relativeWord(state.vesselResistance, "Higher", "Lower");
+        $("vessel-caption").textContent = state.vesselResistance < .88 ? "Vasodilation: wider lumen" : "Normal tone / slight vasoconstriction";
+
+        const mapStatus = $("map-status");
+        if (state.MAP < .87) {
+          mapStatus.textContent = "Decreased";
+          mapStatus.style.background = "#dceefa";
+          mapStatus.style.color = "#14518c";
+        } else {
+          mapStatus.textContent = "Normal range";
+          mapStatus.style.background = "#dff3ea";
+          mapStatus.style.color = "#176347";
+        }
+
+        const m = MODES[modeKey];
+        const signalTime = reduceMotion ? .5 : seconds * .34;
+        signalParticle($("ne-beta"), $("beta-lane"), signalTime, m.blocks.includes("beta"));
+        signalParticle($("ne-alpha"), $("alpha-lane"), signalTime + .42, m.blocks.includes("alpha"));
+        signalParticle($("e-alpha"), $("alpha-lane"), signalTime + .78, m.blocks.includes("alpha"));
+        signalParticle($("angii-vessel"), $("at1-lane"), signalTime + .33, m.blocks.includes("arb"), !m.blocks.includes("ace"));
+        signalParticle($("calcium-particle"), $("calcium-lane"), signalTime + .61, m.blocks.includes("ccb"));
+        raasParticle($("angi-particle"), signalTime + .15, m.blocks.includes("ace"), true);
+        raasParticle($("angii-source-particle"), signalTime + .58, false, !m.blocks.includes("ace"));
+
+        requestAnimationFrame(animate);
+      }
+
+      select.addEventListener("change", event => setMode(event.target.value));
+      setMode("normal");
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Horizontal Gene Transfer in Bacteria</title>
+  <style>
+    :root {
+      --bg: #f7fbfb;
+      --panel: #ffffff;
+      --ink: #153038;
+      --muted: #4c6770;
+      --line: #cddfe3;
+      --cell: #bfe9df;
+      --cell-edge: #35796f;
+      --host-dna: #7b45c3;
+      --donor-dna: #f1c84b;
+      --viral-dna: #d83a3a;
+      --plasmid-dna: #1d9d72;
+      --new-dna: #0b8793;
+      --tube: #6bb7c8;
+      --tube-edge: #2e7789;
+      --button: #e8f3f4;
+      --button-active: #124f5c;
+      --button-active-text: #ffffff;
+      --button-edge: #aacbd1;
+      --focus: #ffbf3f;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    .page {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      padding: 10px clamp(10px, 2vw, 20px) 18px;
+    }
+
+    .attribution {
+      margin: 0;
+      font-size: clamp(17px, 2.2vw, 24px);
+      font-weight: 800;
+      line-height: 1.25;
+      text-align: center;
+    }
+
+    h1 {
+      margin: 4px 0 10px;
+      font-size: clamp(24px, 3.2vw, 42px);
+      line-height: 1.1;
+      text-align: center;
+      letter-spacing: 0;
+    }
+
+    .animation-shell {
+      background: var(--panel);
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 10px 24px rgba(20, 50, 60, 0.10);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px;
+      background: #eaf5f6;
+      border-bottom: 2px solid var(--line);
+    }
+
+    .control-group {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    button {
+      min-height: 42px;
+      border: 2px solid var(--button-edge);
+      border-radius: 8px;
+      background: var(--button);
+      color: var(--ink);
+      padding: 8px 13px;
+      font-size: clamp(14px, 1.7vw, 17px);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: var(--button-active);
+    }
+
+    button:focus-visible {
+      outline: 4px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    button.active,
+    button[aria-pressed="true"] {
+      background: var(--button-active);
+      border-color: var(--button-active);
+      color: var(--button-active-text);
+    }
+
+    .stage-wrap {
+      padding: clamp(8px, 1.5vw, 14px);
+    }
+
+    #stage {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 420px;
+      background: #fdfefe;
+      border: 1px solid #dbe9ec;
+      border-radius: 8px;
+    }
+
+    .step-text {
+      margin: 10px clamp(8px, 1.5vw, 14px) 14px;
+      min-height: 58px;
+      padding: 12px 14px;
+      border: 2px solid #b8d7dc;
+      border-radius: 8px;
+      background: #f4fbfc;
+      color: var(--ink);
+      font-size: clamp(17px, 2vw, 23px);
+      line-height: 1.35;
+      font-weight: 700;
+    }
+
+    .scene-label {
+      font-size: 24px;
+      font-weight: 800;
+      fill: var(--ink);
+      paint-order: stroke;
+      stroke: #ffffff;
+      stroke-width: 5px;
+      stroke-linejoin: round;
+    }
+
+    .small-label {
+      font-size: 18px;
+      font-weight: 800;
+      fill: var(--ink);
+      paint-order: stroke;
+      stroke: #ffffff;
+      stroke-width: 4px;
+      stroke-linejoin: round;
+    }
+
+    .tiny-label {
+      font-size: 15px;
+      font-weight: 800;
+      fill: var(--ink);
+      paint-order: stroke;
+      stroke: #ffffff;
+      stroke-width: 3px;
+      stroke-linejoin: round;
+    }
+
+    .cell-body {
+      fill: var(--cell);
+      stroke: var(--cell-edge);
+      stroke-width: 4;
+    }
+
+    .recipient-cell {
+      fill: #c8eee7;
+    }
+
+    .donor-cell {
+      fill: #d7ecd9;
+      stroke: #508955;
+    }
+
+    .dying-cell {
+      fill: #ecd2d2;
+      stroke: #9b5252;
+    }
+
+    .lysis-cell {
+      fill: #f0d6d6;
+      stroke: #a84b4b;
+    }
+
+    .chromosome {
+      fill: none;
+      stroke: var(--host-dna);
+      stroke-width: 9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .integrated-segment {
+      fill: none;
+      stroke-width: 9;
+      stroke-linecap: butt;
+      stroke-linejoin: round;
+    }
+
+    .dna-line {
+      fill: none;
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .thin-dna {
+      fill: none;
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .plasmid {
+      fill: none;
+      stroke: var(--plasmid-dna);
+      stroke-width: 7;
+      stroke-linecap: round;
+    }
+
+    .plasmid-inner {
+      fill: none;
+      stroke: #64caa2;
+      stroke-width: 4;
+      stroke-linecap: round;
+    }
+
+    .new-strand {
+      fill: none;
+      stroke: var(--new-dna);
+      stroke-width: 5;
+      stroke-linecap: round;
+    }
+
+    .tube {
+      fill: rgba(107, 183, 200, 0.22);
+      stroke: var(--tube-edge);
+      stroke-width: 5;
+      stroke-linejoin: round;
+    }
+
+    .tube-fill {
+      stroke: var(--tube);
+      stroke-width: 28;
+      stroke-linecap: round;
+      opacity: 0.32;
+    }
+
+    .arrow-line {
+      fill: none;
+      stroke: #34515a;
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .stress-halo {
+      fill: none;
+      stroke: #f39c34;
+      stroke-width: 5;
+      opacity: 0.85;
+    }
+
+    .fragment-glow {
+      filter: drop-shadow(0 0 5px rgba(241, 200, 75, 0.7));
+    }
+
+    .viral-glow {
+      filter: drop-shadow(0 0 5px rgba(216, 58, 58, 0.65));
+    }
+
+    .fade {
+      opacity: 0.45;
+    }
+
+    .motion-slow {
+      animation-duration: 1.8s;
+      animation-timing-function: ease-in-out;
+      animation-fill-mode: both;
+    }
+
+    .move-fragment-to-cell {
+      animation-name: fragmentToCell;
+    }
+
+    .enter-cell {
+      animation-name: enterCell;
+    }
+
+    .inject-red {
+      animation-name: injectRed;
+    }
+
+    .transfer-through-tube {
+      animation-name: transferThroughTube;
+    }
+
+    .phage-approach {
+      animation-name: phageApproach;
+    }
+
+    @keyframes fragmentToCell {
+      from { transform: translate(-90px, -16px); }
+      to { transform: translate(0, 0); }
+    }
+
+    @keyframes enterCell {
+      from { transform: translate(-92px, -18px); opacity: 0.95; }
+      to { transform: translate(0, 0); opacity: 1; }
+    }
+
+    @keyframes injectRed {
+      from { transform: translate(0, -82px); opacity: 0.85; }
+      to { transform: translate(0, 0); opacity: 1; }
+    }
+
+    @keyframes transferThroughTube {
+      from { transform: translate(-140px, 0); }
+      to { transform: translate(0, 0); }
+    }
+
+    @keyframes phageApproach {
+      from { transform: translate(-90px, -18px); }
+      to { transform: translate(0, 0); }
+    }
+
+    @media (max-width: 680px) {
+      .page {
+        padding-left: 6px;
+        padding-right: 6px;
+      }
+
+      .controls {
+        align-items: stretch;
+      }
+
+      .control-group {
+        width: 100%;
+      }
+
+      .control-group button {
+        flex: 1 1 130px;
+      }
+
+      #stage {
+        min-height: 360px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <p class="attribution"><strong>Animation Prompted by Jerred Seveyka for his biology class.</strong></p>
+    <h1>Horizontal Gene Transfer in Bacteria</h1>
+
+    <section class="animation-shell" aria-label="Horizontal gene transfer animation">
+      <div class="controls" aria-label="Animation controls">
+        <div class="control-group" role="group" aria-label="Select process">
+          <button type="button" class="mode-button active" data-mode="transformation" aria-pressed="true">Transformation</button>
+          <button type="button" class="mode-button" data-mode="transduction" aria-pressed="false">Transduction</button>
+          <button type="button" class="mode-button" data-mode="conjugation" aria-pressed="false">Conjugation</button>
+        </div>
+        <div class="control-group" role="group" aria-label="Step controls">
+          <button type="button" id="backButton">Step Back</button>
+          <button type="button" id="playButton" aria-pressed="false">Play</button>
+          <button type="button" id="forwardButton">Step Forward</button>
+          <button type="button" id="resetButton">Reset</button>
+        </div>
+      </div>
+
+      <div class="stage-wrap">
+        <svg id="stage" viewBox="0 0 1000 560" role="img" aria-labelledby="sceneTitle sceneDescription">
+          <title id="sceneTitle">Horizontal Gene Transfer in Bacteria</title>
+          <desc id="sceneDescription">Interactive educational animation showing transformation, transduction, and conjugation in bacteria.</desc>
+        </svg>
+      </div>
+      <div id="stepText" class="step-text" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script>
+    const SVG_NS = "http://www.w3.org/2000/svg";
+    const COLORS = {
+      host: "#7b45c3",
+      donor: "#f1c84b",
+      viral: "#d83a3a",
+      plasmid: "#1d9d72",
+      plasmidLight: "#64caa2",
+      newStrand: "#0b8793",
+      recipient: "#c8eee7",
+      donorCell: "#d7ecd9",
+      ink: "#153038"
+    };
+
+    const appState = {
+      mode: "transformation",
+      step: 0,
+      playing: false,
+      timer: null
+    };
+
+    const modeData = {
+      transformation: {
+        label: "Transformation",
+        steps: [
+          {
+            text: "A donor bacterium and a nearby recipient bacterium each contain a circular chromosome.",
+            render: renderTransformationStart
+          },
+          {
+            text: "The donor bacterium dies, making its DNA available to the environment.",
+            render: renderTransformationDonorDies
+          },
+          {
+            text: "The donor chromosome is released from the dying cell.",
+            render: renderTransformationRelease
+          },
+          {
+            text: "The released donor DNA breaks into smaller environmental fragments.",
+            render: renderTransformationFragments
+          },
+          {
+            text: "A stressed recipient cell becomes competent and can take up DNA from its surroundings.",
+            render: renderTransformationCompetent
+          },
+          {
+            text: "One yellow donor DNA fragment moves toward the stressed competent cell.",
+            render: renderTransformationFragmentMoves
+          },
+          {
+            text: "The competent cell takes up the donor DNA fragment.",
+            render: renderTransformationFragmentEnters
+          },
+          {
+            text: "The donor DNA aligns with a matching region of the host chromosome.",
+            render: renderTransformationAligns
+          },
+          {
+            text: "The donor DNA integrates into the chromosome, creating a transformed bacterium.",
+            render: renderTransformationIntegrated
+          }
+        ]
+      },
+      transduction: {
+        label: "Transduction",
+        steps: [
+          {
+            text: "A bacteriophage approaches a bacterial cell with a circular chromosome.",
+            render: renderTransductionApproach
+          },
+          {
+            text: "A bacteriophage docks onto the bacterial surface.",
+            render: renderTransductionDock
+          },
+          {
+            text: "The phage injects viral DNA into the host cell.",
+            render: renderTransductionInject
+          },
+          {
+            text: "The viral DNA aligns with the host chromosome inside the bacterium.",
+            render: renderTransductionAlign
+          },
+          {
+            text: "The viral DNA integrates into the host genome as part of one continuous chromosome.",
+            render: renderTransductionIntegrate
+          },
+          {
+            text: "Replication produces DNA strands that contain both host and viral DNA.",
+            render: renderTransductionReplication
+          },
+          {
+            text: "Viral component synthesis produces phage heads, tails, and DNA packages.",
+            render: renderTransductionParts
+          },
+          {
+            text: "New phages assemble inside the host cell before lysis.",
+            render: renderTransductionAssembly
+          },
+          {
+            text: "The host cell lyses and releases intact phages carrying mixed host and viral DNA.",
+            render: renderTransductionLysis
+          },
+          {
+            text: "A transducing phage carries bacterial DNA to a new recipient cell and docks on its surface.",
+            render: renderTransductionRecipientDock
+          },
+          {
+            text: "The transducing phage injects mixed purple-and-red DNA into the recipient cell.",
+            render: renderTransductionRecipientInject
+          },
+          {
+            text: "The transferred bacterial gene aligns with the recipient chromosome.",
+            render: renderTransductionRecipientAlign
+          },
+          {
+            text: "The transferred DNA integrates into the recipient genome, forming a transduced bacterium.",
+            render: renderTransductionRecipientIntegrated
+          }
+        ]
+      },
+      conjugation: {
+        label: "Conjugation",
+        steps: [
+          {
+            text: "A plasmid-containing donor cell sits beside a recipient cell that does not yet have the plasmid.",
+            render: renderConjugationStart
+          },
+          {
+            text: "A plasmid-containing donor cell carries genes for pilus formation.",
+            render: renderConjugationPilusGenes
+          },
+          {
+            text: "The plasmid directs formation of a pilus from the donor cell.",
+            render: renderConjugationPilusForms
+          },
+          {
+            text: "The pilus attaches to the recipient cell and forms a tube-like conjugation bridge.",
+            render: renderConjugationAttached
+          },
+          {
+            text: "The plasmid opens at the origin of transfer so one strand can begin moving.",
+            render: renderConjugationOpenPlasmid
+          },
+          {
+            text: "One plasmid strand transfers through the conjugation bridge into the recipient.",
+            render: renderConjugationTransfer
+          },
+          {
+            text: "The donor synthesizes the missing complementary strand and keeps a complete plasmid.",
+            render: renderConjugationDonorSynthesis
+          },
+          {
+            text: "The recipient synthesizes a complementary strand and gains a complete plasmid.",
+            render: renderConjugationRecipientSynthesis
+          },
+          {
+            text: "After transfer, the cells separate and both contain complete plasmids.",
+            render: renderConjugationSeparate
+          },
+          {
+            text: "After division, plasmid-containing cells pass the plasmid to daughter cells.",
+            render: renderConjugationDivision
+          }
+        ]
+      }
+    };
+
+    const stage = document.getElementById("stage");
+    const stepText = document.getElementById("stepText");
+    const playButton = document.getElementById("playButton");
+
+    function initializeMode(mode) {
+      pauseAnimation();
+      appState.mode = mode;
+      appState.step = 0;
+      document.querySelectorAll(".mode-button").forEach((button) => {
+        const isActive = button.dataset.mode === mode;
+        button.classList.toggle("active", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
+      });
+      renderScene();
+    }
+
+    function renderScene() {
+      const current = modeData[appState.mode].steps[appState.step];
+      clearStage();
+      addSceneDescription();
+      addDefs();
+      current.render();
+      updateStepText();
+      updateControlStates();
+    }
+
+    function updateStepText() {
+      stepText.textContent = modeData[appState.mode].steps[appState.step].text;
+    }
+
+    function nextStep() {
+      const lastStep = modeData[appState.mode].steps.length - 1;
+      if (appState.step < lastStep) {
+        appState.step += 1;
+      } else {
+        pauseAnimation();
+      }
+      renderScene();
+    }
+
+    function previousStep() {
+      appState.step = Math.max(0, appState.step - 1);
+      renderScene();
+    }
+
+    function resetAnimation() {
+      pauseAnimation();
+      appState.step = 0;
+      renderScene();
+    }
+
+    function playAnimation() {
+      if (appState.playing) return;
+      appState.playing = true;
+      playButton.textContent = "Pause";
+      playButton.setAttribute("aria-pressed", "true");
+      appState.timer = window.setInterval(nextStep, 3100);
+    }
+
+    function pauseAnimation() {
+      appState.playing = false;
+      playButton.textContent = "Play";
+      playButton.setAttribute("aria-pressed", "false");
+      if (appState.timer) {
+        window.clearInterval(appState.timer);
+        appState.timer = null;
+      }
+    }
+
+    function togglePlay() {
+      if (appState.playing) {
+        pauseAnimation();
+      } else {
+        playAnimation();
+      }
+    }
+
+    function updateControlStates() {
+      document.getElementById("backButton").disabled = appState.step === 0;
+      document.getElementById("forwardButton").disabled = appState.step === modeData[appState.mode].steps.length - 1;
+    }
+
+    // Rendering is state-driven: each step redraws the same reusable SVG parts in new biological states.
+    function clearStage() {
+      while (stage.firstChild) stage.removeChild(stage.firstChild);
+    }
+
+    function addSceneDescription() {
+      const title = el("title", { id: "sceneTitle" });
+      title.textContent = "Horizontal Gene Transfer in Bacteria";
+      const description = el("desc", { id: "sceneDescription" });
+      description.textContent = "Interactive educational animation showing transformation, transduction, and conjugation in bacteria.";
+      stage.appendChild(title);
+      stage.appendChild(description);
+    }
+
+    function addDefs() {
+      const defs = el("defs");
+      defs.appendChild(marker("arrowHead", COLORS.ink));
+      defs.appendChild(marker("greenArrowHead", COLORS.plasmid));
+      defs.appendChild(marker("redArrowHead", COLORS.viral));
+      stage.appendChild(defs);
+    }
+
+    function marker(id, color) {
+      const mark = el("marker", {
+        id,
+        viewBox: "0 0 10 10",
+        refX: "8",
+        refY: "5",
+        markerWidth: "7",
+        markerHeight: "7",
+        orient: "auto-start-reverse"
+      });
+      mark.appendChild(el("path", { d: "M 0 0 L 10 5 L 0 10 z", fill: color }));
+      return mark;
+    }
+
+    function el(name, attrs = {}, children = []) {
+      const node = document.createElementNS(SVG_NS, name);
+      Object.entries(attrs).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) node.setAttribute(key, value);
+      });
+      if (!Array.isArray(children)) children = [children];
+      children.forEach((child) => node.appendChild(child));
+      return node;
+    }
+
+    function add(node) {
+      stage.appendChild(node);
+      return node;
+    }
+
+    function group(attrs = {}, children = []) {
+      return el("g", attrs, children);
+    }
+
+    function text(label, x, y, className = "scene-label", anchor = "middle") {
+      const t = el("text", { x, y, class: className, "text-anchor": anchor });
+      t.textContent = label;
+      return t;
+    }
+
+    function wrappedText(lines, x, y, className = "small-label", anchor = "middle", lineHeight = 22) {
+      const t = el("text", { x, y, class: className, "text-anchor": anchor });
+      lines.forEach((line, index) => {
+        const span = el("tspan", { x, dy: index === 0 ? 0 : lineHeight });
+        span.textContent = line;
+        t.appendChild(span);
+      });
+      return t;
+    }
+
+    function rodCell({ x, y, w, h, label, className = "cell-body", labelY, opacity = 1 }) {
+      const g = group({ opacity });
+      g.appendChild(el("rect", { x, y, width: w, height: h, rx: h / 2, ry: h / 2, class: className }));
+      if (label) g.appendChild(text(label, x + w / 2, labelY || y - 16, "scene-label"));
+      return g;
+    }
+
+    function chromosome(cx, cy, r, options = {}) {
+      const g = group();
+      const chromosomeAttrs = { cx, cy, r, class: "chromosome" };
+      if (options.color) chromosomeAttrs.style = `stroke: ${options.color};`;
+      g.appendChild(el("circle", chromosomeAttrs));
+      const segments = options.segments || (options.segmentColor ? [{
+        color: options.segmentColor,
+        startAngle: options.startAngle || 300,
+        endAngle: options.endAngle || 42
+      }] : []);
+      segments.forEach((segment) => {
+        const arc = describeArc(cx, cy, r, segment.startAngle, segment.endAngle);
+        g.appendChild(el("path", {
+          d: arc,
+          class: "integrated-segment",
+          stroke: segment.color
+        }));
+      });
+      if (options.label) g.appendChild(text(options.label, cx, cy + r + 30, "small-label"));
+      return g;
+    }
+
+    function plasmid(cx, cy, r, options = {}) {
+      const g = group();
+      if (options.open) {
+        g.appendChild(el("path", {
+          d: describeArc(cx, cy, r, 30, 320),
+          class: "plasmid",
+          stroke: options.color || COLORS.plasmid
+        }));
+        g.appendChild(el("circle", { cx: cx + r * 0.92, cy: cy - r * 0.16, r: 5, fill: COLORS.plasmid }));
+      } else {
+        g.appendChild(el("circle", { cx, cy, r, class: "plasmid", stroke: options.color || COLORS.plasmid }));
+      }
+      if (options.double) {
+        g.appendChild(el("circle", { cx, cy, r: Math.max(5, r - 8), class: "plasmid-inner" }));
+      }
+      if (options.segmentLabel) {
+        const seg = el("path", {
+          d: describeArc(cx, cy, r, 210, 292),
+          class: "integrated-segment",
+          stroke: "#0f6f52"
+        });
+        seg.setAttribute("stroke-width", "8");
+        g.appendChild(seg);
+        g.appendChild(text(options.segmentLabel, cx - 40, cy + r + 27, "tiny-label"));
+      }
+      return g;
+    }
+
+    function dnaFragment(points, color, className = "dna-line") {
+      return el("path", {
+        d: smoothPath(points),
+        class: className,
+        stroke: color
+      });
+    }
+
+    function mixedDna(points, splitIndex, firstColor = COLORS.host, secondColor = COLORS.viral, width = 7) {
+      const g = group();
+      const first = points.slice(0, splitIndex + 1);
+      const second = points.slice(splitIndex);
+      g.appendChild(el("path", {
+        d: smoothPath(first),
+        fill: "none",
+        stroke: firstColor,
+        "stroke-width": width,
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round"
+      }));
+      g.appendChild(el("path", {
+        d: smoothPath(second),
+        fill: "none",
+        stroke: secondColor,
+        "stroke-width": width,
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round"
+      }));
+      return g;
+    }
+
+    function phage(x, y, scale = 1, options = {}) {
+      const g = group({ transform: `translate(${x} ${y}) scale(${scale})`, class: options.className || "" });
+      g.appendChild(el("polygon", {
+        points: "0,-38 32,-18 32,18 0,38 -32,18 -32,-18",
+        fill: options.headFill || "#cfe5f2",
+        stroke: "#33677a",
+        "stroke-width": 4
+      }));
+      if (options.dna === "red") {
+        g.appendChild(dnaFragment([[-16, -6], [-5, 7], [8, -5], [17, 7]], COLORS.viral, "thin-dna"));
+      } else if (options.dna === "mixed") {
+        g.appendChild(mixedDna([[-17, -4], [-6, 8], [7, -5], [17, 7]], 2, COLORS.host, COLORS.viral, 5));
+      }
+      g.appendChild(el("line", { x1: 0, y1: 38, x2: 0, y2: 82, stroke: "#33677a", "stroke-width": 8, "stroke-linecap": "round" }));
+      g.appendChild(el("rect", { x: -22, y: 78, width: 44, height: 10, rx: 5, fill: "#8fc6d7", stroke: "#33677a", "stroke-width": 3 }));
+      g.appendChild(el("line", { x1: -10, y1: 86, x2: -30, y2: 112, stroke: "#33677a", "stroke-width": 4, "stroke-linecap": "round" }));
+      g.appendChild(el("line", { x1: 10, y1: 86, x2: 30, y2: 112, stroke: "#33677a", "stroke-width": 4, "stroke-linecap": "round" }));
+      g.appendChild(el("line", { x1: 0, y1: 88, x2: 0, y2: 116, stroke: "#33677a", "stroke-width": 4, "stroke-linecap": "round" }));
+      return g;
+    }
+
+    function arrow(points, color = COLORS.ink, markerId = "arrowHead") {
+      return el("path", {
+        d: smoothPath(points),
+        class: "arrow-line",
+        stroke: color,
+        "marker-end": `url(#${markerId})`
+      });
+    }
+
+    function tubePath(x1, y1, x2, y2) {
+      const g = group();
+      g.appendChild(el("line", { x1, y1, x2, y2, class: "tube-fill" }));
+      g.appendChild(el("line", { x1, y1: y1 - 16, x2, y2: y2 - 16, class: "tube" }));
+      g.appendChild(el("line", { x1, y1: y1 + 16, x2, y2: y2 + 16, class: "tube" }));
+      return g;
+    }
+
+    function stressHalo(x, y, w, h) {
+      const g = group();
+      g.appendChild(el("rect", { x: x - 10, y: y - 10, width: w + 20, height: h + 20, rx: h / 2 + 10, ry: h / 2 + 10, class: "stress-halo" }));
+      g.appendChild(el("rect", { x: x - 22, y: y - 22, width: w + 44, height: h + 44, rx: h / 2 + 22, ry: h / 2 + 22, class: "stress-halo", opacity: 0.42 }));
+      return g;
+    }
+
+    function burstLines(cx, cy, r, color = "#a84b4b") {
+      const g = group();
+      for (let i = 0; i < 10; i += 1) {
+        const angle = (i / 10) * Math.PI * 2;
+        const x1 = cx + Math.cos(angle) * (r - 10);
+        const y1 = cy + Math.sin(angle) * (r - 10);
+        const x2 = cx + Math.cos(angle) * (r + 35);
+        const y2 = cy + Math.sin(angle) * (r + 35);
+        g.appendChild(el("line", {
+          x1,
+          y1,
+          x2,
+          y2,
+          stroke: color,
+          "stroke-width": 5,
+          "stroke-linecap": "round"
+        }));
+      }
+      return g;
+    }
+
+    function donorAndRecipientBase({ donorState = "healthy", recipientLabel = "recipient bacterium", recipientCompetent = false } = {}) {
+      const g = group();
+      const donorClass = donorState === "dying" ? "cell-body dying-cell" : "cell-body donor-cell";
+      const donorOpacity = donorState === "ghost" ? 0.2 : 1;
+      g.appendChild(rodCell({ x: 90, y: 230, w: 300, h: 140, label: donorState === "dying" ? "dying donor" : "donor bacterium", className: donorClass, opacity: donorOpacity }));
+      if (donorState !== "missing") g.appendChild(chromosome(240, 300, 42, { color: COLORS.donor }));
+      if (donorState === "dying") {
+        g.appendChild(el("line", { x1: 175, y1: 255, x2: 305, y2: 345, stroke: "#a84b4b", "stroke-width": 9, "stroke-linecap": "round" }));
+        g.appendChild(el("line", { x1: 305, y1: 255, x2: 175, y2: 345, stroke: "#a84b4b", "stroke-width": 9, "stroke-linecap": "round" }));
+      }
+      if (recipientCompetent) g.appendChild(stressHalo(600, 230, 300, 140));
+      g.appendChild(rodCell({ x: 600, y: 230, w: 300, h: 140, label: recipientLabel, className: "cell-body recipient-cell" }));
+      g.appendChild(chromosome(750, 300, 43));
+      return g;
+    }
+
+    function renderTransformationStart() {
+      add(donorAndRecipientBase());
+    }
+
+    function renderTransformationDonorDies() {
+      add(donorAndRecipientBase({ donorState: "dying" }));
+    }
+
+    function renderTransformationRelease() {
+      add(donorAndRecipientBase({ donorState: "dying" }));
+      add(dnaFragment([[370, 225], [430, 190], [505, 225], [555, 185]], COLORS.donor, "dna-line fragment-glow"));
+      add(text("released donor chromosome", 482, 166, "small-label"));
+    }
+
+    function renderTransformationFragments() {
+      add(donorAndRecipientBase({ donorState: "ghost" }));
+      add(dnaFragment([[415, 210], [462, 185], [515, 208]], COLORS.donor, "dna-line fragment-glow"));
+      add(dnaFragment([[445, 285], [500, 250], [555, 280]], COLORS.donor, "dna-line fragment-glow"));
+      add(dnaFragment([[345, 385], [405, 355], [468, 390]], COLORS.donor, "dna-line fragment-glow"));
+      add(text("DNA fragments", 475, 160, "small-label"));
+    }
+
+    function renderTransformationCompetent() {
+      add(donorAndRecipientBase({ donorState: "ghost", recipientLabel: "stressed competent cell", recipientCompetent: true }));
+      add(dnaFragment([[415, 210], [462, 185], [515, 208]], COLORS.donor, "dna-line fragment-glow"));
+      add(dnaFragment([[445, 285], [500, 250], [555, 280]], COLORS.donor, "dna-line fragment-glow"));
+      add(dnaFragment([[345, 385], [405, 355], [468, 390]], COLORS.donor, "dna-line fragment-glow"));
+    }
+
+    function renderTransformationFragmentMoves() {
+      add(donorAndRecipientBase({ donorState: "ghost", recipientLabel: "stressed competent cell", recipientCompetent: true }));
+      add(dnaFragment([[415, 210], [462, 185], [515, 208]], COLORS.donor, "dna-line fragment-glow"));
+      const moving = group({ class: "motion-slow move-fragment-to-cell" }, [
+        dnaFragment([[548, 278], [590, 250], [632, 276]], COLORS.donor, "dna-line fragment-glow")
+      ]);
+      add(moving);
+      add(arrow([[550, 248], [610, 230], [665, 251]], COLORS.donor, "arrowHead"));
+    }
+
+    function renderTransformationFragmentEnters() {
+      add(donorAndRecipientBase({ donorState: "ghost", recipientLabel: "stressed competent cell", recipientCompetent: true }));
+      add(group({ class: "motion-slow enter-cell" }, [
+        dnaFragment([[662, 300], [704, 272], [746, 300]], COLORS.donor, "dna-line fragment-glow")
+      ]));
+    }
+
+    function renderTransformationAligns() {
+      add(donorAndRecipientBase({ donorState: "ghost", recipientLabel: "stressed competent cell", recipientCompetent: true }));
+      add(dnaFragment([[706, 254], [748, 235], [790, 254]], COLORS.donor, "dna-line fragment-glow"));
+      add(text("donor fragment aligns", 750, 215, "small-label"));
+      add(arrow([[750, 248], [750, 260], [750, 270]], COLORS.donor, "arrowHead"));
+    }
+
+    function renderTransformationIntegrated() {
+      const g = group();
+      g.appendChild(rodCell({ x: 600, y: 220, w: 300, h: 150, label: "transformed bacterium", className: "cell-body recipient-cell" }));
+      g.appendChild(chromosome(750, 295, 48, { segmentColor: COLORS.donor, startAngle: 292, endAngle: 35 }));
+      g.appendChild(text("integrated yellow DNA segment", 750, 400, "small-label"));
+      add(g);
+    }
+
+    function hostCellWithPhageBase({ cellClass = "cell-body recipient-cell", label = "", integrated = false } = {}) {
+      const g = group();
+      g.appendChild(rodCell({ x: 310, y: 225, w: 360, h: 155, label, className: cellClass }));
+      g.appendChild(chromosome(490, 302, 52, integrated ? { segmentColor: COLORS.viral, startAngle: 296, endAngle: 42 } : {}));
+      return g;
+    }
+
+    function renderTransductionApproach() {
+      add(hostCellWithPhageBase());
+      add(phage(250, 116, 0.82, { dna: "red", className: "motion-slow phage-approach" }));
+    }
+
+    function renderTransductionDock() {
+      add(hostCellWithPhageBase());
+      add(phage(490, 96, 0.82, { dna: "red" }));
+      add(text("docked phage", 490, 64, "small-label"));
+    }
+
+    function renderTransductionInject() {
+      add(hostCellWithPhageBase());
+      add(phage(490, 96, 0.82, { dna: "red" }));
+      add(group({ class: "motion-slow inject-red" }, [
+        dnaFragment([[490, 206], [515, 238], [482, 269], [510, 302]], COLORS.viral, "dna-line viral-glow")
+      ]));
+    }
+
+    function renderTransductionAlign() {
+      add(hostCellWithPhageBase());
+      add(phage(490, 96, 0.82, { dna: "red" }));
+      add(dnaFragment([[430, 255], [462, 232], [502, 255], [542, 232]], COLORS.viral, "dna-line viral-glow"));
+      add(text("viral DNA aligns", 490, 208, "small-label"));
+    }
+
+    function renderTransductionIntegrate() {
+      add(hostCellWithPhageBase({ label: "host genome with integrated viral DNA", integrated: true }));
+      add(phage(490, 96, 0.82, { dna: "red" }));
+    }
+
+    function renderTransductionReplication() {
+      add(hostCellWithPhageBase({ integrated: true }));
+    }
+
+    function renderTransductionParts() {
+      add(hostCellWithPhageBase({ label: "host cell making phage parts", integrated: true }));
+      add(el("polygon", { points: "370,230 400,247 400,282 370,300 340,282 340,247", fill: "#cfe5f2", stroke: "#33677a", "stroke-width": 4 }));
+      add(el("polygon", { points: "560,235 592,253 592,288 560,306 528,288 528,253", fill: "#cfe5f2", stroke: "#33677a", "stroke-width": 4 }));
+      add(el("line", { x1: 430, y1: 255, x2: 430, y2: 330, stroke: "#33677a", "stroke-width": 8, "stroke-linecap": "round" }));
+      add(el("line", { x1: 620, y1: 255, x2: 620, y2: 330, stroke: "#33677a", "stroke-width": 8, "stroke-linecap": "round" }));
+      add(mixedDna([[440, 355], [475, 332], [512, 355]], 1, COLORS.host, COLORS.viral, 7));
+      add(mixedDna([[555, 355], [590, 332], [628, 355]], 1, COLORS.host, COLORS.viral, 7));
+    }
+
+    function renderTransductionAssembly() {
+      add(hostCellWithPhageBase({ label: "host cell assembling new phages", integrated: true }));
+      add(phage(390, 245, 0.46, { dna: "mixed" }));
+      add(phage(510, 238, 0.46, { dna: "mixed" }));
+      add(phage(610, 263, 0.46, { dna: "mixed" }));
+      add(text("assembled intact phages", 500, 438, "small-label"));
+    }
+
+    function renderTransductionLysis() {
+      add(rodCell({ x: 310, y: 225, w: 360, h: 155, label: "lysing host cell", className: "cell-body lysis-cell" }));
+      add(burstLines(490, 302, 116));
+      add(phage(250, 154, 0.62, { dna: "mixed" }));
+      add(phage(470, 105, 0.62, { dna: "mixed" }));
+      add(phage(705, 155, 0.62, { dna: "mixed" }));
+      add(phage(575, 410, 0.62, { dna: "mixed" }));
+      add(text("released intact transducing phages", 500, 505, "small-label"));
+    }
+
+    function recipientCellBase({ label = "", integrated = false } = {}) {
+      const g = group();
+      g.appendChild(rodCell({ x: 585, y: 245, w: 330, h: 145, label, className: "cell-body recipient-cell" }));
+      g.appendChild(chromosome(750, 318, 48, integrated ? {
+        color: COLORS.donor,
+        segments: [
+          { color: COLORS.host, startAngle: 286, endAngle: 326 },
+          { color: COLORS.viral, startAngle: 326, endAngle: 38 }
+        ]
+      } : { color: COLORS.donor }));
+      return g;
+    }
+
+    function renderTransductionRecipientDock() {
+      add(phage(190, 130, 0.6, { dna: "mixed" }));
+      add(phage(350, 410, 0.6, { dna: "mixed" }));
+      add(recipientCellBase());
+      add(phage(750, 116, 0.78, { dna: "mixed" }));
+      add(text("transducing phage docked", 750, 74, "small-label"));
+    }
+
+    function renderTransductionRecipientInject() {
+      add(recipientCellBase());
+      add(phage(750, 116, 0.78, { dna: "mixed" }));
+      add(group({ class: "motion-slow inject-red" }, [
+        mixedDna([[750, 223], [775, 250], [742, 278], [775, 310]], 2, COLORS.host, COLORS.viral, 8)
+      ]));
+    }
+
+    function renderTransductionRecipientAlign() {
+      add(recipientCellBase());
+      add(phage(750, 116, 0.78, { dna: "mixed" }));
+      add(mixedDna([[682, 272], [720, 247], [756, 272], [795, 248]], 2, COLORS.host, COLORS.viral, 8));
+      add(text("transferred bacterial gene aligns", 750, 224, "small-label"));
+    }
+
+    function renderTransductionRecipientIntegrated() {
+      add(recipientCellBase({ label: "transduced bacterium", integrated: true }));
+      add(text("transferred segment integrated", 750, 420, "small-label"));
+    }
+
+    function conjugationCellsBase({ recipientPlasmid = false, donorPlasmid = true, labels = true } = {}) {
+      const g = group();
+      g.appendChild(rodCell({
+        x: 105,
+        y: 245,
+        w: 300,
+        h: 140,
+        label: labels ? "donor cell" : "",
+        className: "cell-body donor-cell"
+      }));
+      g.appendChild(chromosome(255, 315, 39));
+      if (donorPlasmid) g.appendChild(plasmid(315, 287, 27, { double: true }));
+      g.appendChild(rodCell({
+        x: 615,
+        y: 245,
+        w: 300,
+        h: 140,
+        label: labels ? "recipient cell" : "",
+        className: "cell-body recipient-cell"
+      }));
+      g.appendChild(chromosome(765, 315, 39));
+      if (recipientPlasmid) g.appendChild(plasmid(704, 287, 27, { double: true }));
+      return g;
+    }
+
+    function renderConjugationStart() {
+      add(conjugationCellsBase({ recipientPlasmid: false }));
+      add(text("plasmid-containing donor", 255, 430, "small-label"));
+      add(text("no plasmid yet", 765, 430, "small-label"));
+    }
+
+    function renderConjugationPilusGenes() {
+      add(conjugationCellsBase({ recipientPlasmid: false }));
+      add(plasmid(315, 287, 27, { double: true, segmentLabel: "tra genes" }));
+      add(text("plasmid genes code for pilus formation", 315, 198, "small-label"));
+    }
+
+    function renderConjugationPilusForms() {
+      add(conjugationCellsBase({ recipientPlasmid: false }));
+      add(plasmid(315, 287, 27, { double: true, segmentLabel: "tra genes" }));
+      add(arrow([[330, 260], [420, 230], [476, 284]], COLORS.plasmid, "greenArrowHead"));
+      add(tubePath(405, 315, 535, 315));
+      add(text("forming pilus", 475, 260, "small-label"));
+    }
+
+    function renderConjugationAttached() {
+      add(conjugationCellsBase({ recipientPlasmid: false }));
+      add(plasmid(315, 287, 27, { double: true, segmentLabel: "tra genes" }));
+      add(tubePath(405, 315, 615, 315));
+      add(text("conjugation bridge", 510, 260, "small-label"));
+    }
+
+    function renderConjugationOpenPlasmid() {
+      add(conjugationCellsBase({ recipientPlasmid: false, donorPlasmid: false }));
+      add(plasmid(315, 287, 29, { double: true, open: true, oriLabel: true }));
+      add(tubePath(405, 315, 615, 315));
+      add(text("plasmid opens at origin of transfer", 315, 205, "small-label"));
+    }
+
+    function renderConjugationTransfer() {
+      add(conjugationCellsBase({ recipientPlasmid: false, donorPlasmid: false }));
+      add(plasmid(315, 287, 29, { double: true, open: true, oriLabel: true }));
+      add(tubePath(405, 315, 615, 315));
+      add(group({ class: "motion-slow transfer-through-tube" }, [
+        dnaFragment([[415, 315], [470, 300], [525, 330], [602, 315]], COLORS.plasmid, "dna-line")
+      ]));
+      add(text("single strand moving through tube", 510, 385, "small-label"));
+    }
+
+    function renderConjugationDonorSynthesis() {
+      add(conjugationCellsBase({ recipientPlasmid: false, donorPlasmid: false }));
+      add(tubePath(405, 315, 615, 315));
+      add(plasmid(315, 287, 29, { double: true }));
+      add(el("path", { d: describeArc(315, 287, 18, 40, 305), class: "new-strand" }));
+      add(dnaFragment([[510, 315], [555, 300], [603, 315]], COLORS.plasmid, "dna-line"));
+      add(text("new donor strand", 315, 210, "small-label"));
+    }
+
+    function renderConjugationRecipientSynthesis() {
+      add(conjugationCellsBase({ recipientPlasmid: false, donorPlasmid: false }));
+      add(tubePath(405, 315, 615, 315));
+      add(plasmid(315, 287, 29, { double: true }));
+      add(plasmid(704, 287, 29, { double: false }));
+      add(el("circle", { cx: 704, cy: 287, r: 20, class: "new-strand" }));
+      add(text("complementary strand synthesis", 704, 214, "small-label"));
+    }
+
+    function renderConjugationSeparate() {
+      add(conjugationCellsBase({ recipientPlasmid: true, donorPlasmid: true }));
+      add(text("both cells now contain complete plasmids", 510, 472, "small-label"));
+    }
+
+    function renderConjugationDivision() {
+      const g = group();
+      const cells = [
+        { x: 105, y: 205, label: "daughter cell", className: "cell-body donor-cell" },
+        { x: 105, y: 365, label: "daughter cell", className: "cell-body donor-cell" },
+        { x: 615, y: 205, label: "daughter cell", className: "cell-body recipient-cell" },
+        { x: 615, y: 365, label: "daughter cell", className: "cell-body recipient-cell" }
+      ];
+      cells.forEach((cell) => {
+        g.appendChild(rodCell({ x: cell.x, y: cell.y, w: 270, h: 95, label: cell.label, labelY: cell.y - 10, className: cell.className }));
+        g.appendChild(chromosome(cell.x + 135, cell.y + 48, 28));
+        g.appendChild(plasmid(cell.x + 198, cell.y + 36, 18, { double: true }));
+      });
+      g.appendChild(text("plasmids are inherited by daughter cells", 500, 520, "small-label"));
+      add(g);
+    }
+
+    function polarToCartesian(cx, cy, r, angleInDegrees) {
+      const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+      return {
+        x: cx + (r * Math.cos(angleInRadians)),
+        y: cy + (r * Math.sin(angleInRadians))
+      };
+    }
+
+    function describeArc(cx, cy, r, startAngle, endAngle) {
+      const start = polarToCartesian(cx, cy, r, startAngle);
+      const end = polarToCartesian(cx, cy, r, endAngle);
+      const delta = (endAngle - startAngle + 360) % 360;
+      const largeArcFlag = delta > 180 ? "1" : "0";
+      return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`;
+    }
+
+    function smoothPath(points) {
+      if (!points.length) return "";
+      return points.map((point, index) => `${index === 0 ? "M" : "L"} ${point[0]} ${point[1]}`).join(" ");
+    }
+
+    document.querySelectorAll(".mode-button").forEach((button) => {
+      button.addEventListener("click", () => initializeMode(button.dataset.mode));
+    });
+    document.getElementById("backButton").addEventListener("click", previousStep);
+    document.getElementById("forwardButton").addEventListener("click", nextStep);
+    document.getElementById("resetButton").addEventListener("click", resetAnimation);
+    playButton.addEventListener("click", togglePlay);
+
+    initializeMode("transformation");
+  </script>
+</body>
+</html>

@@ -1,0 +1,1240 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Interferon and the Antiviral State</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1d2733;
+      --muted: #5d6f80;
+      --panel: #ffffff;
+      --line: #c7d4dc;
+      --bg: #f3f7f6;
+      --left-fill: #e0f5ee;
+      --left-stroke: #3b8d7d;
+      --right-fill: #e8eefc;
+      --right-stroke: #516fb0;
+      --virus: #d24b63;
+      --virus-edge: #84243b;
+      --rna: #7137a8;
+      --viral-rna: #a23a83;
+      --host-rna: #27839a;
+      --signal-mrna: #d6413f;
+      --dsrna-a: #7137a8;
+      --dsrna-b: #008c90;
+      --ifn: #f4c64a;
+      --ifn-edge: #90650b;
+      --protein: #68b88b;
+      --protein-active: #ffd23f;
+      --protein-active-edge: #b88707;
+      --shadow: 0 14px 30px rgba(31, 49, 63, .13);
+      font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: linear-gradient(180deg, #fbfdfd 0%, var(--bg) 58%, #eaf1f0 100%);
+    }
+
+    .page {
+      width: min(1420px, 100%);
+      margin: 0 auto;
+      padding: 14px 12px 28px;
+    }
+
+    .attribution {
+      margin: 0 0 6px;
+      text-align: center;
+      color: #395467;
+      font-size: .98rem;
+      font-weight: 750;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      text-align: center;
+      color: #173247;
+      font-size: 2.25rem;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin: 0 auto 12px;
+      max-width: 1280px;
+    }
+
+    .controls button {
+      min-height: 42px;
+      border: 1px solid #8aa0b1;
+      border-radius: 8px;
+      padding: 8px 12px;
+      background: #fff;
+      color: #20384a;
+      font-weight: 760;
+      line-height: 1.12;
+      cursor: pointer;
+      box-shadow: 0 5px 14px rgba(31, 49, 63, .08);
+      transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+      white-space: normal;
+    }
+
+    .controls button:hover,
+    .controls button:focus-visible {
+      border-color: #366b90;
+      outline: 3px solid rgba(54, 107, 144, .22);
+      outline-offset: 2px;
+      transform: translateY(-1px);
+    }
+
+    .controls button.primary {
+      border-color: #1e6b70;
+      background: #1e6b70;
+      color: #fff;
+    }
+
+    .controls button.active,
+    .controls button[aria-pressed="true"]:not(.primary) {
+      border-color: #bd6a16;
+      background: #fff2df;
+      color: #754409;
+    }
+
+    .controls button.primary[aria-pressed="true"] {
+      border-color: #174f54;
+      background: #174f54;
+    }
+
+    .status-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(240px, 360px);
+      gap: 12px;
+      align-items: stretch;
+      max-width: 1320px;
+      margin: 0 auto 12px;
+    }
+
+    .explanation,
+    .status-pill,
+    .stage-shell {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .96);
+      box-shadow: var(--shadow);
+    }
+
+    .explanation {
+      min-height: 74px;
+      padding: 12px 15px;
+      font-size: 1.02rem;
+      line-height: 1.42;
+    }
+
+    .explanation strong {
+      display: block;
+      margin-bottom: 3px;
+      color: #173247;
+      font-size: 1.04rem;
+    }
+
+    .status-pill {
+      display: grid;
+      align-content: center;
+      gap: 4px;
+      padding: 12px 14px;
+      color: #405c70;
+      font-weight: 740;
+    }
+
+    .status-pill span:first-child {
+      color: #173247;
+      font-size: 1.02rem;
+    }
+
+    .stage-shell {
+      max-width: 1320px;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #f8fbfb;
+    }
+
+    text {
+      letter-spacing: 0;
+    }
+
+    .cell-body {
+      stroke-width: 4;
+      filter: drop-shadow(0 8px 13px rgba(31, 49, 63, .1));
+    }
+
+    .left-cell {
+      fill: var(--left-fill);
+      stroke: var(--left-stroke);
+    }
+
+    .right-cell {
+      fill: var(--right-fill);
+      stroke: var(--right-stroke);
+    }
+
+    .cell-label {
+      fill: #173247;
+      font-size: 24px;
+      font-weight: 850;
+      text-anchor: middle;
+    }
+
+    .label,
+    .small-label,
+    .process-label,
+    .callout-label {
+      fill: #243b4e;
+      font-weight: 780;
+    }
+
+    .label {
+      font-size: 19px;
+    }
+
+    .small-label {
+      font-size: 16px;
+    }
+
+    .process-label {
+      font-size: 18px;
+    }
+
+    .fine-label {
+      fill: #4e6575;
+      font-size: 14px;
+      font-weight: 710;
+    }
+
+    .callout-label {
+      font-size: 18px;
+    }
+
+    .nucleus {
+      fill: #f5eaff;
+      stroke: #8050a0;
+      stroke-width: 3;
+    }
+
+    .dna {
+      fill: none;
+      stroke: #8050a0;
+      stroke-width: 3;
+      stroke-linecap: round;
+    }
+
+    .arrow,
+    .label-arrow {
+      fill: none;
+      stroke: #49687c;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      marker-end: url(#arrowHead);
+    }
+
+    .receptor-arrow {
+      stroke: #111111;
+      marker-end: url(#blackArrowHead);
+    }
+
+    .signal-arrow {
+      fill: none;
+      stroke: #d28522;
+      stroke-width: 3;
+      stroke-dasharray: 8 9;
+      stroke-linecap: round;
+      marker-end: url(#orangeArrowHead);
+    }
+
+    .virus-spike {
+      stroke: var(--virus-edge);
+      stroke-width: 3;
+      stroke-linecap: round;
+    }
+
+    .virus-core {
+      fill: var(--virus);
+      stroke: var(--virus-edge);
+      stroke-width: 2.4;
+    }
+
+    .capsid-rna {
+      fill: none;
+      stroke: #4b2584;
+      stroke-width: 3.1;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .capsid-piece {
+      fill: #f7c5d0;
+      stroke: var(--virus-edge);
+      stroke-width: 2.4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .rna,
+    .signal-mrna,
+    .viral-rna,
+    .host-rna,
+    .dsrna {
+      fill: none;
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .rna {
+      stroke: var(--rna);
+    }
+
+    .signal-mrna {
+      stroke: var(--signal-mrna);
+    }
+
+    .viral-rna {
+      stroke: var(--viral-rna);
+    }
+
+    .host-rna {
+      stroke: var(--host-rna);
+    }
+
+    .dsrna-a {
+      stroke: var(--dsrna-a);
+    }
+
+    .dsrna-b {
+      stroke: var(--dsrna-b);
+    }
+
+    .sensor {
+      fill: #fff7dc;
+      stroke: #c78314;
+      stroke-width: 2.5;
+    }
+
+    .sensor-pulse {
+      fill: none;
+      stroke: #d48718;
+      stroke-width: 3;
+      opacity: .72;
+    }
+
+    .ifn-square rect {
+      fill: var(--ifn);
+      stroke: var(--ifn-edge);
+      stroke-width: 2;
+      rx: 0;
+      ry: 0;
+    }
+
+    .receptor {
+      fill: #405e9a;
+      stroke: #274474;
+      stroke-width: 2.3;
+    }
+
+    .receptor-pocket {
+      fill: #f8fbfb;
+      stroke: #223d69;
+      stroke-width: 2.1;
+    }
+
+    .ribosome {
+      fill: #f4d2b2;
+      stroke: #ad6534;
+      stroke-width: 2.2;
+    }
+
+    .protein-shape {
+      fill: var(--protein);
+      stroke: #2f7c52;
+      stroke-width: 2;
+    }
+
+    .inactive .protein-shape {
+      fill: #a7d8bd;
+      stroke: #4c8562;
+    }
+
+    .active .protein-shape {
+      fill: var(--protein-active);
+      stroke: var(--protein-active-edge);
+      stroke-width: 2.2;
+    }
+
+    .damage-crack {
+      fill: none;
+      stroke: #8a3f4f;
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .incomplete-virus {
+      opacity: .46;
+    }
+
+    .incomplete-virus .virus-core {
+      fill: #ef9caf;
+    }
+
+    .stage-layer {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease;
+    }
+
+    .scene.step-1 .step1-only,
+    .scene.step-2 .after-step1,
+    .scene.step-2 .step2-only,
+    .scene.step-3 .after-step2,
+    .scene.step-3 .step3-only,
+    .scene.step-4 .after-step3,
+    .scene.step-4 .step4-only,
+    .scene.step-5 .step5-only {
+      opacity: 1;
+    }
+
+    .scene.step-3 .after-step2 {
+      opacity: .72;
+    }
+
+    .scene.step-4 .after-step3 {
+      opacity: .86;
+    }
+
+    .scene.labels-hidden .scene-label,
+    .scene.labels-hidden .label-arrow {
+      opacity: 0 !important;
+    }
+
+    .draw-path,
+    .hidden-at-start,
+    .cap-left,
+    .cap-right,
+    .fragment,
+    .active-protein,
+    .active-label,
+    .late-damage,
+    .late-reduced,
+    .host-strand-final,
+    .viral-strand-final {
+      opacity: 0;
+    }
+
+    .entry-motion,
+    .entry-intact,
+    .cap-left,
+    .cap-right,
+    .ifn-motion,
+    .binding-motion,
+    .protein-pop,
+    .primed-inactive-final,
+    .active-protein,
+    .fragment,
+    .later-virus-motion,
+    .later-intact,
+    .late-damage,
+    .late-reduced {
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+
+    .scene.animate.step-1 .entry-motion {
+      animation: enterLeftVirus 1600ms ease-out both;
+    }
+
+    .scene.animate.step-1 .entry-intact {
+      animation: fadeOut 360ms 1500ms ease-out forwards;
+    }
+
+    .scene.animate.step-1 .cap-left {
+      animation: openCapLeft 850ms 1450ms ease-out both;
+    }
+
+    .scene.animate.step-1 .cap-right {
+      animation: openCapRight 850ms 1450ms ease-out both;
+    }
+
+    .scene.animate.step-1 .released-left-rna {
+      animation: drawLine 1100ms 2050ms ease-out both;
+    }
+
+    .scene.animate.step-2 .copied-dsrna {
+      animation: drawLine 1200ms 650ms ease-out both;
+    }
+
+    .scene.animate.step-2 .sensor-pulse {
+      animation: sensorPulse 1100ms 1450ms ease-out both;
+    }
+
+    .scene.animate.step-2 .ifn-made-1 {
+      animation: ifnRelease1 1900ms 1900ms ease-in-out both;
+    }
+
+    .scene.animate.step-2 .ifn-made-2 {
+      animation: ifnRelease2 1800ms 2050ms ease-in-out both;
+    }
+
+    .scene.animate.step-2 .ifn-made-3 {
+      animation: ifnRelease3 1950ms 2200ms ease-in-out both;
+    }
+
+    .scene.animate.step-3 .diffuse-1 {
+      animation: diffuseOne 2300ms ease-in-out both;
+    }
+
+    .scene.animate.step-3 .diffuse-2 {
+      animation: diffuseTwo 2450ms 120ms ease-in-out both;
+    }
+
+    .scene.animate.step-3 .diffuse-3 {
+      animation: diffuseThree 2350ms 240ms ease-in-out both;
+    }
+
+    .scene.animate.step-3 .binding-motion {
+      animation: bindInterferon 1700ms 1450ms ease-in-out both;
+    }
+
+    .scene.animate.step-4 .signal-arrow {
+      animation: signalDash 950ms ease-in-out infinite;
+    }
+
+    .scene.animate.step-4 .transcribed-mrna {
+      animation: drawLine 1150ms 700ms ease-out both;
+    }
+
+    .scene.animate.step-4 .exported-mrna {
+      animation: drawLine 1200ms 1450ms ease-out both;
+    }
+
+    .scene.animate.step-4 .protein-pop {
+      animation: proteinAppear 750ms 2700ms ease-out both;
+    }
+
+    .scene.animate.step-5 .later-virus-motion {
+      animation: enterRightVirus 1450ms ease-out both;
+    }
+
+    .scene.animate.step-5 .later-intact {
+      animation: fadeOut 320ms 1350ms ease-out forwards;
+    }
+
+    .scene.animate.step-5 .later-cap-left {
+      animation: openCapLeft 760ms 1300ms ease-out both;
+    }
+
+    .scene.animate.step-5 .later-cap-right {
+      animation: openCapRight 760ms 1300ms ease-out both;
+    }
+
+    .scene.animate.step-5 .released-right-rna {
+      animation: drawLine 900ms 1850ms ease-out both;
+    }
+
+    .scene.animate.step-5 .viral-strand-final {
+      animation: finalStrandReveal 500ms 1900ms ease-out both, rnaBreak 1650ms 4000ms ease-out forwards;
+    }
+
+    .scene.animate.step-5 .host-strand-final {
+      animation: finalStrandReveal 500ms 1050ms ease-out both, rnaBreak 1650ms 4100ms ease-out forwards;
+    }
+
+    .scene.animate.step-5 .protein-to-viral-a {
+      animation: proteinToViralA 2650ms 2350ms ease-in-out both;
+    }
+
+    .scene.animate.step-5 .protein-to-viral-b {
+      animation: proteinToViralB 2650ms 2450ms ease-in-out both;
+    }
+
+    .scene.animate.step-5 .protein-to-host-a {
+      animation: proteinToHostA 2650ms 2550ms ease-in-out both;
+    }
+
+    .scene.animate.step-5 .protein-to-host-b {
+      animation: proteinToHostB 2650ms 2650ms ease-in-out both;
+    }
+
+    .scene.animate.step-5 .primed-inactive-final {
+      animation: inactiveActivate 950ms 2100ms ease-out forwards;
+    }
+
+    .scene.animate.step-5 .active-label {
+      animation: fadeIn 450ms 2700ms ease-out both;
+    }
+
+    .scene.animate.step-5 .fragment {
+      animation: fragmentScatter 1250ms 4700ms ease-out both;
+    }
+
+    .scene.animate.step-5 .late-damage {
+      animation: fadeIn 700ms 5700ms ease-out both;
+    }
+
+    .scene.animate.step-5 .late-reduced {
+      animation: fadeIn 700ms 6350ms ease-out both;
+    }
+
+    @keyframes enterLeftVirus {
+      from { transform: translate(-95px, -66px) scale(.88); opacity: .2; }
+      to { transform: translate(0, 0) scale(1); opacity: 1; }
+    }
+
+    @keyframes enterRightVirus {
+      from { transform: translate(112px, -54px) scale(.88); opacity: .2; }
+      to { transform: translate(0, 0) scale(1); opacity: 1; }
+    }
+
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes openCapLeft {
+      from { transform: translate(0, 0) rotate(0); opacity: 0; }
+      20% { opacity: 1; }
+      to { transform: translate(-17px, -8px) rotate(-20deg); opacity: 1; }
+    }
+
+    @keyframes openCapRight {
+      from { transform: translate(0, 0) rotate(0); opacity: 0; }
+      20% { opacity: 1; }
+      to { transform: translate(17px, 8px) rotate(20deg); opacity: 1; }
+    }
+
+    @keyframes drawLine {
+      from { stroke-dasharray: 0 360; opacity: 0; }
+      to { stroke-dasharray: 360 0; opacity: 1; }
+    }
+
+    @keyframes sensorPulse {
+      from { r: 20; opacity: .8; }
+      to { r: 56; opacity: 0; }
+    }
+
+    @keyframes ifnRelease1 {
+      from { transform: translate(-82px, 64px); opacity: 0; }
+      22% { opacity: 1; }
+      to { transform: translate(0, 0); opacity: 1; }
+    }
+
+    @keyframes ifnRelease2 {
+      from { transform: translate(-100px, 24px); opacity: 0; }
+      22% { opacity: 1; }
+      to { transform: translate(0, 0); opacity: 1; }
+    }
+
+    @keyframes ifnRelease3 {
+      from { transform: translate(-86px, -38px); opacity: 0; }
+      22% { opacity: 1; }
+      to { transform: translate(0, 0); opacity: 1; }
+    }
+
+    @keyframes diffuseOne {
+      from { transform: translate(-162px, 18px); opacity: 0; }
+      18% { opacity: 1; }
+      to { transform: translate(0, 0); opacity: 1; }
+    }
+
+    @keyframes diffuseTwo {
+      from { transform: translate(-178px, -28px); opacity: 0; }
+      18% { opacity: 1; }
+      to { transform: translate(0, 0); opacity: 1; }
+    }
+
+    @keyframes diffuseThree {
+      from { transform: translate(-150px, 58px); opacity: 0; }
+      18% { opacity: 1; }
+      to { transform: translate(0, 0); opacity: 1; }
+    }
+
+    @keyframes bindInterferon {
+      from { transform: translate(-110px, -6px); opacity: 1; }
+      76% { transform: translate(0, 0); opacity: 1; }
+      to { transform: translate(0, 0); opacity: 1; }
+    }
+
+    @keyframes signalDash {
+      from { stroke-dashoffset: 0; }
+      to { stroke-dashoffset: -34; }
+    }
+
+    @keyframes proteinAppear {
+      from { transform: scale(.55); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes inactiveActivate {
+      0%, 42% { transform: scale(1); opacity: 1; }
+      72% { transform: scale(1.16); opacity: .75; }
+      100% { transform: scale(1.16); opacity: 0; }
+    }
+
+    @keyframes finalStrandReveal {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes proteinToViralA {
+      0% { transform: translate(0, 0) scale(.92); opacity: 0; }
+      12%, 30% { transform: translate(0, 0) scale(1); opacity: 1; }
+      64%, 100% { transform: translate(18px, -174px) scale(1.04); opacity: 1; }
+    }
+
+    @keyframes proteinToViralB {
+      0% { transform: translate(0, 0) scale(.92); opacity: 0; }
+      12%, 30% { transform: translate(0, 0) scale(1); opacity: 1; }
+      64%, 100% { transform: translate(18px, -174px) scale(1.04); opacity: 1; }
+    }
+
+    @keyframes proteinToHostA {
+      0% { transform: translate(0, 0) scale(.92); opacity: 0; }
+      12%, 30% { transform: translate(0, 0) scale(1); opacity: 1; }
+      64%, 100% { transform: translate(-48px, -72px) scale(1.04); opacity: 1; }
+    }
+
+    @keyframes proteinToHostB {
+      0% { transform: translate(0, 0) scale(.92); opacity: 0; }
+      12%, 30% { transform: translate(0, 0) scale(1); opacity: 1; }
+      64%, 100% { transform: translate(-12px, -70px) scale(1.04); opacity: 1; }
+    }
+
+    @keyframes rnaBreak {
+      0%, 36% { opacity: 1; stroke-dasharray: 360 0; }
+      62% { opacity: .72; stroke-dasharray: 34 14; }
+      100% { opacity: .12; stroke-dasharray: 8 18; }
+    }
+
+    @keyframes fragmentScatter {
+      from { transform: translate(0, 0) scale(.68); opacity: 0; }
+      28% { opacity: 1; }
+      to { transform: translate(var(--dx), var(--dy)) scale(1); opacity: .9; }
+    }
+
+    @media (max-width: 900px) {
+      h1 {
+        font-size: 1.9rem;
+      }
+
+      .status-row {
+        grid-template-columns: 1fr;
+      }
+
+      .controls button {
+        flex: 1 1 220px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .page {
+        padding-inline: 8px;
+      }
+
+      h1 {
+        font-size: 1.55rem;
+      }
+
+      .controls button {
+        flex-basis: 100%;
+      }
+
+      .explanation {
+        min-height: 96px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <p class="attribution">Animation Prompted by Jerred Seveyka for his biology class.</p>
+    <h1>Interferon and the Antiviral State</h1>
+
+    <nav class="controls" aria-label="Animation controls">
+      <button id="playFull" class="primary" type="button" aria-pressed="false">Play full sequence</button>
+      <button class="step-button" type="button" data-step="1">Step 1: virus enters</button>
+      <button class="step-button" type="button" data-step="2">Step 2: dsRNA triggers interferon</button>
+      <button class="step-button" type="button" data-step="3">Step 3: interferon binds receptor</button>
+      <button class="step-button" type="button" data-step="4">Step 4: antiviral proteins made</button>
+      <button class="step-button" type="button" data-step="5">Step 5: later infection</button>
+      <button id="reset" type="button">Reset</button>
+      <button id="labelToggle" type="button" aria-pressed="false">Labels on/off</button>
+    </nav>
+
+    <section class="status-row" aria-live="polite">
+      <div id="explanation" class="explanation"></div>
+      <div class="status-pill">
+        <span id="stageStatus">Ready</span>
+        <span>Interferon-induced antiviral state</span>
+      </div>
+    </section>
+
+    <section class="stage-shell" aria-label="Interferon animation scene">
+      <svg id="scene" class="scene step-0" viewBox="0 0 1280 760" role="img" aria-labelledby="sceneTitle sceneDesc">
+        <title id="sceneTitle">Interferon and the antiviral state</title>
+        <desc id="sceneDesc">Two neighboring body cells show how a first infected cell releases interferon and how a primed neighboring cell later cuts up viral RNA and host mRNA.</desc>
+
+        <defs>
+          <marker id="arrowHead" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+            <path d="M0,0 L9,4.5 L0,9 Z" fill="#49687c"></path>
+          </marker>
+          <marker id="orangeArrowHead" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+            <path d="M0,0 L9,4.5 L0,9 Z" fill="#d28522"></path>
+          </marker>
+          <marker id="blackArrowHead" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+            <path d="M0,0 L9,4.5 L0,9 Z" fill="#111111"></path>
+          </marker>
+          <linearGradient id="leftMembrane" x1="0" x2="1">
+            <stop offset="0%" stop-color="#c2eadf"></stop>
+            <stop offset="100%" stop-color="#f2fbf8"></stop>
+          </linearGradient>
+          <linearGradient id="rightMembrane" x1="0" x2="1">
+            <stop offset="0%" stop-color="#f4f7ff"></stop>
+            <stop offset="100%" stop-color="#dce6ff"></stop>
+          </linearGradient>
+        </defs>
+
+        <rect x="28" y="32" width="1224" height="692" rx="28" fill="#f2f8f7" stroke="#d5e1e6"></rect>
+        <path d="M640 132 L640 626" stroke="#d2dde4" stroke-width="3" stroke-dasharray="8 13"></path>
+
+        <text x="322" y="102" class="cell-label scene-label">Virus-infected body cell.</text>
+        <text x="958" y="102" class="cell-label scene-label">Neighboring body cell.</text>
+
+        <g id="leftCell">
+          <rect class="cell-body left-cell" x="74" y="140" width="520" height="500" rx="44"></rect>
+          <rect x="100" y="166" width="468" height="448" rx="34" fill="url(#leftMembrane)" opacity=".7"></rect>
+          <ellipse cx="222" cy="546" rx="78" ry="50" fill="#eef8ee" stroke="#6b9b70" stroke-width="2.4" opacity=".75"></ellipse>
+          <text x="222" y="552" class="fine-label scene-label" text-anchor="middle">host nucleus</text>
+        </g>
+
+        <g id="rightCell">
+          <rect class="cell-body right-cell" x="710" y="140" width="520" height="500" rx="44"></rect>
+          <rect x="736" y="166" width="468" height="448" rx="34" fill="url(#rightMembrane)" opacity=".73"></rect>
+          <ellipse class="nucleus" cx="922" cy="262" rx="91" ry="58"></ellipse>
+          <path class="dna" d="M866 252 C886 232, 906 289, 926 270 S961 235, 982 272"></path>
+          <path class="dna" d="M866 274 C886 295, 906 238, 926 256 S961 292, 982 256"></path>
+        </g>
+
+        <g id="fixedReceptor">
+          <rect class="receptor" x="710" y="318" width="50" height="88" rx="2"></rect>
+          <rect class="receptor-pocket" x="710" y="348" width="28" height="28" rx="1"></rect>
+        </g>
+
+        <g class="stage-layer after-step1">
+          <g transform="translate(312 312)">
+            <path class="capsid-piece" d="M-30 -24 C-52 -5, -46 31, -10 40 L-3 14 C-18 8, -21 -10, -8 -25 Z"></path>
+            <path class="capsid-piece" d="M30 24 C52 5, 46 -31, 10 -40 L3 -14 C18 -8, 21 10, 8 25 Z"></path>
+            <path class="rna" d="M-6 0 C18 -28, 48 27, 75 0 S122 -22, 144 8"></path>
+            <text x="70" y="52" class="small-label scene-label" text-anchor="middle">viral ssRNA released</text>
+          </g>
+        </g>
+
+        <g class="stage-layer after-step2">
+          <g transform="translate(404 350)">
+            <path class="dsrna dsrna-a" d="M-98 -14 C-70 -35, -43 2, -16 -16 S39 -33, 72 -6 S111 -8, 124 -29"></path>
+            <path class="dsrna dsrna-b" d="M-98 13 C-70 -8, -43 29, -16 11 S39 -5, 72 22 S111 19, 124 -2"></path>
+            <text x="15" y="55" class="small-label scene-label" text-anchor="middle">viral dsRNA</text>
+          </g>
+          <g transform="translate(520 432)">
+            <path class="sensor" d="M-28 -14 L-5 -32 L21 -21 L32 5 L13 29 L-14 26 L-32 4 Z"></path>
+            <circle cx="-5" cy="-4" r="6" fill="#c78314"></circle>
+            <circle cx="13" cy="8" r="5" fill="#c78314"></circle>
+          </g>
+          <g class="ifn-square" transform="translate(602 274)">
+            <rect x="-11" y="-11" width="22" height="22"></rect>
+          </g>
+          <g class="ifn-square" transform="translate(612 342)">
+            <rect x="-11" y="-11" width="22" height="22"></rect>
+          </g>
+        </g>
+
+        <g class="stage-layer after-step3">
+          <g class="ifn-square" transform="translate(724 362)">
+            <rect x="-13" y="-13" width="26" height="26"></rect>
+          </g>
+        </g>
+
+        <g class="stage-layer step1-only">
+          <g transform="translate(306 306)">
+            <g class="entry-motion">
+              <g class="entry-intact">
+                <line class="virus-spike" x1="-32" y1="0" x2="-45" y2="0"></line>
+                <line class="virus-spike" x1="32" y1="0" x2="45" y2="0"></line>
+                <line class="virus-spike" x1="0" y1="-32" x2="0" y2="-45"></line>
+                <line class="virus-spike" x1="0" y1="32" x2="0" y2="45"></line>
+                <line class="virus-spike" x1="-23" y1="-23" x2="-34" y2="-34"></line>
+                <line class="virus-spike" x1="23" y1="-23" x2="34" y2="-34"></line>
+                <line class="virus-spike" x1="-23" y1="23" x2="-34" y2="34"></line>
+                <line class="virus-spike" x1="23" y1="23" x2="34" y2="34"></line>
+                <circle class="virus-core" r="31"></circle>
+                <path class="capsid-rna" d="M-17 -4 C-7 -17, 6 11, 17 -3"></path>
+              </g>
+            </g>
+            <g class="cap-left">
+              <path class="capsid-piece" d="M-30 -24 C-52 -5, -46 31, -10 40 L-3 14 C-18 8, -21 -10, -8 -25 Z"></path>
+            </g>
+            <g class="cap-right">
+              <path class="capsid-piece" d="M30 24 C52 5, 46 -31, 10 -40 L3 -14 C18 -8, 21 10, 8 25 Z"></path>
+            </g>
+            <path class="rna draw-path released-left-rna" d="M-6 0 C18 -28, 48 27, 75 0 S122 -22, 144 8"></path>
+          </g>
+          <path class="label-arrow" d="M170 190 C219 188, 260 221, 286 270"></path>
+          <text x="168" y="184" class="label scene-label">virus enters</text>
+          <text x="238" y="260" class="fine-label scene-label">ssRNA inside capsid</text>
+          <text x="320" y="378" class="small-label scene-label" text-anchor="middle">uncoating releases ssRNA</text>
+        </g>
+
+        <g class="stage-layer step2-only">
+          <g transform="translate(312 312)">
+            <path class="rna" d="M-6 0 C18 -28, 48 27, 75 0 S122 -22, 144 8"></path>
+            <path class="label-arrow" d="M98 38 C126 62, 143 84, 158 112"></path>
+            <text x="60" y="-44" class="small-label scene-label" text-anchor="middle">ssRNA template</text>
+          </g>
+          <g transform="translate(408 412)">
+            <path class="dsrna dsrna-a draw-path copied-dsrna" d="M-98 -14 C-70 -35, -43 2, -16 -16 S39 -33, 72 -6 S111 -8, 124 -29"></path>
+            <path class="dsrna dsrna-b draw-path copied-dsrna" d="M-98 13 C-70 -8, -43 29, -16 11 S39 -5, 72 22 S111 19, 124 -2"></path>
+            <text x="15" y="55" class="small-label scene-label" text-anchor="middle">ssRNA copied into dsRNA</text>
+          </g>
+          <g transform="translate(520 432)">
+            <circle class="sensor-pulse" r="20"></circle>
+            <path class="sensor" d="M-28 -14 L-5 -32 L21 -21 L32 5 L13 29 L-14 26 L-32 4 Z"></path>
+            <circle cx="-5" cy="-4" r="6" fill="#c78314"></circle>
+            <circle cx="13" cy="8" r="5" fill="#c78314"></circle>
+            <text x="-68" y="68" class="small-label scene-label" text-anchor="middle">dsRNA stimulates response</text>
+          </g>
+          <path class="label-arrow" d="M540 390 C562 356, 578 323, 597 292"></path>
+          <text x="524" y="270" class="small-label scene-label">interferon forms and exits</text>
+          <g class="ifn-square ifn-made-1" transform="translate(594 264)">
+            <g class="ifn-motion"><rect x="-11" y="-11" width="22" height="22"></rect></g>
+          </g>
+          <g class="ifn-square ifn-made-2" transform="translate(610 329)">
+            <g class="ifn-motion"><rect x="-11" y="-11" width="22" height="22"></rect></g>
+          </g>
+          <g class="ifn-square ifn-made-3" transform="translate(588 392)">
+            <g class="ifn-motion"><rect x="-11" y="-11" width="22" height="22"></rect></g>
+          </g>
+        </g>
+
+        <g class="stage-layer step3-only">
+          <g class="ifn-square" transform="translate(602 290)">
+            <g class="ifn-motion diffuse-1"><rect x="-10" y="-10" width="20" height="20"></rect></g>
+          </g>
+          <g class="ifn-square" transform="translate(656 244)">
+            <g class="ifn-motion diffuse-2"><rect x="-10" y="-10" width="20" height="20"></rect></g>
+          </g>
+          <g class="ifn-square" transform="translate(672 418)">
+            <g class="ifn-motion diffuse-3"><rect x="-10" y="-10" width="20" height="20"></rect></g>
+          </g>
+          <g class="ifn-square" transform="translate(724 362)">
+            <g class="binding-motion"><rect x="-13" y="-13" width="26" height="26"></rect></g>
+          </g>
+          <path class="label-arrow" d="M602 240 C635 227, 674 231, 707 252"></path>
+          <text x="596" y="232" class="label scene-label">interferon</text>
+          <path class="label-arrow receptor-arrow" d="M788 407 C768 389, 760 372, 758 338"></path>
+          <text x="790" y="424" class="small-label scene-label">interferon receptor</text>
+          <text x="936" y="198" class="callout-label scene-label" text-anchor="middle">Square interferon fits the receptor pocket.</text>
+        </g>
+
+        <g class="stage-layer step4-only">
+          <path class="signal-arrow" d="M758 360 C800 344, 843 318, 884 285"></path>
+          <text x="803" y="332" class="small-label scene-label">signal to nucleus</text>
+
+          <g transform="translate(922 262)">
+            <path class="signal-mrna draw-path transcribed-mrna" d="M-50 10 C-28 -10, -6 24, 18 4 S60 -14, 78 8"></path>
+            <text x="3" y="44" class="fine-label scene-label" text-anchor="middle">transcription makes mRNA</text>
+          </g>
+
+          <path class="signal-mrna draw-path exported-mrna" d="M952 320 C972 350, 994 378, 1028 400 S1084 431, 1108 462"></path>
+          <text x="1086" y="436" class="fine-label scene-label" text-anchor="middle">mRNA exits nucleus</text>
+
+          <g transform="translate(990 504)">
+            <path class="signal-mrna" d="M-92 0 C-62 -18, -34 18, -5 0 S54 -17, 88 2"></path>
+            <ellipse class="ribosome" cx="4" cy="-12" rx="42" ry="18"></ellipse>
+            <ellipse class="ribosome" cx="6" cy="12" rx="31" ry="12"></ellipse>
+            <text x="0" y="52" class="process-label scene-label" text-anchor="middle">ribosome translates mRNA</text>
+          </g>
+
+          <g transform="translate(790 560)">
+            <g class="inactive protein-pop">
+              <circle class="protein-shape" r="18"></circle>
+            </g>
+          </g>
+          <g transform="translate(850 590)">
+            <g class="inactive protein-pop">
+              <circle class="protein-shape" r="16"></circle>
+            </g>
+          </g>
+          <g transform="translate(970 590)">
+            <g class="inactive protein-pop">
+              <circle class="protein-shape" r="16"></circle>
+            </g>
+          </g>
+          <text x="880" y="632" class="small-label scene-label" text-anchor="middle">inactive antiviral proteins</text>
+        </g>
+
+        <g class="stage-layer step5-only">
+          <text x="920" y="174" class="callout-label scene-label" text-anchor="middle">Later infection of the primed neighboring cell</text>
+
+          <g transform="translate(1044 286)">
+            <g class="later-virus-motion">
+              <g class="later-intact">
+                <line class="virus-spike" x1="-29" y1="0" x2="-41" y2="0"></line>
+                <line class="virus-spike" x1="29" y1="0" x2="41" y2="0"></line>
+                <line class="virus-spike" x1="0" y1="-29" x2="0" y2="-41"></line>
+                <line class="virus-spike" x1="0" y1="29" x2="0" y2="41"></line>
+                <line class="virus-spike" x1="-20" y1="-20" x2="-31" y2="-31"></line>
+                <line class="virus-spike" x1="20" y1="-20" x2="31" y2="-31"></line>
+                <line class="virus-spike" x1="-20" y1="20" x2="-31" y2="31"></line>
+                <line class="virus-spike" x1="20" y1="20" x2="31" y2="31"></line>
+                <circle class="virus-core" r="28"></circle>
+                <path class="capsid-rna" d="M-15 -4 C-5 -16, 5 10, 15 -3"></path>
+              </g>
+            </g>
+            <g class="cap-left later-cap-left">
+              <path class="capsid-piece" d="M-27 -22 C-48 -4, -42 29, -8 36 L-3 13 C-17 7, -19 -9, -7 -23 Z"></path>
+            </g>
+            <g class="cap-right later-cap-right">
+              <path class="capsid-piece" d="M27 22 C48 4, 42 -29, 8 -36 L3 -13 C17 -7, 19 9, 7 23 Z"></path>
+            </g>
+            <path class="rna draw-path released-right-rna" d="M-8 0 C-34 -18, -58 17, -85 -2 S-124 -4, -143 18"></path>
+          </g>
+          <path class="label-arrow" d="M1100 238 C1078 252, 1063 266, 1049 286"></path>
+          <text x="1106" y="232" class="small-label scene-label">second virus enters</text>
+          <text x="984" y="356" class="small-label scene-label" text-anchor="middle">uncoating releases ssRNA</text>
+
+          <g transform="translate(870 382)">
+            <text x="0" y="-40" class="small-label scene-label" text-anchor="middle">viral RNA/mRNA</text>
+            <path class="viral-rna viral-strand-final" d="M-102 -6 C-70 -32, -40 21, -7 -4 S54 -32, 88 -3 S130 5, 148 -24"></path>
+          </g>
+
+          <g transform="translate(846 514)">
+            <text x="-38" y="-36" class="small-label scene-label" text-anchor="middle">host mRNA</text>
+            <path class="host-rna host-strand-final" d="M-110 2 C-78 -21, -45 30, -14 5 S43 -20, 78 7 S121 21, 142 0"></path>
+          </g>
+
+          <g class="primed-inactive-final">
+            <g transform="translate(790 560)" class="inactive">
+              <circle class="protein-shape" r="18"></circle>
+            </g>
+            <g transform="translate(850 590)" class="inactive">
+              <circle class="protein-shape" r="16"></circle>
+            </g>
+            <g transform="translate(910 560)" class="inactive">
+              <circle class="protein-shape" r="18"></circle>
+            </g>
+            <g transform="translate(970 590)" class="inactive">
+              <circle class="protein-shape" r="16"></circle>
+            </g>
+            <text x="880" y="632" class="small-label scene-label" text-anchor="middle">inactive antiviral proteins</text>
+          </g>
+
+          <g transform="translate(870 402)">
+            <line class="viral-rna fragment" style="--dx:-26px;--dy:-20px" x1="-86" y1="-2" x2="-55" y2="-17"></line>
+            <line class="viral-rna fragment" style="--dx:10px;--dy:-24px" x1="-22" y1="3" x2="12" y2="-13"></line>
+            <line class="viral-rna fragment" style="--dx:32px;--dy:-6px" x1="38" y1="-1" x2="73" y2="-18"></line>
+            <line class="viral-rna fragment" style="--dx:50px;--dy:14px" x1="98" y1="0" x2="130" y2="-16"></line>
+            <text x="22" y="48" class="fine-label scene-label" text-anchor="middle">viral RNA fragments disperse</text>
+          </g>
+
+          <g transform="translate(846 532)">
+            <line class="host-rna fragment" style="--dx:-32px;--dy:18px" x1="-92" y1="0" x2="-56" y2="-14"></line>
+            <line class="host-rna fragment" style="--dx:-4px;--dy:28px" x1="-28" y1="1" x2="8" y2="17"></line>
+            <line class="host-rna fragment" style="--dx:31px;--dy:14px" x1="38" y1="3" x2="75" y2="-12"></line>
+            <line class="host-rna fragment" style="--dx:54px;--dy:-4px" x1="96" y1="2" x2="128" y2="-15"></line>
+            <text x="12" y="54" class="fine-label scene-label" text-anchor="middle">host mRNA fragments disperse</text>
+          </g>
+
+          <g class="protein-foreground">
+            <g transform="translate(790 560)">
+              <g class="active active-protein protein-to-viral-a">
+                <path class="protein-shape" d="M18 -15 A24 24 0 1 0 18 15 L1 0 Z"></path>
+              </g>
+            </g>
+            <g transform="translate(910 560)">
+              <g class="active active-protein protein-to-viral-b">
+                <path class="protein-shape" d="M18 -15 A24 24 0 1 0 18 15 L1 0 Z"></path>
+              </g>
+            </g>
+            <g transform="translate(850 590)">
+              <g class="active active-protein protein-to-host-a">
+                <path class="protein-shape" d="M18 -15 A24 24 0 1 0 18 15 L1 0 Z"></path>
+              </g>
+            </g>
+            <g transform="translate(970 590)">
+              <g class="active active-protein protein-to-host-b">
+                <path class="protein-shape" d="M18 -15 A24 24 0 1 0 18 15 L1 0 Z"></path>
+              </g>
+            </g>
+            <text x="1048" y="524" class="small-label scene-label active-label" text-anchor="middle">active antiviral proteins</text>
+          </g>
+
+          <g class="late-damage">
+            <path class="damage-crack" d="M755 462 L784 486 L770 506 L806 538"></path>
+            <path class="damage-crack" d="M1164 444 L1138 469 L1152 490 L1122 526"></path>
+            <text x="758" y="600" class="small-label scene-label">cell damage</text>
+          </g>
+
+          <g class="late-reduced">
+            <g class="incomplete-virus" transform="translate(1062 604)">
+              <circle class="virus-core" r="19"></circle>
+              <line class="virus-spike" x1="-20" y1="0" x2="-30" y2="0"></line>
+              <line class="virus-spike" x1="0" y1="-20" x2="0" y2="-30"></line>
+              <line class="virus-spike" x1="14" y1="14" x2="22" y2="22"></line>
+            </g>
+            <g class="incomplete-virus" transform="translate(1114 592)">
+              <path class="virus-core" d="M-18 -5 C-9 -25, 19 -18, 18 8 C9 23, -17 20, -18 -5 Z"></path>
+              <line class="virus-spike" x1="-18" y1="-5" x2="-29" y2="-11"></line>
+              <line class="virus-spike" x1="18" y1="8" x2="29" y2="13"></line>
+            </g>
+            <text x="1086" y="656" class="small-label scene-label" text-anchor="middle">decreased viral production</text>
+          </g>
+        </g>
+      </svg>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const scene = document.querySelector("#scene");
+      const explanation = document.querySelector("#explanation");
+      const stageStatus = document.querySelector("#stageStatus");
+      const playFull = document.querySelector("#playFull");
+      const resetButton = document.querySelector("#reset");
+      const labelToggle = document.querySelector("#labelToggle");
+      const stepButtons = Array.from(document.querySelectorAll(".step-button"));
+      const stepClasses = ["step-0", "step-1", "step-2", "step-3", "step-4", "step-5"];
+      const timers = [];
+
+      const content = {
+        0: {
+          title: "Ready",
+          body: "Choose a step or play the full sequence to show how interferon creates an antiviral state in a neighboring cell."
+        },
+        1: {
+          title: "Step 1: virus enters",
+          body: "A virus enters the body cell, uncoats, and releases its single-stranded RNA."
+        },
+        2: {
+          title: "Step 2: dsRNA triggers interferon",
+          body: "During viral replication, viral RNA is copied into double-stranded RNA. The dsRNA stimulates the infected cell to release interferon. Pattern recognition receptors that trigger interferon release may also react to viral single-stranded RNA and unmethylated viral DNA."
+        },
+        3: {
+          title: "Step 3: interferon binds receptor",
+          body: "Interferon diffuses to a neighboring cell and binds to a matching interferon receptor."
+        },
+        4: {
+          title: "Step 4: antiviral proteins made",
+          body: "The receiving cell expresses antiviral genes. Transcription and translation produce inactive antiviral proteins."
+        },
+        5: {
+          title: "Step 5: later infection",
+          body: "Later, a virus infects the primed cell and uncoats. The inactive antiviral proteins become active and cut up viral RNA and host mRNA. This damages the host cell but reduces viral production."
+        }
+      };
+
+      const sequenceDurations = {
+        1: 4500,
+        2: 5000,
+        3: 4700,
+        4: 5600,
+        5: 7800
+      };
+
+      function clearTimers() {
+        while (timers.length) {
+          window.clearTimeout(timers.pop());
+        }
+        playFull.setAttribute("aria-pressed", "false");
+      }
+
+      function updateStepButtons(step) {
+        stepButtons.forEach((button) => {
+          const isActive = Number(button.dataset.step) === step;
+          button.classList.toggle("active", isActive);
+          button.setAttribute("aria-pressed", String(isActive));
+        });
+      }
+
+      function showStep(step, options = {}) {
+        if (!options.fromSequence) {
+          clearTimers();
+        }
+
+        scene.classList.remove(...stepClasses, "animate");
+        scene.classList.add(`step-${step}`);
+        void scene.getBoundingClientRect();
+        scene.classList.add("animate");
+
+        const copy = content[step];
+        explanation.innerHTML = `<strong>${copy.title}</strong>${copy.body}`;
+        stageStatus.textContent = step === 0 ? "Ready" : `Showing step ${step} of 5`;
+        updateStepButtons(step);
+      }
+
+      function playSequence() {
+        clearTimers();
+        playFull.setAttribute("aria-pressed", "true");
+        showStep(1, { fromSequence: true });
+
+        let elapsed = sequenceDurations[1];
+        [2, 3, 4, 5].forEach((step) => {
+          timers.push(window.setTimeout(() => showStep(step, { fromSequence: true }), elapsed));
+          elapsed += sequenceDurations[step];
+        });
+
+        timers.push(window.setTimeout(() => {
+          playFull.setAttribute("aria-pressed", "false");
+        }, elapsed));
+      }
+
+      playFull.addEventListener("click", playSequence);
+      resetButton.addEventListener("click", () => showStep(0));
+      labelToggle.addEventListener("click", () => {
+        const hidden = scene.classList.toggle("labels-hidden");
+        labelToggle.setAttribute("aria-pressed", String(hidden));
+      });
+
+      stepButtons.forEach((button) => {
+        button.addEventListener("click", () => showStep(Number(button.dataset.step)));
+      });
+
+      showStep(0);
+    })();
+  </script>
+</body>
+</html>

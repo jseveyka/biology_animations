@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ventilation-Perfusion Ratio in the Lung</title>
+  <style>
+    :root{--ink:#17324d;--muted:#587086;--blue:#2798e6;--blue2:#9bdcff;--red:#e84a4a;--darkred:#8e2f42;--tan:#dfa88e;--panel:#f7fbfe;--line:#d7e6ee}
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(145deg,#edf7fb,#f8f3f1);color:var(--ink);font-family:Inter,ui-rounded,"Segoe UI",Arial,sans-serif;min-height:100vh}
+    .page{width:min(1180px,96vw);margin:auto;padding:14px 0 26px}
+    .credit{text-align:center;font-size:.82rem;font-weight:800;color:#63798a;margin:0 0 4px}
+    h1{text-align:center;font-size:clamp(1.35rem,2.5vw,2rem);line-height:1.15;margin:0 0 5px;letter-spacing:-.02em}
+    .subtitle{text-align:center;color:var(--muted);font-size:.92rem;margin:0 0 12px}
+    .toolbar{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:9px;margin-bottom:11px}
+    label{font-weight:700;font-size:.86rem}
+    select,button,input{font:inherit}
+    select,button{border:1px solid #b9d0dd;border-radius:10px;background:#fff;color:var(--ink);padding:8px 11px;box-shadow:0 2px 7px #31566c12}
+    button{cursor:pointer;font-weight:700}
+    button:hover{background:#eef8fc}
+    .mode-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center}
+    .slider{display:grid;grid-template-columns:auto minmax(115px,175px) 34px;align-items:center;gap:7px;background:#fff;padding:5px 8px;border:1px solid var(--line);border-radius:10px}
+    .slider output{font-size:.78rem;font-weight:800;text-align:right}
+    .plain-slider{grid-template-columns:auto minmax(145px,205px)}
+    .range-with-ends{display:grid;gap:1px}
+    .range-ends{display:flex;justify-content:space-between;gap:10px;font-size:.68rem;font-weight:750;color:#60778a;white-space:nowrap}
+    input[type=range]{accent-color:var(--blue);width:100%}
+    .board{display:grid;grid-template-columns:minmax(0,2.15fr) minmax(245px,.85fr);background:#fff;border:1px solid #cfe0e9;border-radius:20px;overflow:hidden;box-shadow:0 16px 38px #35566a1c;min-height:560px}
+    .stage{position:relative;min-width:0;background:radial-gradient(circle at 48% 38%,#fff 0,#f8fcfe 62%,#edf7fa 100%)}
+    svg{display:block;width:100%;height:100%;min-height:560px}
+    .side{border-left:1px solid var(--line);background:var(--panel);padding:20px;display:flex;flex-direction:column;justify-content:center;gap:16px}
+    .side h2{font-size:1.08rem;margin:0 0 7px}
+    .side p{font-size:.91rem;line-height:1.55;margin:0;color:#435e73}
+    .status{border-left:4px solid var(--blue);background:#fff;border-radius:8px;padding:12px;font-size:.88rem;line-height:1.5;color:#354f63;box-shadow:0 3px 10px #31566c0c}
+    .status strong{color:var(--ink)}
+    .vq-estimate{background:#edf3fb;border:1px solid #c8d9e8;border-radius:9px;padding:10px 12px;text-align:center;font-size:.93rem;font-weight:900;color:#193b56;transition:background-color .25s ease}
+    .hint{font-size:.76rem!important;color:#718596!important}
+    .lung{fill:#f8dfe1;fill-opacity:.55;stroke:#bf7180;stroke-width:4}
+    .airway{fill:none;stroke:var(--tan);stroke-linecap:round;stroke-linejoin:round}
+    .alveolus{fill:#fff9f7;stroke:#c87881;stroke-width:4;stroke-linecap:round}
+    .capillary{fill:none;stroke:var(--red);stroke-linecap:round}
+    .svg-label{font-weight:800;fill:var(--ink);font-size:15px}
+    .svg-small{font-weight:650;fill:#526d80;font-size:12px}
+    .vq{font-weight:900;font-size:17px;fill:#193b56;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}
+    .dynamic-vessel,.dynamic-airway{transition:stroke-width .28s ease,stroke .28s ease}
+    .collapse-airway{animation:collapseAirway 4s ease-in-out infinite}
+    .disease-breathe{animation:diseaseBreathe 4s ease-in-out infinite;transform-box:fill-box;transform-origin:center top}
+    .inhale-phase{animation:inhalePhase 4s linear infinite}
+    .exhale-phase{animation:exhalePhase 4s linear infinite}
+    .diffusion-dot{filter:drop-shadow(0 1px 1px #17324d28)}
+    .reveal{opacity:0;animation:reveal .55s ease forwards;animation-delay:2.2s}
+    .breathing-lung{animation:breatheLung 4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+    .breathing-sac{animation:breatheSac 4s ease-in-out infinite;transform-box:fill-box;transform-origin:center top}
+    @keyframes reveal{to{opacity:1}}
+    @keyframes breatheLung{0%,100%{transform:scale(.985,.975)}50%{transform:scale(1.015,1.025)}}
+    @keyframes breatheSac{0%,100%{transform:scale(.94)}50%{transform:scale(1.04)}}
+    @keyframes diseaseBreathe{0%,100%{transform:scale(var(--breath-min,.96))}50%{transform:scale(var(--breath-max,1.04))}}
+    @keyframes inhalePhase{0%,47%{opacity:var(--arrow-opacity,1)}49%,100%{opacity:0}}
+    @keyframes exhalePhase{0%,51%{opacity:0}53%,97%{opacity:var(--arrow-opacity,1)}100%{opacity:0}}
+    @keyframes collapseAirway{0%,48%,100%{stroke-width:18}58%,92%{stroke-width:var(--collapse-width,4)}}
+    @media(max-width:800px){.page{width:100%;padding:10px}.board{grid-template-columns:1fr;min-height:0}.side{border-left:0;border-top:1px solid var(--line);padding:16px}.stage svg,svg{min-height:500px}.slider{grid-template-columns:auto minmax(95px,1fr) 30px}.plain-slider{grid-template-columns:auto minmax(135px,1fr)}}
+    @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-delay:0ms!important}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <p class="credit">“Animation Prompted by Jerred Seveyka for his biology class.”</p>
+    <h1>Ventilation–Perfusion Ratio in the Lung</h1>
+    <p class="subtitle">Explore how airflow and blood flow are matched across the lung.</p>
+    <div class="toolbar" aria-label="Animation controls">
+      <label for="mode">View</label>
+      <select id="mode">
+        <option value="normal">Whole normal lung</option>
+        <option value="metabolic">Metabolic control</option>
+        <option value="asthma">Asthma</option>
+        <option value="embolism">Pulmonary embolism</option>
+        <option value="edema">Pulmonary edema</option>
+        <option value="bronchitis">Chronic bronchitis</option>
+        <option value="emphysema">Emphysema</option>
+      </select>
+      <button id="replay" type="button" aria-label="Replay current animation">↻ Replay / reset</button>
+      <div id="modeControls" class="mode-controls"></div>
+    </div>
+    <section class="board">
+      <div class="stage"><svg id="scene" viewBox="0 0 720 560" role="img" aria-labelledby="sceneTitle sceneDesc"></svg></div>
+      <aside class="side" aria-live="polite">
+        <div><h2 id="panelTitle"></h2><p id="panelText"></p></div>
+        <div class="status" id="status"></div>
+        <div class="vq-estimate" id="vqEstimate"></div>
+      </aside>
+    </section>
+  </main>
+  <script>
+    const NS='http://www.w3.org/2000/svg';
+    const scene=document.querySelector('#scene'), mode=document.querySelector('#mode');
+    const modeControls=document.querySelector('#modeControls'), panelTitle=document.querySelector('#panelTitle');
+    const panelText=document.querySelector('#panelText'), status=document.querySelector('#status'), vqEstimate=document.querySelector('#vqEstimate');
+    const el=(tag,a={},parent=scene)=>{const n=document.createElementNS(NS,tag);Object.entries(a).forEach(([k,v])=>n.setAttribute(k,v));parent.appendChild(n);return n};
+    const txt=(x,y,s,cls='svg-label',parent=scene,anchor='middle')=>{const n=el('text',{x,y,class:cls,'text-anchor':anchor},parent);n.textContent=s;return n};
+    const group=(a={})=>el('g',a);
+    function base(title,desc){
+      scene.replaceChildren(); modeControls.replaceChildren();
+      const st=el('title',{id:'sceneTitle'});st.textContent=title;
+      const sd=el('desc',{id:'sceneDesc'});sd.textContent=desc;
+      const defs=el('defs');
+      [['bloodGood','#ef4545'],['bloodPartial','#b94b58'],['bloodPoor','#783a68']].forEach(([id,end])=>{
+        const grad=el('linearGradient',{id,x1:'0%',x2:'100%'},defs);
+        el('stop',{offset:'0%','stop-color':'#673d73'},grad);
+        el('stop',{offset:'100%','stop-color':end},grad);
+      });
+      [['flowGood','#ef4545'],['flowPartial','#b94b58'],['flowPoor','#783a68'],['blueArrow','#2798e6'],['grayArrow','#53616b']].forEach(([id,color])=>{
+        const marker=el('marker',{id,viewBox:'0 0 10 10',refX:8,refY:5,markerWidth:5,markerHeight:5,orient:'auto'},defs);
+        el('path',{d:'M0 0 L10 5 L0 10 Z',fill:color},marker);
+      });
+    }
+    function connectedSacPath(cx,cy,w,h,neckW,neckY){
+      const left=cx-w*.28,right=cx+w*.28,top=cy-h*.42;
+      return 'M '+(cx-neckW/2)+' '+neckY+' L '+left+' '+top+
+        ' C '+(cx-w*.62)+' '+(cy-h*.2)+','+(cx-w*.56)+' '+(cy+h*.36)+','+cx+' '+(cy+h*.48)+
+        ' C '+(cx+w*.56)+' '+(cy+h*.36)+','+(cx+w*.62)+' '+(cy-h*.2)+','+right+' '+top+
+        ' L '+(cx+neckW/2)+' '+neckY;
+    }
+    function drawAirway(path,width=20){
+      const outer=el('path',{d:path,fill:'none',stroke:'#c87881','stroke-width':width+8,'stroke-linecap':'round','stroke-linejoin':'round',class:'dynamic-airway'});
+      const inner=el('path',{d:path,fill:'none',stroke:'#f3c1aa','stroke-width':width,'stroke-linecap':'round','stroke-linejoin':'round',class:'dynamic-airway'});
+      return {outer,inner};
+    }
+    function drawConnectedSac(cx,cy,w,h,neckW,neckY,cls='alveolus',parent=scene){
+      return el('path',{class:cls,d:connectedSacPath(cx,cy,w,h,neckW,neckY)},parent);
+    }
+    function focusedAlveolus({airwayWidth=18,sacW=170,sacH=150,sacClass='alveolus'}={}){
+      const airway=drawAirway('M360 62 L360 125',airwayWidth);
+      const sac=drawConnectedSac(360,245,sacW,sacH,airwayWidth+8,125,sacClass);
+      return {airway,sac,cx:360,cy:245,w:sacW,h:sacH};
+    }
+    function drawBloodVessel(quality='good',width=22,arrow=true){
+      const path=el('path',{d:'M185 360 C280 387 435 387 550 355',fill:'none',stroke:'url(#blood'+quality[0].toUpperCase()+quality.slice(1)+')','stroke-width':width,'stroke-linecap':'round',class:'dynamic-vessel'});
+      const color=quality==='good'?'#ef4545':quality==='partial'?'#b94b58':'#783a68';
+      const flow=arrow?el('path',{d:'M465 379 L535 359',fill:'none',stroke:color,'stroke-width':4,'marker-end':'url(#flow'+quality[0].toUpperCase()+quality.slice(1)+')'}):null;
+      return {path,flow};
+    }
+    function setBloodQuality(vessel,quality){
+      const cap=quality[0].toUpperCase()+quality.slice(1);
+      const color=quality==='good'?'#ef4545':quality==='partial'?'#b94b58':'#783a68';
+      vessel.path.setAttribute('stroke','url(#blood'+cap+')');
+      if(vessel.flow){vessel.flow.setAttribute('stroke',color);vessel.flow.setAttribute('marker-end','url(#flow'+cap+')')}
+    }
+    function exchangeArrows(o2='O₂ enters blood',co2='CO₂ leaves blood',reduced=false){
+      const dash=reduced?'5 5':'none';
+      el('path',{d:'M315 310 L315 355',stroke:'#2798e6','stroke-width':reduced?2:3,'stroke-dasharray':dash,'marker-end':'url(#blueArrow)'});
+      el('path',{d:'M405 355 L405 310',stroke:'#53616b','stroke-width':reduced?2:3,'stroke-dasharray':dash,'marker-end':'url(#grayArrow)'});
+      txt(298,342,o2,'svg-small',scene,'end');
+      txt(422,342,co2,'svg-small',scene,'start');
+    }
+    function breathingArrows(){
+      const inhale=el('path',{d:'M340 72 L340 112',stroke:'#2798e6','stroke-width':4,'marker-end':'url(#blueArrow)',class:'inhale-phase'});
+      const exhale=el('path',{d:'M380 112 L380 72',stroke:'#53616b','stroke-width':4,'marker-end':'url(#grayArrow)',class:'exhale-phase'});
+      const inhaleLabel=txt(315,82,'Inhale','svg-small inhale-phase',scene,'end');
+      const exhaleLabel=txt(405,82,'Exhale','svg-small exhale-phase',scene,'start');
+      return {inhale,exhale,inhaleLabel,exhaleLabel};
+    }
+    function setBreathingPattern(arrows,sac,strength,minScale,maxScale,duration=4){
+      const opacity=Math.max(.18,strength);
+      [arrows.inhale,arrows.exhale,arrows.inhaleLabel,arrows.exhaleLabel].forEach(node=>node.style['--arrow-opacity']=opacity);
+      arrows.inhale.style.strokeWidth=1+strength*4;arrows.exhale.style.strokeWidth=1+strength*4;
+      sac.style['--breath-min']=minScale;sac.style['--breath-max']=maxScale;
+      [sac,arrows.inhale,arrows.exhale,arrows.inhaleLabel,arrows.exhaleLabel].forEach(node=>node.style.animationDuration=duration+'s');
+    }
+    function setBreathingStrength(arrows,sac,strength,duration=4){
+      const amp=.008+strength*.035;
+      setBreathingPattern(arrows,sac,strength,1-amp,1+amp,duration);
+    }
+    function diffusionParticles(parent,severity){
+      parent.replaceChildren();
+      const duration=(2.4+severity*.055).toFixed(1)+'s';
+      const o2Count=Math.max(1,4-Math.floor(severity/30)),co2Count=Math.max(1,3-Math.floor(severity/45));
+      [[o2Count,'#2798e6','M320 300 L320 355'],[co2Count,'#53616b','M400 355 L400 300']].forEach(([count,color,path])=>{
+        for(let i=0;i<count;i++){
+          const dot=el('circle',{r:4.5,fill:color,class:'diffusion-dot'},parent);
+          el('animateMotion',{dur:duration,repeatCount:'indefinite',begin:(i*.8)+'s',path},dot);
+        }
+      });
+    }
+    function retainedCO2(parent,count){
+      parent.replaceChildren();
+      for(let i=0;i<count;i++){
+        const x=315+(i%4)*30,y=225+Math.floor(i/4)*35;
+        const dot=el('circle',{cx:x,cy:y,r:5,fill:'#53616b',opacity:.72,class:'diffusion-dot'},parent);
+        el('animate',{attributeName:'cy',values:y+';'+(y+12)+';'+y,dur:(2.1+(i%3)*.4)+'s',repeatCount:'indefinite'},dot);
+      }
+    }
+    function retainedAir(parent,count){
+      parent.replaceChildren();
+      for(let i=0;i<count;i++){
+        const x=300+(i%5)*28,y=210+Math.floor(i/5)*32;
+        const dot=el('circle',{cx:x,cy:y,r:7,fill:'#9bdcff',stroke:'#2798e6','stroke-width':1,opacity:.35,class:'diffusion-dot'},parent);
+        el('animate',{attributeName:'r',values:'5;8;5',dur:(2.2+(i%3)*.35)+'s',repeatCount:'indefinite'},dot);
+      }
+    }
+    function setPanel(title,text,html){panelTitle.textContent=title;panelText.textContent=text;status.innerHTML=html}
+    function setVQ(value){
+      const allowed=['<< 1.0','< 1.0','1.0','> 1.0','>> 1.0'];
+      if(!allowed.includes(value)) throw new Error('Unsupported V/Q estimate');
+      vqEstimate.textContent='Estimated V/Q: '+value;
+    }
+    function drawLung(){
+      el('path',{class:'lung breathing-lung',d:'M339 67 C254 69 151 111 105 217 C60 321 90 492 192 536 C270 570 349 521 365 450 L365 109 C360 83 352 69 339 67 Z'});
+      drawAirway('M365 25 L365 105 M365 99 C322 100 280 100 225 105 M365 125 C329 188 282 227 230 258 M365 160 C335 288 286 357 238 405',16);
+      el('path',{d:'M365 25 L365 116',stroke:'#bd806b','stroke-width':2,'stroke-dasharray':'5 7',fill:'none'});
+    }
+    function drawRegion({cx,cy,w,h,neckY,yLabel,vq,vent,perf,tubeWidth}){
+      const g=group();
+      drawConnectedSac(cx,cy,w,h,22,neckY,'alveolus breathing-sac',g);
+      const vesselY=cy+h*.55+tubeWidth*.5,curveY=cy+h*.7+tubeWidth*.5;
+      const vessel='M '+(cx-w*.5)+' '+vesselY+' C '+(cx-w*.15)+' '+curveY+','+(cx+w*.15)+' '+curveY+','+(cx+w*.5)+' '+vesselY;
+      el('path',{class:'capillary',d:vessel,stroke:'#b64658','stroke-width':tubeWidth},g);
+      txt(415,cy-28,yLabel,'svg-label',g,'start');
+      const ventilation=txt(415,cy-8,vent,'svg-small',g,'start');ventilation.style.fill='#267fb8';
+      const perfusion=txt(415,cy+10,perf,'svg-small',g,'start');perfusion.style.fill='#7c3d68';
+      txt(415,cy+32,vq,'vq reveal',g,'start');
+    }
+    function renderNormalLung(){
+      base('Whole normal lung','A simplified upright lung with three alveoli showing regional differences in ventilation and perfusion.');
+      drawLung();
+      drawRegion({cx:225,cy:160,w:106,h:104,neckY:105,tubeWidth:12,yLabel:'Upper / apical',vq:'V/Q > 1.0',vent:'More ventilation',perf:'Less perfusion'});
+      drawRegion({cx:230,cy:305,w:92,h:84,neckY:258,tubeWidth:18,yLabel:'Middle',vq:'V/Q = 1.0',vent:'Intermediate ventilation',perf:'Intermediate perfusion'});
+      drawRegion({cx:238,cy:440,w:82,h:68,neckY:405,tubeWidth:27,yLabel:'Lower / basal',vq:'V/Q < 1.0',vent:'Less ventilation',perf:'More perfusion'});
+      txt(238,524,'Pulmonary blood vessels','svg-small');
+      setPanel('Whole normal lung','V/Q compares ventilation reaching an alveolus with blood flow passing that alveolus. In this simplified model, the apex has relatively more ventilation than perfusion, the middle is matched, and the base has relatively more perfusion than ventilation.','<strong>Breathing cycle</strong><br>The lung and alveoli expand during inhalation and contract during exhalation.');
+      vqEstimate.textContent='Estimated V/Q pattern: apex > 1.0, middle 1.0, base < 1.0';
+    }
+    function sliderControl(id,label,value,min=0,max=100,suffix='%'){
+      const wrap=document.createElement('div');wrap.className='slider';
+      const lab=document.createElement('label');lab.htmlFor=id;lab.textContent=label;
+      const input=document.createElement('input');Object.assign(input,{id,type:'range',min,max,value});
+      const out=document.createElement('output');out.htmlFor=id;out.textContent=value+suffix;
+      input.addEventListener('input',()=>out.textContent=input.value+suffix);
+      wrap.append(lab,input,out);modeControls.append(wrap);return input;
+    }
+    function plainSliderControl(id,label,value,leftText,rightText){
+      const wrap=document.createElement('div');wrap.className='slider plain-slider';
+      const lab=document.createElement('label');lab.htmlFor=id;lab.textContent=label;
+      const control=document.createElement('div');control.className='range-with-ends';
+      const input=document.createElement('input');Object.assign(input,{id,type:'range',min:0,max:100,value});
+      const ends=document.createElement('div');ends.className='range-ends';
+      const left=document.createElement('span');left.textContent=leftText;
+      const right=document.createElement('span');right.textContent=rightText;
+      ends.append(left,right);control.append(input,ends);wrap.append(lab,control);modeControls.append(wrap);return input;
+    }
+    function renderMetabolicControl(){
+      base('Metabolic control','A small alveolus showing local O2 and CO2 effects on airway and vessel diameter.');
+      const o2=sliderControl('o2','Alveolar O₂',65),co2=sliderControl('co2','Alveolar CO₂',45);
+      txt(360,36,'LOCAL METABOLIC CONTROL','svg-label');
+      const focus=focusedAlveolus({airwayWidth:18});
+      const vessel=drawBloodVessel('good',16,false);
+      exchangeArrows();
+      txt(470,100,'Bronchiole diameter','svg-small');
+      txt(360,438,'Pulmonary arteriole diameter','svg-small');
+      function update(){
+        const O=+o2.value,C=+co2.value;
+        const art=Math.max(6,Math.min(28,12+(O-50)*.18-(C-50)*.12));
+        const bron=Math.max(5,Math.min(28,8+C*.2));
+        focus.airway.inner.style.strokeWidth=bron;focus.airway.outer.style.strokeWidth=bron+8;
+        focus.sac.setAttribute('d',connectedSacPath(360,245,170,150,bron+8,125));
+        vessel.path.style.strokeWidth=art;
+        const score=O-Math.max(0,C-50)*.7;
+        setBloodQuality(vessel,score>=55?'good':score>=35?'partial':'poor');
+        const ratio=bron/art;
+        setVQ(ratio>=1.65?'>> 1.0':ratio>=1.18?'> 1.0':ratio>=.82?'1.0':ratio>=.58?'< 1.0':'<< 1.0');
+        const oText=O>55?'High alveolar O₂ → pulmonary arteriole dilation':O<45?'Low alveolar O₂ → pulmonary arteriole constriction':'Alveolar O₂ is normal';
+        const cText=C>55?'High alveolar CO₂ → bronchiole dilation; pulmonary arteriole constriction':C<45?'Low alveolar CO₂ → bronchiole constriction':'Alveolar CO₂ is normal';
+        status.innerHTML=oText+'.<br>'+cText+'.';
+      }
+      o2.addEventListener('input',update);co2.addEventListener('input',update);update();
+      setPanel('Metabolic control','Local gas levels adjust airway and vessel diameter. Move either slider and watch the bronchiole and pulmonary arteriole respond.',status.innerHTML);
+    }
+    function renderAsthma(){
+      base('Asthma','A narrowed bronchiole reduces ventilation to an alveolus while nearby blood becomes less oxygenated.');
+      const severity=sliderControl('severity','Bronchoconstriction',55,5,95,'%');
+      txt(360,36,'ASTHMA','svg-label');
+      const focus=focusedAlveolus({airwayWidth:12,sacClass:'alveolus disease-breathe'});
+      const airflow=breathingArrows();
+      const vessel=drawBloodVessel('partial',22,false);
+      txt(505,145,'Narrow bronchiole','svg-label');
+      txt(505,175,'Reduced ventilation','svg-small');
+      txt(215,155,'Reduced airflow','svg-label');
+      txt(220,245,'Low O₂','svg-label');
+      const co2Label=txt(505,245,'CO₂ may rise if severe','svg-small');
+      const retained=group();
+      const retainedLabel=txt(235,285,'Retained air','svg-small');
+      function update(){
+        const s=+severity.value,opening=Math.max(3,22-(s*.2));
+        focus.airway.inner.style.strokeWidth=opening;
+        focus.sac.setAttribute('d',connectedSacPath(360,245,170+s*.45,150+s*.28,opening+8,125));
+        const retention=Math.max(0,(s-35)/60),amp=Math.max(.006,.04*(1-retention));
+        setBreathingPattern(airflow,focus.sac,Math.max(.12,1-s/105),1+retention*.06-amp*.35,1+retention*.06+amp);
+        retainedAir(retained,s>35?Math.round((s-25)/10):0);
+        retainedLabel.style.opacity=s>35?1:.35;
+        setBloodQuality(vessel,s<35?'good':s<68?'partial':'poor');
+        setVQ(s>=60?'<< 1.0':'< 1.0');
+        co2Label.style.opacity=s>65?1:.5;
+        status.innerHTML='<strong>'+(s<35?'Mild':s<70?'Moderate':'Severe')+' bronchoconstriction</strong><br>Air retention reduces exchange of fresh air.<br>'+(s>70?'The over-inflated alveolus cannot take in much more air; respiratory muscle fatigue can result.':'Exhalation is limited, so stale air remains between breaths.');
+      }
+      severity.addEventListener('input',update);update();
+      setPanel('Asthma','Asthma: constricted airways limit exhalation, trapping air so less fresh air is exchanged; severe over-inflation can lead to respiratory muscle fatigue.',status.innerHTML);
+    }
+    function renderPulmonaryEmbolism(){
+      base('Pulmonary embolism','A clot blocks perfusion while ventilation continues, creating alveolar dead space.');
+      txt(360,36,'PULMONARY EMBOLISM','svg-label');
+      const focus=focusedAlveolus({airwayWidth:18,sacClass:'alveolus disease-breathe'});
+      const airflow=breathingArrows();
+      setBreathingStrength(airflow,focus.sac,1);
+      txt(520,95,'Very high V/Q / dead space','vq');
+      txt(500,155,'Ventilation present','svg-label');
+      el('path',{d:'M185 360 C250 373 300 374 332 370',fill:'none',stroke:'#6d3e72','stroke-width':22,'stroke-linecap':'round'});
+      el('path',{d:'M390 370 C450 378 505 366 550 355',fill:'none',stroke:'#78476f','stroke-width':18,'stroke-linecap':'round','stroke-dasharray':'6 8',opacity:.45});
+      el('path',{d:'M220 366 L320 370',fill:'none',stroke:'#783a68','stroke-width':4,'marker-end':'url(#flowPoor)'});
+      el('ellipse',{cx:360,cy:370,rx:27,ry:23,fill:'#742848',stroke:'#522036','stroke-width':4});
+      txt(360,420,'Perfusion blocked','svg-label');
+      setPanel('Pulmonary embolism','Pulmonary embolism: ventilation is present but perfusion is blocked, creating dead space and reducing effective gas exchange.','<strong>Blocked flow</strong><br>Blood flow to the alveolus is blocked by the clot, so blood remains deoxygenated.');
+      setVQ('>> 1.0');
+    }
+    function renderPulmonaryEdema(){
+      base('Pulmonary edema','Fluid thickens the barrier between a ventilated alveolus and its capillary, impairing diffusion.');
+      const edema=plainSliderControl('edemaSeverity','Degree of edema',55,'Less edema','More edema');
+      txt(360,36,'PULMONARY EDEMA','svg-label');
+      const focus=focusedAlveolus({airwayWidth:18,sacClass:'alveolus disease-breathe'});
+      const airflow=breathingArrows();
+      setBreathingStrength(airflow,focus.sac,1);
+      const fluid=el('path',{d:'',fill:'#8fd9f2',opacity:.58,stroke:'#58b9d8','stroke-width':2});
+      const vessel=drawBloodVessel('poor',22,true);
+      const particles=group();
+      txt(175,235,'Fluid increases diffusion distance','svg-small');
+      txt(180,270,'Less O₂ reaches blood','svg-small');
+      txt(535,270,'Less CO₂ leaves blood','svg-small');
+      function update(){
+        const E=+edema.value,bottom=325+E*.4;
+        fluid.setAttribute('d','M245 310 C300 333 420 333 475 310 L505 '+bottom+' C435 '+(bottom+15)+' 285 '+(bottom+15)+' 215 '+bottom+' Z');
+        fluid.style.opacity=.35+E*.0035;
+        diffusionParticles(particles,E);
+        setBloodQuality(vessel,E<35?'partial':'poor');
+        setVQ('1.0');
+        const degree=E<35?'Mild':E<70?'Moderate':'Marked';
+        status.innerHTML='<strong>'+degree+' edema</strong><br>Barrier thickness and diffusion time increase together.<br>Gas diffusion slows across the fluid barrier.';
+      }
+      edema.addEventListener('input',update);update();
+      setPanel('Pulmonary edema','Pulmonary edema: fluid between the alveolus and capillary impairs gas exchange.',status.innerHTML);
+    }
+    function renderChronicBronchitis(){
+      base('Chronic bronchitis','Airway disease and thickened respiratory surfaces reduce oxygen diffusion into nearby blood.');
+      const severity=plainSliderControl('bronchitisSeverity','Disease severity',55,'Less severe','More severe');
+      txt(360,36,'CHRONIC BRONCHITIS','svg-label');
+      const focus=focusedAlveolus({airwayWidth:14,sacClass:'alveolus disease-breathe'});
+      const airflow=breathingArrows();
+      setBreathingStrength(airflow,focus.sac,1);
+      const airway=focus.airway;
+      const mucus=el('ellipse',{cx:360,cy:96,rx:7,ry:7,fill:'#d4b14b',stroke:'#9a762b','stroke-width':2,class:'mucus-plug'});
+      el('path',{d:'M470 116 L376 102',fill:'none',stroke:'#9a762b','stroke-width':1.5});
+      txt(510,120,'Mucus plug','svg-label');
+      focus.sac.style.stroke='#a95e6c';
+      const vessel=drawBloodVessel('partial',22,true);
+      const particles=group();
+      const co2=group();
+      const co2Label=txt(520,275,'Retained CO₂','svg-small');
+      txt(205,185,'Thickened wall','svg-label');
+      txt(515,235,'Reduced diffusion','svg-label');
+      txt(360,425,'Less O₂ enters blood','svg-label');
+      function update(){
+        const T=+severity.value;
+        airway.outer.style.strokeWidth=24+T*.08;
+        airway.inner.style.strokeWidth=Math.max(3,14-T*.09);
+        mucus.setAttribute('rx',3+T*.09);mucus.setAttribute('ry',4+T*.06);
+        setBreathingStrength(airflow,focus.sac,Math.max(.12,1-T/120),Math.max(2.2,4-T*.018));
+        focus.sac.style.strokeWidth=4+T*.1;
+        diffusionParticles(particles,T);
+        retainedCO2(co2,T>20?Math.round((T-10)/14):0);
+        co2Label.style.opacity=T>30?1:.35;
+        setBloodQuality(vessel,T<55?'partial':'poor');
+        setVQ(T>=55?'<< 1.0':'< 1.0');
+        const degree=T<35?'Mild':T<70?'Moderate':'Severe';
+        status.innerHTML='<strong>'+degree+' chronic bronchitis</strong><br>Mucus blocks airflow as the wall thickens; breathing becomes shallow and rapid.<br>Less oxygen reaches the blood; retained CO₂ can cause cyanosis.';
+      }
+      severity.addEventListener('input',update);update();
+      setPanel('Chronic bronchitis','Chronic bronchitis: mucus and thickened respiratory surfaces worsen ventilation, reduce oxygen exchange, and can retain CO₂.',status.innerHTML);
+    }
+    function renderEmphysema(){
+      base('Emphysema','Loss of elastic recoil causes expiratory bronchiole collapse, air trapping, and impaired gas exchange.');
+      const severity=plainSliderControl('emphysemaSeverity','Severity',55,'Less severe','More severe');
+      txt(360,36,'EMPHYSEMA','svg-label');
+      const focus=focusedAlveolus({airwayWidth:18,sacW:200,sacH:170,sacClass:'alveolus disease-breathe'});
+      const airway=focus.airway;
+      airway.inner.setAttribute('class','collapse-airway');
+      focus.sac.style.fill='#f0f7fb';
+      const airflow=breathingArrows();
+      const vessel=drawBloodVessel('poor',22,true);
+      const co2=group();
+      txt(520,125,'Bronchiole collapses on exhalation','svg-small');
+      txt(520,200,'Air trapping','svg-label');
+      txt(520,230,'High CO₂','svg-label');
+      txt(190,250,'Reduced oxygenation','svg-small');
+      function update(){
+        const S=+severity.value,strength=Math.max(.08,1-S/105);
+        airway.inner.style['--collapse-width']=Math.max(2,16-S*.14);
+        const retention=S/100,amp=Math.max(.006,.04*(1-retention*.85));
+        setBreathingPattern(airflow,focus.sac,Math.max(.12,strength),1+retention*.07-amp*.25,1+retention*.07+amp);
+        const w=185+S*.35,h=160+S*.26;
+        focus.sac.setAttribute('d',connectedSacPath(360,245,w,h,26,125));
+        retainedCO2(co2,2+Math.round(S/10));
+        setBloodQuality(vessel,S<25?'partial':'poor');
+        setVQ(S>=55?'>> 1.0':'> 1.0');
+        const degree=S<35?'Mild':S<70?'Moderate':'Severe';
+        status.innerHTML='<strong>'+degree+' emphysema</strong><br>Collapsed bronchioles limit exhalation, so the alveolus stays inflated between breaths.<br>CO₂ retention can remain chronically high.';
+      }
+      severity.addEventListener('input',update);update();
+      setPanel('Emphysema','Emphysema: loss of elastic recoil causes bronchiole collapse during exhalation, trapping air and keeping CO₂ chronically high.',status.innerHTML);
+    }
+    const renderers={normal:renderNormalLung,metabolic:renderMetabolicControl,asthma:renderAsthma,embolism:renderPulmonaryEmbolism,edema:renderPulmonaryEdema,bronchitis:renderChronicBronchitis,emphysema:renderEmphysema};
+    function render(){renderers[mode.value]();}
+    mode.addEventListener('change',render);
+    document.querySelector('#replay').addEventListener('click',render);
+    render();
+  </script>
+</body>
+</html>

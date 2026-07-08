@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cell Shape, Surface Area, and Volume</title>
+  <style>
+    :root {
+      --ink: #172026;
+      --muted: #56636f;
+      --paper: #fbfcfd;
+      --panel: #ffffff;
+      --line: #d8e0e6;
+      --cell: #f1c985;
+      --cell-light: #f8dfb5;
+      --membrane: #7a4a24;
+      --surface: #d24b39;
+      --volume: #167b83;
+      --control: #235d68;
+      --control-dark: #18464f;
+      --focus: #f6b44b;
+      --shadow: 0 18px 45px rgba(35, 59, 72, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, #f7fafb 0%, #edf4f4 100%);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.45;
+    }
+
+    .app {
+      width: min(1220px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 18px 0 22px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.45rem, 2.6vw, 2.2rem);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+      min-height: 40px;
+      padding: 8px 12px;
+      border: 1px solid rgba(22, 123, 131, 0.3);
+      border-radius: 999px;
+      background: #eef8f7;
+      color: #135961;
+      font-weight: 760;
+      font-size: 0.96rem;
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--volume);
+      box-shadow: 0 0 0 5px rgba(22, 123, 131, 0.12);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.12fr) minmax(330px, 0.88fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .tool-pane,
+    .controls,
+    .explanation {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .tool-pane {
+      min-width: 0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .pane-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 48px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      background: #f8fbfb;
+    }
+
+    .pane-title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 820;
+    }
+
+    .pane-note {
+      color: var(--muted);
+      font-size: 0.92rem;
+      text-align: right;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      width: 100%;
+      min-height: 360px;
+      background:
+        linear-gradient(90deg, rgba(216, 224, 230, 0.42) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(216, 224, 230, 0.42) 1px, transparent 1px),
+        #ffffff;
+      background-size: 34px 34px;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #modelCanvas {
+      min-height: 430px;
+    }
+
+    #graphCanvas {
+      min-height: 430px;
+    }
+
+    .below {
+      display: grid;
+      grid-template-columns: minmax(0, 1.36fr) minmax(290px, 0.64fr);
+      gap: 14px;
+      margin-top: 14px;
+      align-items: stretch;
+    }
+
+    .controls,
+    .explanation {
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(230px, 1fr));
+      gap: 14px;
+      align-items: start;
+    }
+
+    .control-group {
+      min-width: 0;
+    }
+
+    .control-heading {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 820;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #eef3f5;
+    }
+
+    .segmented button,
+    .reset-button {
+      min-height: 44px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      color: var(--ink);
+      background: transparent;
+      font: inherit;
+      font-size: 1rem;
+      font-weight: 780;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .segmented button[aria-pressed="true"] {
+      color: #ffffff;
+      background: var(--control);
+      border-color: var(--control-dark);
+      box-shadow: 0 7px 16px rgba(35, 93, 104, 0.18);
+    }
+
+    .segmented button:focus-visible,
+    .reset-button:focus-visible,
+    input[type="range"]:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 3px;
+    }
+
+    .slider-stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .slider-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px 12px;
+      background: #ffffff;
+    }
+
+    .slider-card.disabled {
+      opacity: 0.52;
+    }
+
+    .slider-top {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .slider-top label {
+      font-size: 1rem;
+      font-weight: 820;
+    }
+
+    .slider-value {
+      flex: 0 0 auto;
+      color: var(--control-dark);
+      font-variant-numeric: tabular-nums;
+      font-weight: 820;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      min-height: 34px;
+      accent-color: var(--control);
+      cursor: pointer;
+    }
+
+    .readouts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .stat {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #f9fbfb;
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.86rem;
+      font-weight: 760;
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 4px;
+      font-size: clamp(1.05rem, 2vw, 1.36rem);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.12;
+      overflow-wrap: anywhere;
+    }
+
+    .reset-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .reset-button {
+      min-width: 112px;
+      padding: 0 16px;
+      color: #ffffff;
+      background: var(--control-dark);
+      border-color: #12343a;
+    }
+
+    .model-note {
+      color: var(--muted);
+      font-size: 0.93rem;
+    }
+
+    .explanation h2 {
+      margin: 0 0 8px;
+      font-size: 1.05rem;
+    }
+
+    .explanation p {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .fold-note {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .attribution {
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+      text-align: center;
+    }
+
+    @media (max-width: 930px) {
+      .workspace,
+      .below {
+        grid-template-columns: 1fr;
+      }
+
+      .controls-grid {
+        grid-template-columns: 1fr;
+      }
+
+      #modelCanvas,
+      #graphCanvas {
+        min-height: 360px;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .app {
+        width: min(100% - 18px, 1220px);
+        padding-top: 10px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .status-pill {
+        white-space: normal;
+      }
+
+      .pane-head {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .pane-note {
+        text-align: left;
+      }
+
+      .segmented {
+        grid-template-columns: 1fr;
+      }
+
+      .readouts {
+        grid-template-columns: 1fr;
+      }
+
+      #modelCanvas,
+      #graphCanvas {
+        min-height: 330px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="topbar">
+      <h1>Cell Shape, Surface Area, and Volume</h1>
+      <div class="status-pill" aria-label="Volume held constant">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>Volume held constant.</span>
+      </div>
+    </div>
+
+    <section class="workspace" aria-label="Cell model and graph">
+      <div class="tool-pane">
+        <div class="pane-head">
+          <h2 class="pane-title">Animated cell model</h2>
+          <div class="pane-note">Original smooth outline shown faintly</div>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="modelCanvas" aria-label="Animated cell model"></canvas>
+        </div>
+      </div>
+
+      <div class="tool-pane">
+        <div class="pane-head">
+          <h2 class="pane-title">Surface area and volume graph</h2>
+          <div class="pane-note">Live comparison</div>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="graphCanvas" aria-label="Graph of surface area and volume"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="below" aria-label="Controls and explanation">
+      <div class="controls">
+        <div class="controls-grid">
+          <div class="control-group">
+            <p class="control-heading">Shape type</p>
+            <div class="segmented" role="group" aria-label="Shape type">
+              <button type="button" data-shape="sphere" aria-pressed="true">Spherical cell</button>
+              <button type="button" data-shape="box" aria-pressed="false">Box-like cell</button>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <p class="control-heading">Mode</p>
+            <div class="segmented" role="group" aria-label="Mode">
+              <button type="button" data-mode="flatten" aria-pressed="true">Flatten cell</button>
+              <button type="button" data-mode="fold" aria-pressed="false">Fold membrane</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="slider-stack" aria-label="Shape change sliders">
+          <div class="slider-card" id="flattenCard">
+            <div class="slider-top">
+              <label for="flattenSlider">Flattening</label>
+              <span class="slider-value" id="flattenValue">0%</span>
+            </div>
+            <input id="flattenSlider" type="range" min="0" max="100" value="0" />
+          </div>
+
+          <div class="slider-card disabled" id="foldCard">
+            <div class="slider-top">
+              <label for="foldSlider">Folding</label>
+              <span class="slider-value" id="foldValue">0%</span>
+            </div>
+            <input id="foldSlider" type="range" min="0" max="100" value="0" disabled />
+          </div>
+        </div>
+
+        <div class="readouts" aria-live="polite">
+          <div class="stat">
+            <span>Volume</span>
+            <strong id="volumeReadout">1000.0</strong>
+          </div>
+          <div class="stat">
+            <span>Surface area</span>
+            <strong id="surfaceReadout">483.6</strong>
+          </div>
+          <div class="stat">
+            <span>Surface-area-to-volume ratio</span>
+            <strong id="ratioReadout">0.484</strong>
+          </div>
+        </div>
+
+        <div class="reset-row">
+          <div class="model-note" id="modeNote">Oblate spheroid or prism dimensions recalculate to preserve volume.</div>
+          <button class="reset-button" type="button" id="resetButton">Reset</button>
+        </div>
+      </div>
+
+      <aside class="explanation">
+        <h2>Student explanation</h2>
+        <p>Cells can increase exchange with the environment by increasing surface area without increasing volume. Flattening a cell or folding the membrane increases surface area, while the amount of cytoplasm can stay the same. This increases the surface-area-to-volume ratio, which can improve diffusion and transport.</p>
+        <p class="fold-note">Folding is shown as a simplified 2D representation: a smooth membrane boundary gains perimeter while its enclosed area is rescaled to stay constant, representing increased 3D membrane surface area.</p>
+      </aside>
+    </section>
+
+    <p class="attribution">Animation Prompted by Jerred Seveyka for his biology class.</p>
+  </main>
+
+  <script>
+    const FIXED_VOLUME = 1000;
+    const TWO_PI = Math.PI * 2;
+    const sphereRadius = Math.cbrt((3 * FIXED_VOLUME) / (4 * Math.PI));
+    const cubeSide = Math.cbrt(FIXED_VOLUME);
+
+    const state = {
+      shape: "sphere",
+      mode: "flatten",
+      flatten: 0,
+      fold: 0
+    };
+
+    const display = {
+      flatten: 0,
+      fold: 0
+    };
+
+    const els = {
+      modelCanvas: document.getElementById("modelCanvas"),
+      graphCanvas: document.getElementById("graphCanvas"),
+      flattenSlider: document.getElementById("flattenSlider"),
+      foldSlider: document.getElementById("foldSlider"),
+      flattenValue: document.getElementById("flattenValue"),
+      foldValue: document.getElementById("foldValue"),
+      flattenCard: document.getElementById("flattenCard"),
+      foldCard: document.getElementById("foldCard"),
+      volumeReadout: document.getElementById("volumeReadout"),
+      surfaceReadout: document.getElementById("surfaceReadout"),
+      ratioReadout: document.getElementById("ratioReadout"),
+      modeNote: document.getElementById("modeNote"),
+      resetButton: document.getElementById("resetButton")
+    };
+
+    function atanh(x) {
+      return 0.5 * Math.log((1 + x) / (1 - x));
+    }
+
+    function oblateSurfaceArea(a, c) {
+      if (Math.abs(a - c) < 0.00001) {
+        return 4 * Math.PI * a * a;
+      }
+
+      const e = Math.sqrt(Math.max(0, 1 - (c * c) / (a * a)));
+      if (e < 0.00001) {
+        return 4 * Math.PI * a * a;
+      }
+
+      return 2 * Math.PI * a * a * (1 + ((1 - e * e) / e) * atanh(e));
+    }
+
+    function sphereFlattenMetrics(change) {
+      const c = sphereRadius * (1 - 0.925 * change);
+      const a = Math.sqrt((3 * FIXED_VOLUME) / (4 * Math.PI * c));
+      const surfaceArea = oblateSurfaceArea(a, c);
+
+      return {
+        volume: FIXED_VOLUME,
+        surfaceArea,
+        ratio: surfaceArea / FIXED_VOLUME,
+        dims: { a, c },
+        baseSurfaceArea: 4 * Math.PI * sphereRadius * sphereRadius
+      };
+    }
+
+    function boxFlattenMetrics(change) {
+      const height = cubeSide * (1 - 0.92 * change);
+      const width = Math.sqrt(FIXED_VOLUME / height);
+      const depth = width;
+      const surfaceArea = 2 * (width * depth + width * height + depth * height);
+
+      return {
+        volume: FIXED_VOLUME,
+        surfaceArea,
+        ratio: surfaceArea / FIXED_VOLUME,
+        dims: { width, depth, height },
+        baseSurfaceArea: 6 * cubeSide * cubeSide
+      };
+    }
+
+    function superellipseRadius(theta, shape) {
+      if (shape === "sphere") {
+        return 1;
+      }
+
+      const n = 5;
+      const c = Math.abs(Math.cos(theta));
+      const s = Math.abs(Math.sin(theta));
+      return 1 / Math.pow(Math.pow(c, n) + Math.pow(s, n), 1 / n);
+    }
+
+    function polygonArea(points) {
+      let sum = 0;
+      for (let i = 0; i < points.length; i += 1) {
+        const p = points[i];
+        const q = points[(i + 1) % points.length];
+        sum += p.x * q.y - q.x * p.y;
+      }
+      return Math.abs(sum) * 0.5;
+    }
+
+    function polygonPerimeter(points) {
+      let sum = 0;
+      for (let i = 0; i < points.length; i += 1) {
+        const p = points[i];
+        const q = points[(i + 1) % points.length];
+        sum += Math.hypot(q.x - p.x, q.y - p.y);
+      }
+      return sum;
+    }
+
+    function makeFoldBoundary(shape, change, phase = 0, count = 260) {
+      const folds = Math.round(6 + change * 10);
+      const foldDepth = 0.46 * change;
+      const ridgeLift = 0.1 * change;
+      const fineFold = 0.03 * change;
+      const points = [];
+      const smoothPoints = [];
+
+      for (let i = 0; i < count; i += 1) {
+        const theta = (i / count) * TWO_PI;
+        const base = superellipseRadius(theta, shape);
+        const wave = (1 + Math.sin(folds * theta + phase)) * 0.5;
+        const inwardFold = Math.pow(wave, 1.35);
+        const ridge = Math.pow(1 - wave, 1.8);
+        const softWave = Math.sin((folds * 2) * theta - phase * 0.5);
+        const r = base * (1 - foldDepth * inwardFold + ridgeLift * ridge + fineFold * softWave);
+        const smoothR = base;
+
+        points.push({
+          x: Math.cos(theta) * r,
+          y: Math.sin(theta) * r
+        });
+
+        smoothPoints.push({
+          x: Math.cos(theta) * smoothR,
+          y: Math.sin(theta) * smoothR
+        });
+      }
+
+      const baseArea = polygonArea(smoothPoints);
+      const rawArea = polygonArea(points);
+      const areaScale = Math.sqrt(baseArea / rawArea);
+
+      const scaled = points.map((p) => ({
+        x: p.x * areaScale,
+        y: p.y * areaScale
+      }));
+
+      return {
+        points: scaled,
+        smoothPoints,
+        area: polygonArea(scaled),
+        baseArea,
+        perimeter: polygonPerimeter(scaled),
+        basePerimeter: polygonPerimeter(smoothPoints),
+        folds
+      };
+    }
+
+    function getPointExtents(points) {
+      return points.reduce((extents, p) => ({
+        x: Math.max(extents.x, Math.abs(p.x)),
+        y: Math.max(extents.y, Math.abs(p.y))
+      }), { x: 0.001, y: 0.001 });
+    }
+
+    function foldMetrics(shape, change) {
+      const boundary = makeFoldBoundary(shape, change, 0, 360);
+      const baseSurfaceArea = shape === "sphere"
+        ? 4 * Math.PI * sphereRadius * sphereRadius
+        : 6 * cubeSide * cubeSide;
+      const lengthFactor = boundary.perimeter / boundary.basePerimeter;
+      const surfaceArea = baseSurfaceArea * lengthFactor;
+
+      return {
+        volume: FIXED_VOLUME,
+        surfaceArea,
+        ratio: surfaceArea / FIXED_VOLUME,
+        lengthFactor,
+        folds: boundary.folds,
+        baseSurfaceArea
+      };
+    }
+
+    function getMetrics(shape = state.shape, mode = state.mode, value = getActiveChange()) {
+      if (mode === "fold") {
+        return foldMetrics(shape, value);
+      }
+
+      return shape === "sphere"
+        ? sphereFlattenMetrics(value)
+        : boxFlattenMetrics(value);
+    }
+
+    function getActiveChange() {
+      return state.mode === "fold" ? state.fold : state.flatten;
+    }
+
+    function setCanvasSize(canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      const width = Math.max(320, Math.round(rect.width * ratio));
+      const height = Math.max(300, Math.round(rect.height * ratio));
+
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      return { ctx, width: rect.width, height: rect.height };
+    }
+
+    function drawRoundedLabel(ctx, text, x, y, options = {}) {
+      const fontSize = options.fontSize || 15;
+      const padX = options.padX || 9;
+      const padY = options.padY || 6;
+      const radius = options.radius || 7;
+      const align = options.align || "left";
+
+      ctx.save();
+      ctx.font = `800 ${fontSize}px Inter, system-ui, sans-serif`;
+      const width = ctx.measureText(text).width + padX * 2;
+      const height = fontSize + padY * 2;
+      let left = x;
+
+      if (align === "center") {
+        left -= width / 2;
+      } else if (align === "right") {
+        left -= width;
+      }
+
+      left = Math.max(8, Math.min(left, ctx.canvas.getBoundingClientRect().width - width - 8));
+      y = Math.max(8, Math.min(y, ctx.canvas.getBoundingClientRect().height - height - 8));
+
+      ctx.beginPath();
+      ctx.roundRect(left, y, width, height, radius);
+      ctx.fillStyle = options.fill || "rgba(255, 255, 255, 0.92)";
+      ctx.fill();
+      ctx.strokeStyle = options.stroke || "rgba(23, 32, 38, 0.14)";
+      ctx.stroke();
+      ctx.fillStyle = options.color || "#172026";
+      ctx.fillText(text, left + padX, y + padY + fontSize * 0.78);
+      ctx.restore();
+    }
+
+    function drawPath(ctx, points, cx, cy, scale) {
+      ctx.beginPath();
+      for (let i = 0; i < points.length; i += 1) {
+        const p = points[i];
+        const x = cx + p.x * scale;
+        const y = cy + p.y * scale;
+
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.closePath();
+    }
+
+    function fillCellTexture(ctx, cx, cy, width, height, time) {
+      ctx.save();
+      ctx.globalAlpha = 0.18;
+      ctx.fillStyle = "#fff7e8";
+      for (let i = 0; i < 18; i += 1) {
+        const a = i * 2.399 + time * 0.22;
+        const rx = Math.cos(a) * width * (0.08 + (i % 5) * 0.045);
+        const ry = Math.sin(a * 1.17) * height * (0.08 + (i % 4) * 0.05);
+        ctx.beginPath();
+        ctx.arc(cx + rx, cy + ry, 2.5 + (i % 3), 0, TWO_PI);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawModel(timestamp) {
+      const { ctx, width, height } = setCanvasSize(els.modelCanvas);
+      const active = state.mode === "fold" ? display.fold : display.flatten;
+      const cx = width * 0.5;
+      const cy = height * 0.53;
+      const time = timestamp / 1000;
+
+      ctx.clearRect(0, 0, width, height);
+
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,0.86)";
+      ctx.fillRect(0, 0, width, height);
+      ctx.restore();
+
+      if (state.mode === "flatten") {
+        drawFlattenModel(ctx, width, height, cx, cy, active, time);
+      } else {
+        drawFoldModel(ctx, width, height, cx, cy, active, time);
+      }
+
+      drawRoundedLabel(ctx, "Volume held constant.", 16, 16, {
+        fill: "rgba(238, 248, 247, 0.94)",
+        stroke: "rgba(22, 123, 131, 0.28)",
+        color: "#135961"
+      });
+
+      drawRoundedLabel(ctx, "Surface area increases.", width - 18, 18, {
+        align: "right",
+        fill: "rgba(255, 245, 241, 0.96)",
+        stroke: "rgba(210, 75, 57, 0.28)",
+        color: "#9d3529"
+      });
+    }
+
+    function drawFlattenModel(ctx, width, height, cx, cy, change, time) {
+      const isSphere = state.shape === "sphere";
+      const metrics = getMetrics(state.shape, "flatten", change);
+      const baseMax = isSphere ? sphereFlattenMetrics(1).dims.a : boxFlattenMetrics(1).dims.width / 2;
+      const baseHeight = isSphere ? sphereRadius : cubeSide / 2;
+      const scale = Math.min(width * 0.44 / baseMax, height * 0.31 / baseHeight);
+
+      ctx.save();
+      ctx.setLineDash([8, 8]);
+      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = "rgba(122, 74, 36, 0.24)";
+
+      if (isSphere) {
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, sphereRadius * scale, sphereRadius * scale, 0, 0, TWO_PI);
+        ctx.stroke();
+      } else {
+        const side = cubeSide * scale;
+        ctx.beginPath();
+        ctx.roundRect(cx - side / 2, cy - side / 2, side, side, 12);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      const gradient = ctx.createRadialGradient(
+        cx - width * 0.08,
+        cy - height * 0.08,
+        10,
+        cx,
+        cy,
+        width * 0.36
+      );
+      gradient.addColorStop(0, "#f8dfb5");
+      gradient.addColorStop(1, "#edbf74");
+
+      ctx.save();
+      ctx.fillStyle = gradient;
+      ctx.strokeStyle = "#7a4a24";
+      ctx.lineWidth = 4;
+
+      if (isSphere) {
+        const rx = metrics.dims.a * scale;
+        const ry = metrics.dims.c * scale;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx, ry, 0, 0, TWO_PI);
+        ctx.fill();
+        ctx.stroke();
+        ctx.clip();
+        fillCellTexture(ctx, cx, cy, rx, ry, time);
+        ctx.restore();
+
+        ctx.save();
+        ctx.strokeStyle = "rgba(210, 75, 57, 0.72)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(cx + rx * 0.82, cy, Math.max(10, ry * 0.24), -1.2, 1.2);
+        ctx.stroke();
+        ctx.restore();
+
+        drawLeader(ctx, width - 160, 72, cx + rx * 0.88, cy - ry * 0.18, "#d24b39");
+      } else {
+        const rectW = metrics.dims.width * scale;
+        const rectH = metrics.dims.height * scale;
+        ctx.beginPath();
+        ctx.roundRect(cx - rectW / 2, cy - rectH / 2, rectW, rectH, Math.min(16, rectH * 0.25));
+        ctx.fill();
+        ctx.stroke();
+        ctx.clip();
+        fillCellTexture(ctx, cx, cy, rectW / 2, rectH / 2, time);
+        ctx.restore();
+
+        ctx.save();
+        ctx.strokeStyle = "rgba(210, 75, 57, 0.72)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(cx + rectW * 0.28, cy - rectH / 2);
+        ctx.lineTo(cx + rectW * 0.45, cy - rectH / 2);
+        ctx.stroke();
+        ctx.restore();
+
+        drawLeader(ctx, width - 160, 72, cx + rectW * 0.44, cy - rectH * 0.48, "#d24b39");
+      }
+    }
+
+    function drawFoldModel(ctx, width, height, cx, cy, change, time) {
+      const phase = time * 0.45;
+      const boundary = makeFoldBoundary(state.shape, change, phase, 520);
+      const smooth = makeFoldBoundary(state.shape, 0, 0, 520);
+      const boundaryExtents = getPointExtents(boundary.points);
+      const smoothExtents = getPointExtents(smooth.smoothPoints);
+      const maxX = Math.max(boundaryExtents.x, smoothExtents.x);
+      const maxY = Math.max(boundaryExtents.y, smoothExtents.y);
+      const scale = Math.min(
+        width * 0.36 / maxX,
+        Math.max(64, cy - 78) / maxY,
+        Math.max(64, height - cy - 34) / maxY
+      );
+
+      ctx.save();
+      ctx.setLineDash([8, 8]);
+      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = "rgba(122, 74, 36, 0.24)";
+      drawPath(ctx, smooth.smoothPoints, cx, cy, scale);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      const gradient = ctx.createRadialGradient(
+        cx - width * 0.08,
+        cy - height * 0.08,
+        10,
+        cx,
+        cy,
+        width * 0.33
+      );
+      gradient.addColorStop(0, "#f8dfb5");
+      gradient.addColorStop(1, "#edbf74");
+      ctx.fillStyle = gradient;
+      ctx.strokeStyle = "#7a4a24";
+      ctx.lineWidth = 4;
+      drawPath(ctx, boundary.points, cx, cy, scale);
+      ctx.fill();
+      ctx.stroke();
+      ctx.clip();
+      fillCellTexture(ctx, cx, cy, scale, scale, time);
+      ctx.restore();
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(210, 75, 57, 0.75)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      for (let i = 20; i < 74; i += 1) {
+        const p = boundary.points[i % boundary.points.length];
+        const x = cx + p.x * scale;
+        const y = cy + p.y * scale;
+        if (i === 20) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      const targetPoint = boundary.points[Math.floor(boundary.points.length * 0.12)];
+      drawLeader(ctx, width - 160, 72, cx + targetPoint.x * scale, cy + targetPoint.y * scale, "#d24b39");
+    }
+
+    function drawLeader(ctx, fromX, fromY, toX, toY, color) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = 0.76;
+      ctx.beginPath();
+      ctx.moveTo(fromX, fromY + 20);
+      ctx.lineTo(toX, toY);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(toX, toY, 4, 0, TWO_PI);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawGraph() {
+      const { ctx, width, height } = setCanvasSize(els.graphCanvas);
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "rgba(255,255,255,0.92)";
+      ctx.fillRect(0, 0, width, height);
+
+      const pad = {
+        left: Math.max(56, width * 0.13),
+        right: Math.max(72, width * 0.18),
+        top: 44,
+        bottom: 58
+      };
+
+      const plotW = width - pad.left - pad.right;
+      const plotH = height - pad.top - pad.bottom;
+      const samples = [];
+      let maxRelativeSurface = 1;
+
+      for (let i = 0; i <= 100; i += 1) {
+        const change = i / 100;
+        const m = getMetrics(state.shape, state.mode, change);
+        const relativeSurface = m.surfaceArea / m.baseSurfaceArea;
+        samples.push({ change, surface: relativeSurface, volume: 1 });
+        maxRelativeSurface = Math.max(maxRelativeSurface, relativeSurface);
+      }
+
+      const yMax = Math.max(1.35, Math.ceil(maxRelativeSurface * 10 + 1) / 10);
+      const yMin = 0;
+      const xToPx = (x) => pad.left + x * plotW;
+      const yToPx = (value) => pad.top + (1 - (value - yMin) / (yMax - yMin)) * plotH;
+
+      ctx.save();
+      ctx.strokeStyle = "#d8e0e6";
+      ctx.lineWidth = 1;
+      ctx.fillStyle = "#56636f";
+      ctx.font = "700 12px Inter, system-ui, sans-serif";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+
+      for (let i = 0; i <= 4; i += 1) {
+        const value = yMin + ((yMax - yMin) / 4) * i;
+        const y = yToPx(value);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(width - pad.right, y);
+        ctx.stroke();
+        ctx.fillText(value.toFixed(1), pad.left - 10, y);
+      }
+
+      ctx.strokeStyle = "#9eabb4";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(pad.left, pad.top);
+      ctx.lineTo(pad.left, height - pad.bottom);
+      ctx.lineTo(width - pad.right, height - pad.bottom);
+      ctx.stroke();
+
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillStyle = "#172026";
+      ctx.font = "800 14px Inter, system-ui, sans-serif";
+      ctx.fillText("Shape change", pad.left + plotW / 2, height - 34);
+
+      ctx.save();
+      ctx.translate(20, pad.top + plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText("Relative surface area and volume", 0, 0);
+      ctx.restore();
+
+      ctx.font = "700 12px Inter, system-ui, sans-serif";
+      ctx.fillStyle = "#56636f";
+      ctx.fillText("0%", pad.left, height - pad.bottom + 14);
+      ctx.fillText("100%", width - pad.right, height - pad.bottom + 14);
+      ctx.restore();
+
+      drawGraphLine(ctx, samples, xToPx, yToPx, "surface", "#d24b39", 4);
+      drawGraphLine(ctx, samples, xToPx, yToPx, "volume", "#167b83", 3);
+
+      const current = getActiveChange();
+      const currentMetrics = getMetrics(state.shape, state.mode, current);
+      const currentSurface = currentMetrics.surfaceArea / currentMetrics.baseSurfaceArea;
+      const markerX = xToPx(current);
+      const markerY = yToPx(currentSurface);
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(23, 32, 38, 0.24)";
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(markerX, pad.top);
+      ctx.lineTo(markerX, height - pad.bottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#ffffff";
+      ctx.strokeStyle = "#d24b39";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(markerX, markerY, 6, 0, TWO_PI);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.strokeStyle = "#167b83";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(markerX, yToPx(1), 5, 0, TWO_PI);
+      ctx.stroke();
+      ctx.restore();
+
+      drawGraphLabel(ctx, "Surface area", width - pad.right + 14, yToPx(samples[samples.length - 1].surface), "#d24b39");
+      drawGraphLabel(ctx, "Volume", width - pad.right + 14, yToPx(1), "#167b83");
+    }
+
+    function drawGraphLine(ctx, samples, xToPx, yToPx, key, color, width) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      samples.forEach((sample, i) => {
+        const x = xToPx(sample.change);
+        const y = yToPx(sample[key]);
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      });
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawGraphLabel(ctx, text, x, y, color) {
+      ctx.save();
+      ctx.font = "800 13px Inter, system-ui, sans-serif";
+      const metrics = ctx.measureText(text);
+      const labelWidth = metrics.width + 14;
+      const labelHeight = 24;
+      const left = Math.min(x, ctx.canvas.getBoundingClientRect().width - labelWidth - 8);
+      const top = Math.max(8, Math.min(y - labelHeight / 2, ctx.canvas.getBoundingClientRect().height - labelHeight - 8));
+
+      ctx.fillStyle = "#ffffff";
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(left, top, labelWidth, labelHeight, 6);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.fillText(text, left + 7, top + 16);
+      ctx.restore();
+    }
+
+    function updateControls() {
+      document.querySelectorAll("[data-shape]").forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.shape === state.shape));
+      });
+
+      document.querySelectorAll("[data-mode]").forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.mode === state.mode));
+      });
+
+      els.flattenSlider.disabled = state.mode !== "flatten";
+      els.foldSlider.disabled = state.mode !== "fold";
+      els.flattenCard.classList.toggle("disabled", state.mode !== "flatten");
+      els.foldCard.classList.toggle("disabled", state.mode !== "fold");
+      els.flattenValue.textContent = `${Math.round(state.flatten * 100)}%`;
+      els.foldValue.textContent = `${Math.round(state.fold * 100)}%`;
+
+      els.modeNote.textContent = state.mode === "fold"
+        ? "Simplified membrane perimeter increases while enclosed area is rescaled to stay constant."
+        : "Oblate spheroid or prism dimensions recalculate to preserve volume.";
+    }
+
+    function updateReadouts() {
+      const metrics = getMetrics();
+      els.volumeReadout.textContent = `${metrics.volume.toFixed(1)} units^3`;
+      els.surfaceReadout.textContent = `${metrics.surfaceArea.toFixed(1)} units^2`;
+      els.ratioReadout.textContent = metrics.ratio.toFixed(3);
+    }
+
+    function handleShapeChange(shape) {
+      state.shape = shape;
+      updateControls();
+      updateReadouts();
+      drawGraph();
+    }
+
+    function handleModeChange(mode) {
+      state.mode = mode;
+      updateControls();
+      updateReadouts();
+      drawGraph();
+    }
+
+    document.querySelectorAll("[data-shape]").forEach((button) => {
+      button.addEventListener("click", () => handleShapeChange(button.dataset.shape));
+    });
+
+    document.querySelectorAll("[data-mode]").forEach((button) => {
+      button.addEventListener("click", () => handleModeChange(button.dataset.mode));
+    });
+
+    els.flattenSlider.addEventListener("input", (event) => {
+      state.flatten = Number(event.target.value) / 100;
+      updateControls();
+      updateReadouts();
+      drawGraph();
+    });
+
+    els.foldSlider.addEventListener("input", (event) => {
+      state.fold = Number(event.target.value) / 100;
+      updateControls();
+      updateReadouts();
+      drawGraph();
+    });
+
+    els.resetButton.addEventListener("click", () => {
+      state.flatten = 0;
+      state.fold = 0;
+      display.flatten = 0;
+      display.fold = 0;
+      els.flattenSlider.value = "0";
+      els.foldSlider.value = "0";
+      updateControls();
+      updateReadouts();
+      drawGraph();
+    });
+
+    function animate(timestamp) {
+      display.flatten += (state.flatten - display.flatten) * 0.16;
+      display.fold += (state.fold - display.fold) * 0.16;
+      drawModel(timestamp);
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener("resize", () => {
+      drawGraph();
+    });
+
+    updateControls();
+    updateReadouts();
+    drawGraph();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

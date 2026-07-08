@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Membrane Potential Concept Model</title>
+  <style>
+    :root {
+      --ink: #1f2933;
+      --muted: #52616f;
+      --line: #cbd5df;
+      --panel: #ffffff;
+      --page: #eef5f7;
+      --outside: #f8fcff;
+      --inside: #fbfcf8;
+      --ion: #8fd3ff;
+      --ion-edge: #2d78a3;
+      --membrane-head: #f5c84c;
+      --membrane-tail: #d49a2a;
+      --channel: #4f8a8b;
+      --negative: #dbeafe;
+      --positive: #ffedd5;
+      --button: #2563eb;
+      --button-dark: #1d4ed8;
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0)),
+        var(--page);
+    }
+
+    .app {
+      width: min(1180px, calc(100vw - 28px));
+      margin: 0 auto;
+      padding: 14px 0 30px;
+    }
+
+    .attribution {
+      margin: 0 0 10px;
+      text-align: center;
+      font-size: clamp(1rem, 1.4vw, 1.18rem);
+      font-weight: 800;
+    }
+
+    .topline {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: end;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .readout {
+      min-width: 260px;
+      padding: 10px 13px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 10px 28px rgba(31, 41, 51, 0.08);
+    }
+
+    .readout strong {
+      display: block;
+      font-size: clamp(1rem, 1.8vw, 1.28rem);
+      line-height: 1.15;
+    }
+
+    .readout span {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 310px;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .scene-wrap,
+    .side-panel,
+    .controls {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 12px 34px rgba(31, 41, 51, 0.08);
+    }
+
+    .scene-wrap {
+      overflow: hidden;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .svg-label {
+      font-weight: 800;
+      fill: #24313f;
+    }
+
+    .svg-small {
+      font-weight: 700;
+      fill: #405364;
+    }
+
+    .side-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 14px;
+    }
+
+    .explanation {
+      display: grid;
+      gap: 10px;
+      font-size: 1rem;
+      line-height: 1.42;
+    }
+
+    .explanation p {
+      margin: 0;
+    }
+
+    .note {
+      padding: 10px 11px;
+      border-left: 4px solid #4f8a8b;
+      border-radius: 6px;
+      background: #eefafa;
+      color: #294556;
+      font-weight: 650;
+    }
+
+    .counts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .count-box {
+      min-height: 86px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+
+    .count-box span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .count-box strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 2.1rem;
+      line-height: 1;
+    }
+
+    .cue {
+      min-height: 68px;
+      padding: 11px 12px;
+      border: 1px solid #b8d2d3;
+      border-radius: 8px;
+      background: #f7ffff;
+      color: #284b59;
+      font-weight: 750;
+      line-height: 1.28;
+      transition: background 180ms ease, border-color 180ms ease;
+    }
+
+    .cue.warn {
+      border-color: #f3c179;
+      background: #fff8ed;
+      color: #71450d;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 10px;
+      margin-top: 14px;
+      padding: 12px;
+    }
+
+    button {
+      min-height: 56px;
+      border: 0;
+      border-radius: 8px;
+      padding: 11px 14px;
+      color: #ffffff;
+      background: var(--button);
+      font-size: clamp(1rem, 1.7vw, 1.2rem);
+      font-weight: 800;
+      line-height: 1.1;
+      cursor: pointer;
+      box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.18);
+      transition: transform 120ms ease, background 120ms ease, opacity 120ms ease;
+    }
+
+    button:hover:not(:disabled) {
+      background: var(--button-dark);
+      transform: translateY(-1px);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.52;
+      box-shadow: none;
+    }
+
+    .reset {
+      min-width: 112px;
+      background: #475569;
+    }
+
+    .reset:hover:not(:disabled) {
+      background: #334155;
+    }
+
+    .ion circle {
+      fill: var(--ion);
+      stroke: var(--ion-edge);
+      stroke-width: 2.5;
+      filter: drop-shadow(0 2px 1px rgba(31, 41, 51, 0.16));
+    }
+
+    .ion text {
+      fill: #11486b;
+      font-size: 28px;
+      font-weight: 900;
+      text-anchor: middle;
+      dominant-baseline: central;
+      pointer-events: none;
+    }
+
+    .lipid-head {
+      fill: var(--membrane-head);
+      stroke: #9d7215;
+      stroke-width: 1.2;
+    }
+
+    .lipid-tail {
+      stroke: var(--membrane-tail);
+      stroke-width: 3.2;
+      stroke-linecap: round;
+    }
+
+    .wire {
+      fill: none;
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .wire-reference {
+      stroke: #1f2937;
+    }
+
+    .wire-positive {
+      stroke: #c2410c;
+    }
+
+    .meter-box {
+      fill: #ffffff;
+      stroke: #9aa8b7;
+      stroke-width: 2;
+    }
+
+    .tick {
+      stroke: #56616f;
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+
+    .needle {
+      stroke: #e11d48;
+      stroke-width: 5;
+      stroke-linecap: round;
+      transition: x2 320ms ease, y2 320ms ease;
+    }
+
+    .needle-cap {
+      fill: #1f2937;
+    }
+
+    @media (max-width: 900px) {
+      .topline,
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .readout {
+        min-width: 0;
+      }
+
+      .side-panel {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .explanation {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .app {
+        width: min(100vw - 18px, 1180px);
+        padding-top: 10px;
+      }
+
+      .side-panel,
+      .controls {
+        grid-template-columns: 1fr;
+      }
+
+      .counts {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      button,
+      .reset {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <p class="attribution"><strong>Animation Prompted by Jerred Seveyka for his biology class.</strong></p>
+
+    <div class="topline">
+      <h1>Membrane Potential</h1>
+      <div class="readout" aria-live="polite">
+        <strong id="voltageReadout">Intracellular voltage: 0 mV</strong>
+        <span>relative to extracellular fluid</span>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <section class="scene-wrap" aria-label="Interactive membrane potential animation">
+        <svg id="scene" viewBox="0 0 1000 620" role="img" aria-labelledby="sceneTitle sceneDesc">
+          <title id="sceneTitle">Conceptual membrane potential model</title>
+          <desc id="sceneDesc">Positive ions move across a membrane through a channel, changing intracellular voltage relative to extracellular fluid.</desc>
+
+          <rect x="0" y="0" width="1000" height="294" fill="var(--outside)"></rect>
+          <rect id="insideTint" x="0" y="326" width="1000" height="294" fill="var(--inside)"></rect>
+          <rect x="0" y="294" width="1000" height="32" fill="#fff7df"></rect>
+
+          <text class="svg-label" x="42" y="48" font-size="28">Extracellular fluid</text>
+          <text class="svg-label" x="42" y="596" font-size="28">Intracellular fluid</text>
+
+          <path class="wire wire-reference" d="M 627 260 C 705 246, 723 210, 742 160"></path>
+          <path class="wire wire-positive" d="M 627 354 C 710 350, 760 272, 808 205"></path>
+
+          <g id="lipids"></g>
+
+          <g aria-label="Open ion channel">
+            <rect x="470" y="266" width="60" height="92" rx="26" fill="#d3edee" stroke="var(--channel)" stroke-width="5"></rect>
+            <rect x="492" y="268" width="16" height="88" rx="8" fill="#f8ffff" stroke="#9ac8ca" stroke-width="2"></rect>
+            <text class="svg-small" x="500" y="250" text-anchor="middle" font-size="18">channel</text>
+          </g>
+
+          <g aria-label="Voltage probes">
+            <circle cx="620" cy="260" r="18" fill="#f8fafc" stroke="#111827" stroke-width="4"></circle>
+            <text x="620" y="260" text-anchor="middle" dominant-baseline="central" font-size="25" font-weight="900" fill="#111827">-</text>
+            <text class="svg-small" x="647" y="265" font-size="18">extracellular reference</text>
+
+            <circle cx="620" cy="354" r="18" fill="#fff7ed" stroke="#c2410c" stroke-width="4"></circle>
+            <text x="620" y="354" text-anchor="middle" dominant-baseline="central" font-size="25" font-weight="900" fill="#c2410c">+</text>
+            <text class="svg-small" x="647" y="360" font-size="18">intracellular probe</text>
+          </g>
+
+          <g id="meter" aria-label="Dial voltmeter">
+            <rect class="meter-box" x="724" y="58" width="220" height="168" rx="8"></rect>
+            <text x="834" y="83" text-anchor="middle" font-size="21" font-weight="900" fill="#24313f">Voltmeter</text>
+            <path d="M 760 168 A 74 74 0 0 1 908 168" fill="none" stroke="#d8e0e8" stroke-width="13" stroke-linecap="round"></path>
+            <path d="M 760 168 A 74 74 0 0 1 834 94" fill="none" stroke="#dbeafe" stroke-width="8" stroke-linecap="round"></path>
+            <path d="M 834 94 A 74 74 0 0 1 908 168" fill="none" stroke="#ffedd5" stroke-width="8" stroke-linecap="round"></path>
+            <g id="meterTicks"></g>
+            <text x="759" y="195" text-anchor="middle" font-size="16" font-weight="800" fill="#1d4ed8">-70</text>
+            <text x="834" y="102" text-anchor="middle" font-size="16" font-weight="800" fill="#334155">0 mV</text>
+            <text x="909" y="195" text-anchor="middle" font-size="16" font-weight="800" fill="#c2410c">+70</text>
+            <line id="needle" class="needle" x1="834" y1="168" x2="834" y2="106"></line>
+            <circle class="needle-cap" cx="834" cy="168" r="8"></circle>
+            <text id="meterDigital" x="834" y="218" text-anchor="middle" font-size="18" font-weight="900" fill="#24313f">0 mV</text>
+          </g>
+
+          <g id="ions"></g>
+        </svg>
+      </section>
+
+      <aside class="side-panel">
+        <div class="explanation">
+          <p>This simplified model shows membrane voltage as a charge difference across the membrane. When positive ions leave the intracellular fluid, the inside becomes more negative relative to the outside. When positive ions move back in, the voltage moves back toward zero or becomes more positive.</p>
+          <p class="note">This is a conceptual model. Real resting membrane potential also depends on ion concentration gradients, selective membrane permeability, and ion pumps.</p>
+        </div>
+
+        <div class="counts" aria-live="polite">
+          <div class="count-box">
+            <span>Outside ions</span>
+            <strong id="outsideCount">12</strong>
+          </div>
+          <div class="count-box">
+            <span>Inside ions</span>
+            <strong id="insideCount">12</strong>
+          </div>
+        </div>
+
+        <div id="cue" class="cue" aria-live="polite">Equal positive ions on both sides make the intracellular voltage 0 mV.</div>
+      </aside>
+    </div>
+
+    <div class="controls" aria-label="Ion movement controls">
+      <button id="moveInButton" type="button">Move an ion into the cell</button>
+      <button id="moveOutButton" type="button">Move an ion out of the cell</button>
+      <button id="resetButton" class="reset" type="button">Reset</button>
+    </div>
+  </main>
+
+  <script>
+    const TOTAL_IONS = 24;
+    const STARTING_INSIDE = 12;
+    const MILLIVOLTS_PER_ION = 5;
+    const VOLTAGE_LIMIT = 70;
+    const MOVE_DURATION = 950;
+    const CHANNEL_X = 500;
+    const CHANNEL_TOP_Y = 270;
+    const CHANNEL_BOTTOM_Y = 350;
+
+    const outsideSlots = [
+      [104, 94], [188, 92], [272, 95], [356, 91], [440, 96], [524, 92], [608, 96], [692, 93],
+      [120, 158], [204, 162], [288, 157], [372, 161], [456, 156], [540, 162], [624, 158], [696, 158],
+      [104, 224], [188, 220], [272, 225], [356, 219], [440, 224], [524, 220], [608, 225], [692, 221]
+    ];
+
+    const insideSlots = [
+      [116, 386], [204, 390], [292, 386], [380, 391], [468, 386], [556, 391], [744, 388], [840, 390],
+      [104, 454], [192, 450], [280, 456], [368, 451], [456, 455], [544, 450], [704, 455], [840, 452],
+      [116, 526], [204, 522], [292, 528], [380, 523], [468, 528], [556, 523], [704, 526], [840, 522]
+    ];
+
+    const initialOutsideSlots = [0, 2, 4, 6, 9, 11, 13, 15, 16, 18, 20, 22];
+    const initialInsideSlots = [1, 3, 5, 7, 8, 10, 12, 14, 17, 19, 21, 23];
+
+    const ionsLayer = document.getElementById("ions");
+    const lipidsLayer = document.getElementById("lipids");
+    const tickLayer = document.getElementById("meterTicks");
+    const insideTint = document.getElementById("insideTint");
+    const needle = document.getElementById("needle");
+    const meterDigital = document.getElementById("meterDigital");
+    const voltageReadout = document.getElementById("voltageReadout");
+    const outsideCountEl = document.getElementById("outsideCount");
+    const insideCountEl = document.getElementById("insideCount");
+    const cue = document.getElementById("cue");
+    const moveInButton = document.getElementById("moveInButton");
+    const moveOutButton = document.getElementById("moveOutButton");
+    const resetButton = document.getElementById("resetButton");
+
+    let ions = [];
+    let activeMove = null;
+    let animationStart = performance.now();
+
+    function makeSvgElement(tag, attributes) {
+      const element = document.createElementNS("http://www.w3.org/2000/svg", tag);
+      Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
+      return element;
+    }
+
+    function buildLipids() {
+      for (let x = 82; x <= 918; x += 32) {
+        const topHead = makeSvgElement("circle", { class: "lipid-head", cx: x, cy: 286, r: 10 });
+        const bottomHead = makeSvgElement("circle", { class: "lipid-head", cx: x, cy: 334, r: 10 });
+        const topTailA = makeSvgElement("line", { class: "lipid-tail", x1: x - 4, y1: 296, x2: x - 8, y2: 322 });
+        const topTailB = makeSvgElement("line", { class: "lipid-tail", x1: x + 4, y1: 296, x2: x + 8, y2: 322 });
+        const bottomTailA = makeSvgElement("line", { class: "lipid-tail", x1: x - 4, y1: 324, x2: x - 8, y2: 298 });
+        const bottomTailB = makeSvgElement("line", { class: "lipid-tail", x1: x + 4, y1: 324, x2: x + 8, y2: 298 });
+        lipidsLayer.append(topTailA, topTailB, bottomTailA, bottomTailB, topHead, bottomHead);
+      }
+    }
+
+    function buildMeterTicks() {
+      [-70, -35, 0, 35, 70].forEach((value) => {
+        const angle = voltageToAngle(value);
+        const outer = pointOnMeter(angle, 76);
+        const inner = pointOnMeter(angle, value === 0 ? 55 : 61);
+        tickLayer.append(makeSvgElement("line", {
+          class: "tick",
+          x1: outer.x,
+          y1: outer.y,
+          x2: inner.x,
+          y2: inner.y
+        }));
+      });
+    }
+
+    function createIon(id, compartment, slotIndex) {
+      const group = makeSvgElement("g", { class: "ion", "data-id": id });
+      const circle = makeSvgElement("circle", { cx: 0, cy: 0, r: 19 });
+      const plus = makeSvgElement("text", { x: 0, y: 0 });
+      plus.textContent = "+";
+      group.append(circle, plus);
+      ionsLayer.append(group);
+
+      return {
+        id,
+        compartment,
+        slotIndex,
+        seed: id * 0.73 + 1.2,
+        element: group,
+        moving: null
+      };
+    }
+
+    function resetModel() {
+      activeMove = null;
+      ionsLayer.innerHTML = "";
+      ions = [];
+
+      for (let i = 0; i < TOTAL_IONS; i += 1) {
+        if (i < STARTING_INSIDE) {
+          ions.push(createIon(i, "inside", initialInsideSlots[i]));
+        } else {
+          ions.push(createIon(i, "outside", initialOutsideSlots[i - STARTING_INSIDE]));
+        }
+      }
+
+      setCue("Equal positive ions on both sides make the intracellular voltage 0 mV.");
+      updateDashboard();
+    }
+
+    function slotForIon(ion) {
+      return ion.compartment === "inside" ? insideSlots[ion.slotIndex] : outsideSlots[ion.slotIndex];
+    }
+
+    function occupiedSlots(compartment) {
+      return new Set(
+        ions
+          .filter((ion) => ion.compartment === compartment && !ion.moving)
+          .map((ion) => ion.slotIndex)
+      );
+    }
+
+    function firstOpenSlot(compartment) {
+      const slots = compartment === "inside" ? insideSlots : outsideSlots;
+      const occupied = occupiedSlots(compartment);
+      for (let i = 0; i < slots.length; i += 1) {
+        if (!occupied.has(i)) {
+          return i;
+        }
+      }
+      return -1;
+    }
+
+    function voltage() {
+      const insideCount = ions.filter((ion) => ion.compartment === "inside").length;
+      return clamp((insideCount - STARTING_INSIDE) * MILLIVOLTS_PER_ION, -VOLTAGE_LIMIT, VOLTAGE_LIMIT);
+    }
+
+    function updateDashboard() {
+      const insideCount = ions.filter((ion) => ion.compartment === "inside").length;
+      const outsideCount = TOTAL_IONS - insideCount;
+      const currentVoltage = voltage();
+
+      insideCountEl.textContent = insideCount;
+      outsideCountEl.textContent = outsideCount;
+      voltageReadout.textContent = `Intracellular voltage: ${formatVoltage(currentVoltage)} mV`;
+      meterDigital.textContent = `${formatVoltage(currentVoltage)} mV`;
+      updateNeedle(currentVoltage);
+      updateTint(currentVoltage);
+      updateButtonStates();
+    }
+
+    function updateButtonStates() {
+      const insideCount = ions.filter((ion) => ion.compartment === "inside").length;
+      const outsideCount = TOTAL_IONS - insideCount;
+      moveOutButton.disabled = Boolean(activeMove) || insideCount === 0;
+      moveInButton.disabled = Boolean(activeMove) || outsideCount === 0;
+      resetButton.disabled = Boolean(activeMove);
+    }
+
+    function updateTint(currentVoltage) {
+      const magnitude = Math.min(Math.abs(currentVoltage) / VOLTAGE_LIMIT, 1);
+      if (currentVoltage < 0) {
+        insideTint.setAttribute("fill", mixHex("#fbfcf8", "#dbeafe", magnitude * 0.78));
+      } else if (currentVoltage > 0) {
+        insideTint.setAttribute("fill", mixHex("#fbfcf8", "#ffedd5", magnitude * 0.82));
+      } else {
+        insideTint.setAttribute("fill", "var(--inside)");
+      }
+    }
+
+    function requestMove(direction) {
+      if (activeMove) {
+        return;
+      }
+
+      const from = direction === "out" ? "inside" : "outside";
+      const to = direction === "out" ? "outside" : "inside";
+      const candidates = ions.filter((ion) => ion.compartment === from && !ion.moving);
+
+      if (candidates.length === 0) {
+        setCue(
+          direction === "out"
+            ? "No positive ions remain inside to move out."
+            : "No positive ions remain outside to move in.",
+          true
+        );
+        updateButtonStates();
+        return;
+      }
+
+      const destinationSlot = firstOpenSlot(to);
+      if (destinationSlot < 0) {
+        setCue("There is no open display space on that side.", true);
+        return;
+      }
+
+      const ion = chooseIonClosestToChannel(candidates);
+      const [startX, startY] = slotForIon(ion);
+      const [endX, endY] = to === "inside" ? insideSlots[destinationSlot] : outsideSlots[destinationSlot];
+
+      ion.moving = {
+        from,
+        to,
+        destinationSlot,
+        startX,
+        startY,
+        endX,
+        endY,
+        startedAt: performance.now()
+      };
+      activeMove = ion;
+      updateButtonStates();
+      setCue(
+        direction === "out"
+          ? "A positive ion is leaving the cell through the channel."
+          : "A positive ion is entering the cell through the channel."
+      );
+    }
+
+    function chooseIonClosestToChannel(candidates) {
+      return candidates
+        .slice()
+        .sort((a, b) => {
+          const [ax, ay] = slotForIon(a);
+          const [bx, by] = slotForIon(b);
+          return Math.hypot(ax - CHANNEL_X, ay - 310) - Math.hypot(bx - CHANNEL_X, by - 310);
+        })[0];
+    }
+
+    function completeMove(ion) {
+      const movedOut = ion.moving.to === "outside";
+      ion.compartment = ion.moving.to;
+      ion.slotIndex = ion.moving.destinationSlot;
+      ion.moving = null;
+      activeMove = null;
+
+      updateDashboard();
+      const insideCount = ions.filter((item) => item.compartment === "inside").length;
+      if (movedOut && insideCount === 0) {
+        setCue("Inside lost positive charge -> inside becomes more negative. All positive ions are outside, so no more can move out.");
+      } else if (!movedOut && insideCount === TOTAL_IONS) {
+        setCue("Positive charge entered the cell -> inside becomes more positive. All positive ions are inside, so no more can move in.");
+      } else {
+        setCue(
+          movedOut
+            ? "Inside lost positive charge -> inside becomes more negative."
+            : "Positive charge entered the cell -> inside becomes less negative or more positive."
+        );
+      }
+    }
+
+    function draw(now) {
+      ions.forEach((ion) => {
+        const position = ion.moving ? movingPosition(ion, now) : restingPosition(ion, now);
+        ion.element.setAttribute("transform", `translate(${position.x.toFixed(2)} ${position.y.toFixed(2)})`);
+      });
+      requestAnimationFrame(draw);
+    }
+
+    function restingPosition(ion, now) {
+      const [baseX, baseY] = slotForIon(ion);
+      const t = (now - animationStart) / 1000;
+      const jiggleX = Math.sin(t * 2.1 + ion.seed) * 3.2;
+      const jiggleY = Math.cos(t * 2.6 + ion.seed * 1.7) * 2.6;
+      return { x: baseX + jiggleX, y: baseY + jiggleY };
+    }
+
+    function movingPosition(ion, now) {
+      const move = ion.moving;
+      const elapsed = now - move.startedAt;
+      const progress = clamp(elapsed / MOVE_DURATION, 0, 1);
+      const eased = easeInOut(progress);
+      const throughY = move.to === "outside" ? CHANNEL_TOP_Y : CHANNEL_BOTTOM_Y;
+      const points = [
+        { x: move.startX, y: move.startY },
+        { x: CHANNEL_X, y: move.from === "inside" ? CHANNEL_BOTTOM_Y : CHANNEL_TOP_Y },
+        { x: CHANNEL_X, y: throughY },
+        { x: move.endX, y: move.endY }
+      ];
+      const position = cubicBezier(points, eased);
+
+      if (progress >= 1) {
+        completeMove(ion);
+      }
+
+      return position;
+    }
+
+    function updateNeedle(currentVoltage) {
+      const angle = voltageToAngle(currentVoltage);
+      const point = pointOnMeter(angle, 62);
+      needle.setAttribute("x2", point.x);
+      needle.setAttribute("y2", point.y);
+    }
+
+    function voltageToAngle(currentVoltage) {
+      const normalized = clamp(currentVoltage / VOLTAGE_LIMIT, -1, 1);
+      return -90 + normalized * 65;
+    }
+
+    function pointOnMeter(angleDegrees, radius) {
+      const radians = angleDegrees * Math.PI / 180;
+      return {
+        x: 834 + Math.cos(radians) * radius,
+        y: 168 + Math.sin(radians) * radius
+      };
+    }
+
+    function cubicBezier(points, t) {
+      const oneMinus = 1 - t;
+      const x =
+        oneMinus ** 3 * points[0].x +
+        3 * oneMinus ** 2 * t * points[1].x +
+        3 * oneMinus * t ** 2 * points[2].x +
+        t ** 3 * points[3].x;
+      const y =
+        oneMinus ** 3 * points[0].y +
+        3 * oneMinus ** 2 * t * points[1].y +
+        3 * oneMinus * t ** 2 * points[2].y +
+        t ** 3 * points[3].y;
+      return { x, y };
+    }
+
+    function easeInOut(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - ((-2 * t + 2) ** 3) / 2;
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    function formatVoltage(value) {
+      return value > 0 ? `+${value}` : `${value}`;
+    }
+
+    function setCue(message, warning = false) {
+      cue.textContent = message;
+      cue.classList.toggle("warn", warning);
+    }
+
+    function mixHex(hexA, hexB, amount) {
+      const a = hexToRgb(hexA);
+      const b = hexToRgb(hexB);
+      const mixed = a.map((channel, index) => Math.round(channel + (b[index] - channel) * amount));
+      return `rgb(${mixed[0]}, ${mixed[1]}, ${mixed[2]})`;
+    }
+
+    function hexToRgb(hex) {
+      const value = hex.replace("#", "");
+      return [
+        parseInt(value.slice(0, 2), 16),
+        parseInt(value.slice(2, 4), 16),
+        parseInt(value.slice(4, 6), 16)
+      ];
+    }
+
+    moveInButton.addEventListener("click", () => requestMove("in"));
+    moveOutButton.addEventListener("click", () => requestMove("out"));
+    resetButton.addEventListener("click", resetModel);
+
+    buildLipids();
+    buildMeterTicks();
+    resetModel();
+    requestAnimationFrame(draw);
+  </script>
+</body>
+</html>

@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Interactive Dichotomous Key for Tissue Identification</title>
+  <style>
+    :root {
+      --ink: #18343b;
+      --muted: #526d72;
+      --paper: #f7fbfa;
+      --panel: #ffffff;
+      --teal: #167f7a;
+      --teal-dark: #0d625f;
+      --teal-soft: #dff3f0;
+      --gold: #e5a83f;
+      --gold-soft: #fff3d8;
+      --coral: #c95d5d;
+      --line: #bfd4d1;
+      --shadow: 0 12px 30px rgba(24, 52, 59, .10);
+    }
+    * { box-sizing: border-box; }
+    html { background: #eaf4f2; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 0%, rgba(255,255,255,.95), transparent 30rem),
+        linear-gradient(145deg, #edf8f6 0%, #f7f4e9 100%);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.45;
+    }
+    button, input { font: inherit; }
+    button { touch-action: manipulation; }
+    .skip-link {
+      position: fixed; left: 1rem; top: -4rem; z-index: 100;
+      padding: .7rem 1rem; background: var(--ink); color: white; border-radius: .5rem;
+    }
+    .skip-link:focus { top: 1rem; }
+    header {
+      max-width: 1500px; margin: 0 auto; padding: .45rem clamp(1rem, 3vw, 2.4rem) .7rem;
+      display: flex; flex-direction: column; align-items: center; gap: .85rem; text-align: center;
+    }
+    h1 { margin: 0; max-width: 900px; font-size: clamp(1.45rem, 2.7vw, 2.35rem); line-height: 1.1; letter-spacing: -.03em; }
+    .attribution { margin: 0; padding: .9rem 1rem .25rem; color: var(--ink); font-size: clamp(1.08rem, 1.8vw, 1.35rem); font-weight: 850; text-align: center; }
+    .top-actions { display: flex; flex-wrap: wrap; gap: .55rem; justify-content: center; }
+    .btn {
+      min-height: 46px; border: 2px solid transparent; border-radius: .8rem; padding: .68rem 1rem;
+      background: var(--panel); color: var(--ink); font-weight: 800; cursor: pointer;
+      box-shadow: 0 3px 10px rgba(24,52,59,.08); transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 7px 16px rgba(24,52,59,.13); }
+    .btn:focus-visible, input:focus-visible { outline: 4px solid rgba(229,168,63,.42); outline-offset: 2px; }
+    .btn.primary { background: var(--teal); color: white; }
+    .btn.secondary { border-color: var(--line); }
+    .btn.small { min-height: 40px; padding: .5rem .75rem; font-size: .9rem; }
+    main {
+      max-width: 1500px; margin: 0 auto; padding: .75rem clamp(1rem, 3vw, 2.4rem) 2.4rem;
+      display: grid; grid-template-columns: minmax(270px, .92fr) minmax(380px, 1.35fr) minmax(280px, .95fr);
+      gap: 1rem; align-items: stretch;
+    }
+    .panel {
+      min-width: 0; min-height: 650px; background: rgba(255,255,255,.94); border: 1px solid rgba(167,198,193,.78);
+      border-radius: 1.15rem; box-shadow: var(--shadow); overflow: hidden;
+    }
+    .panel-head { padding: .8rem 1rem; background: #eff8f6; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+    .panel-head h2 { margin: 0; font-size: .9rem; letter-spacing: .06em; text-transform: uppercase; color: var(--teal-dark); }
+    .step-pill { border-radius: 999px; padding: .25rem .55rem; background: white; border: 1px solid var(--line); font-size: .76rem; font-weight: 800; }
+    .nav-body, .study-body { padding: 1.15rem; }
+    .question-kicker { color: var(--teal-dark); font-weight: 900; font-size: .78rem; text-transform: uppercase; letter-spacing: .07em; }
+    #question { font-size: clamp(1.25rem, 2vw, 1.62rem); line-height: 1.28; margin: .45rem 0 .8rem; }
+    .teaching-note { margin: 0 0 1rem; padding: .75rem .8rem; background: var(--gold-soft); border-left: 5px solid var(--gold); border-radius: .35rem .7rem .7rem .35rem; color: #5e4a20; }
+    .answer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; margin-top: 1rem; }
+    .answer-btn { min-height: 74px; font-size: 1.15rem; border-width: 3px; }
+    .answer-btn.yes { background: var(--teal); color: white; }
+    .answer-btn.no { background: white; border-color: var(--teal); color: var(--teal-dark); }
+    .nav-tools { display: flex; gap: .55rem; flex-wrap: wrap; margin-top: 1rem; }
+    .nav-tools .btn { flex: 1 1 110px; }
+    .history-wrap { margin-top: 1.25rem; border-top: 1px solid var(--line); padding-top: 1rem; }
+    .history-wrap h3 { margin: 0 0 .55rem; font-size: .87rem; }
+    #history { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .crumb { padding: .35rem .55rem; border-radius: .55rem; background: #eef5f4; color: var(--muted); font-size: .79rem; }
+    .crumb b { color: var(--teal-dark); }
+    .diagram-panel { display: flex; flex-direction: column; }
+    .diagram-stage {
+      flex: 1; min-height: 490px; padding: 1rem; display: grid; place-items: center; position: relative; overflow: hidden;
+      background-image: linear-gradient(rgba(22,127,122,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(22,127,122,.045) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    #diagram { width: 100%; }
+    #diagram svg, .result-diagram svg { width: 100%; height: auto; max-height: 520px; display: block; }
+    .diagram-caption { text-align: center; margin: .25rem auto 0; max-width: 42rem; color: var(--muted); font-size: .94rem; }
+    .clue-badge { position: absolute; top: .8rem; left: .8rem; z-index: 2; max-width: calc(100% - 1.6rem); background: rgba(255,255,255,.94); border: 1px solid var(--line); border-radius: 999px; padding: .38rem .7rem; font-size: .78rem; font-weight: 850; box-shadow: 0 3px 10px rgba(24,52,59,.08); }
+    .look-list, .feature-list { padding-left: 1.2rem; }
+    .look-list li, .feature-list li { margin-bottom: .55rem; }
+    .study-icon { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 50%; background: var(--teal-soft); font-size: 1.7rem; font-weight: 900; color: var(--teal-dark); }
+    .study-body h3 { margin: .65rem 0 .35rem; font-size: 1.35rem; }
+    .study-body p { color: var(--muted); }
+    .term-list { display: grid; gap: .45rem; margin-top: 1rem; }
+    .term { border: 1px solid var(--line); border-radius: .65rem; padding: .55rem .65rem; background: #fbfdfd; font-size: .86rem; }
+    .term b { color: var(--teal-dark); }
+    .result-card .category { display: inline-block; margin: 0 0 .6rem; padding: .3rem .55rem; border-radius: 999px; background: var(--teal-soft); color: var(--teal-dark); font-size: .76rem; font-weight: 900; text-transform: uppercase; }
+    .result-card h3 { margin: 0 0 .55rem; font-size: clamp(1.45rem, 2vw, 1.9rem); line-height: 1.13; }
+    .result-card h4 { margin: 1rem 0 .35rem; }
+    .result-card p { margin: .25rem 0; }
+    .result-card .result-diagram { border: 1px solid var(--line); border-radius: .8rem; overflow: hidden; background: var(--paper); margin: .8rem 0; }
+    .result-card .result-diagram svg { max-height: 240px; }
+    .result-actions { display: grid; gap: .55rem; margin-top: 1.1rem; }
+    .practice-banner { display: none; max-width: 1500px; margin: 0 auto; padding: .7rem clamp(1rem, 3vw, 2.4rem); }
+    .practice-banner.show { display: block; }
+    .practice-inner { border: 2px dashed var(--gold); border-radius: .8rem; padding: .65rem .8rem; background: var(--gold-soft); color: #5e4a20; font-weight: 750; text-align: center; }
+    .practice-result { padding: .8rem; border-radius: .75rem; margin: .8rem 0; font-weight: 850; }
+    .practice-result.correct { background: #dff3e6; color: #165f36; border: 1px solid #77b88d; }
+    .practice-result.incorrect { background: #fff0e7; color: #7b3b24; border: 1px solid #d99b7d; }
+    dialog { width: min(1180px, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); border: 0; border-radius: 1rem; padding: 0; box-shadow: 0 25px 80px rgba(14,43,48,.35); color: var(--ink); }
+    dialog::backdrop { background: rgba(15,39,44,.66); backdrop-filter: blur(3px); }
+    .modal-head { position: sticky; top: 0; z-index: 5; display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem 1.2rem; background: white; border-bottom: 1px solid var(--line); }
+    .modal-head h2 { margin: 0; }
+    .gallery-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(235px, 1fr)); gap: .8rem; padding: 1rem; background: #eef6f5; }
+    .gallery-card { border: 1px solid var(--line); border-radius: .85rem; background: white; overflow: hidden; cursor: pointer; text-align: left; color: var(--ink); padding: 0; transition: transform .16s ease, box-shadow .16s ease; }
+    .gallery-card:hover, .gallery-card:focus-visible { transform: translateY(-3px); box-shadow: var(--shadow); }
+    .gallery-card .thumb { height: 150px; background: var(--paper); border-bottom: 1px solid var(--line); display: grid; place-items: center; overflow: hidden; }
+    .gallery-card svg { width: 100%; height: 100%; }
+    .gallery-text { padding: .75rem; }
+    .gallery-text h3 { margin: 0 0 .35rem; font-size: 1rem; line-height: 1.2; }
+    .gallery-text p { margin: 0; color: var(--muted); font-size: .8rem; }
+    .gallery-category { display: inline-block; margin-top: .5rem; padding: .18rem .4rem; border-radius: 999px; background: var(--teal-soft); color: var(--teal-dark); font-size: .68rem; font-weight: 850; text-transform: uppercase; }
+    .practice-intro { padding: 1rem 1.2rem 1.25rem; text-align: center; }
+    .practice-intro p { color: var(--muted); }
+    .mystery-diagram { max-width: 680px; margin: 1rem auto; border: 2px solid var(--line); border-radius: 1rem; background: var(--paper); overflow: hidden; }
+    .mystery-diagram svg { display: block; width: 100%; }
+    .reconsider { text-align: center; padding: 1.1rem; border: 2px dashed var(--gold); background: var(--gold-soft); border-radius: .8rem; }
+    .reconsider h3 { margin: 0 0 .4rem; }
+    svg text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; fill: #18343b; font-weight: 750; }
+    .tissue-bg { fill: #f8fbfa; }
+    .cell { fill: #c9e6e1; stroke: #235c62; stroke-width: 2.2; }
+    .cell.alt { fill: #ead9b3; }
+    .nucleus { fill: #765382; stroke: #3f2f49; stroke-width: 1.5; transform-box: fill-box; transform-origin: center; }
+    .membrane { stroke: #8e6034; stroke-width: 7; stroke-linecap: round; }
+    .free-line { stroke: var(--gold); stroke-width: 7; stroke-linecap: round; animation: glow 2.8s ease-in-out infinite; }
+    .cilia { stroke: #167f7a; stroke-width: 3; stroke-linecap: round; transform-box: fill-box; transform-origin: bottom; animation: sway 2.8s ease-in-out infinite alternate; }
+    .pulse { animation: pulse 2.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    .lacuna { fill: #fff; stroke: #326c74; stroke-width: 3; animation: lacunaGlow 2.8s ease-in-out infinite; }
+    .fiber { fill: none; stroke: #b97b58; stroke-width: 8; stroke-linecap: round; opacity: .82; }
+    .fiber.thin { stroke: #376f69; stroke-width: 3; }
+    .striation { stroke: #765382; stroke-width: 3; opacity: .75; animation: bands 2.8s ease-in-out infinite; }
+    .disc { stroke: #2d252e; stroke-width: 7; animation: discFlash 2.8s ease-in-out infinite; }
+    .label-box { fill: rgba(255,255,255,.9); stroke: #bfd4d1; stroke-width: 1.5; }
+    .label-line { stroke: #526d72; stroke-width: 1.8; stroke-dasharray: 4 3; }
+    .question-mark { fill: #167f7a; opacity: .12; }
+    @keyframes glow { 0%,100% { stroke-width: 7; opacity: .7; } 50% { stroke-width: 12; opacity: 1; } }
+    @keyframes sway { from { transform: skewX(-8deg); } to { transform: skewX(8deg); } }
+    @keyframes pulse { 0%,100% { transform: scale(1); opacity: .85; } 50% { transform: scale(1.18); opacity: 1; } }
+    @keyframes lacunaGlow { 0%,100% { stroke: #326c74; stroke-width: 3; } 50% { stroke: #e5a83f; stroke-width: 6; } }
+    @keyframes bands { 0%,100% { opacity: .25; } 50% { opacity: .95; } }
+    @keyframes discFlash { 0%,100% { opacity: .65; } 45%,60% { opacity: 1; stroke-width: 11; } }
+    @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } svg * { animation: none !important; } }
+    @media (max-width: 1080px) {
+      main { grid-template-columns: minmax(280px, .9fr) minmax(400px, 1.2fr); }
+      .study-panel { grid-column: 1 / -1; min-height: auto; }
+      .study-body { display: grid; grid-template-columns: auto 1fr; gap: 0 1rem; }
+      .study-body > *:not(.study-icon) { grid-column: 2; }
+    }
+    @media (max-width: 740px) {
+      header { grid-template-columns: 1fr; }
+      .top-actions { justify-content: flex-start; }
+      main { grid-template-columns: 1fr; padding-inline: .7rem; }
+      .panel { min-height: auto; }
+      .diagram-panel { min-height: 560px; }
+      .diagram-stage { min-height: 390px; }
+      .study-panel { grid-column: auto; }
+      .study-body { display: block; }
+      .study-body > *:not(.study-icon) { grid-column: auto; }
+      .answer-btn { min-height: 66px; }
+    }
+    @media (max-width: 430px) {
+      .top-actions { display: grid; grid-template-columns: 1fr 1fr; }
+      .top-actions .btn { padding-inline: .55rem; }
+      .gallery-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#question">Skip to current question</a>
+  <p class="attribution">Animation Prompted by Jerred Seveyka for his biology class.</p>
+  <header>
+    <h1>Interactive Dichotomous Key for Tissue Identification</h1>
+    <div class="top-actions">
+      <button class="btn secondary" id="galleryBtn" aria-label="Open the study gallery">Study Gallery</button>
+      <button class="btn primary" id="practiceBtn" aria-label="Start unknown tissue practice mode">Unknown Practice Mode</button>
+    </div>
+  </header>
+
+  <div class="practice-banner" id="practiceBanner" role="status">
+    <div class="practice-inner">Mystery sample active. Answer from the diagram, then see whether the key agrees.</div>
+  </div>
+
+  <main id="mainContent">
+    <section class="panel nav-panel" aria-labelledby="navHeading">
+      <div class="panel-head"><h2 id="navHeading">1. Follow the key</h2><span class="step-pill" id="stepPill">Question A</span></div>
+      <div class="nav-body">
+        <div class="question-kicker" id="questionKicker">Observe the sample</div>
+        <h2 id="question" tabindex="-1"></h2>
+        <p class="teaching-note" id="teachingNote"></p>
+        <div class="answer-grid" id="answers">
+          <button class="btn answer-btn yes" id="yesBtn" aria-label="Answer yes to the current question">Yes</button>
+          <button class="btn answer-btn no" id="noBtn" aria-label="Answer no to the current question">No</button>
+        </div>
+        <div class="nav-tools">
+          <button class="btn secondary" id="backBtn" aria-label="Go back one question">Back</button>
+          <button class="btn secondary" id="resetBtn" aria-label="Start the dichotomous key over">Start Over</button>
+        </div>
+        <div class="history-wrap">
+          <h3>Your path</h3>
+          <div id="history" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel diagram-panel" aria-labelledby="diagramHeading">
+      <div class="panel-head"><h2 id="diagramHeading">2. Inspect the clue</h2><span class="step-pill" id="diagramMode">Guided diagram</span></div>
+      <div class="diagram-stage">
+        <div class="clue-badge" id="clueBadge"></div>
+        <div id="diagram" role="img" aria-label="Animated tissue feature diagram"></div>
+      </div>
+    </section>
+
+    <aside class="panel study-panel" aria-labelledby="studyHeading">
+      <div class="panel-head"><h2 id="studyHeading">3. Study card</h2><span class="step-pill" id="studyStatus">What to look for</span></div>
+      <div class="study-body" id="studyBody" aria-live="polite"></div>
+    </aside>
+  </main>
+
+  <dialog id="galleryDialog" aria-labelledby="galleryTitle">
+    <div class="modal-head"><h2 id="galleryTitle">Study Gallery</h2><button class="btn small secondary" data-close="galleryDialog" aria-label="Close study gallery">Close</button></div>
+    <div class="gallery-grid" id="galleryGrid"></div>
+  </dialog>
+
+  <dialog id="practiceDialog" aria-labelledby="practiceTitle">
+    <div class="modal-head"><h2 id="practiceTitle">Unknown Tissue Sample</h2><button class="btn small secondary" data-close="practiceDialog" aria-label="Close unknown practice mode">Close</button></div>
+    <div class="practice-intro">
+      <p>Study the shapes, layers, spaces, fibers, and bands. The tissue name stays hidden until you complete the key.</p>
+      <div class="mystery-diagram" id="mysteryDiagram" role="img" aria-label="Unlabeled mystery tissue diagram"></div>
+      <button class="btn primary" id="beginPracticeBtn">Begin the key</button>
+    </div>
+  </dialog>
+
+  <script>
+    const NS = 'http://www.w3.org/2000/svg';
+    const notes = {
+      free: '“Free surface” means one side faces an open space or lumen.',
+      apical: '“Apical” means toward the free surface. “Basal” means toward the basement membrane or underlying tissue.',
+      matrix: '“Matrix” means extracellular material between cells.',
+      lacunae: '“Lacunae” are small spaces or cavities that may contain cells.',
+      striations: '“Striations” are visible repeating bands in muscle.',
+      discs: '“Intercalated discs” are dark cross-bands found in cardiac muscle.',
+      pseudo: '“Pseudostratified” appears layered because nuclei are staggered, even though it is not truly stratified.'
+    };
+
+    const results = {
+      simpleSquamous: { name:'Simple squamous epithelium', category:'Epithelial', features:['One very thin cell layer','Flat cells with flattened nuclei','Distinct free surface','Basement membrane beneath the cells'], location:'Lines alveoli and capillaries; allows rapid diffusion.', identified:'A free surface, one layer, and flat cells.', kind:'simpleSquamous' },
+      simpleCuboidal: { name:'Simple cuboidal epithelium', category:'Epithelial', features:['One layer of cube-shaped cells','Round nuclei near the center','Cells border a free surface or lumen','Basement membrane under the layer'], location:'Kidney tubules; secretion and absorption.', identified:'A free surface, one layer, and square cells with central nuclei.', kind:'simpleCuboidal' },
+      simpleColumnar: { name:'Simple columnar epithelium', category:'Epithelial', features:['One layer of tall cells','Oval nuclei aligned near the basal half','Clear apical and basal sides','No cilia at the apical edge'], location:'Digestive tract; absorption and secretion.', identified:'One layer of rectangular cells with aligned nuclei and no cilia.', kind:'simpleColumnar' },
+      ciliatedSimpleColumnar: { name:'Ciliated simple columnar epithelium', category:'Epithelial', features:['One layer of tall cells','Oval nuclei aligned near the basal half','Hair-like cilia on the apical edge','Distinct basement membrane'], location:'Uterine tubes; cilia move material along the surface.', identified:'One layer of rectangular cells with aligned nuclei and apical cilia.', kind:'ciliatedSimpleColumnar' },
+      pseudostratified: { name:'Pseudostratified columnar epithelium', category:'Epithelial', features:['Cells of unequal heights','Nuclei staggered at several levels','All cells touch the basement membrane','Some cells do not reach the free surface'], location:'Parts of the male reproductive tract; secretion and absorption.', identified:'A layered appearance made by staggered nuclei, with no cilia.', kind:'pseudostratified' },
+      ciliatedPseudostratified: { name:'Ciliated pseudostratified columnar epithelium', category:'Epithelial', features:['Cells of unequal heights','Staggered nuclei','All cells touch the basement membrane','Cilia line the apical surface'], location:'Trachea; traps and moves mucus.', identified:'Staggered nuclei, unequal cell heights, and apical cilia.', kind:'ciliatedPseudostratified' },
+      nonkeratinizedStratifiedSquamous: { name:'Nonkeratinized stratified squamous epithelium', category:'Epithelial', features:['Many cell layers','Flat cells at the free surface','Superficial cells may show nuclei','No dry keratin cap'], location:'Lines the mouth and esophagus; resists abrasion.', identified:'Many layers with flat apical cells; the source key’s nuclei branch led here.', kind:'nonkeratinizedStratifiedSquamous' },
+      keratinizedStratifiedSquamous: { name:'Keratinized stratified squamous epithelium', category:'Epithelial', features:['Many cell layers','Flattened surface region','Distinct keratin layer','Protective, abrasion-resistant barrier'], location:'Epidermis of skin; protection from abrasion and water loss.', identified:'Many layers with flat apical cells; the source key’s nuclei branch led here.', kind:'keratinizedStratifiedSquamous' },
+      stratifiedCuboidal: { name:'Stratified cuboidal epithelium', category:'Epithelial', features:['Usually two cell layers','Cube-shaped apical cells','Round central nuclei','Small central free surface'], location:'Sweat gland ducts; protection and secretion.', identified:'Multiple layers with square apical cells and round nuclei.', kind:'stratifiedCuboidal' },
+      stratifiedColumnar: { name:'Stratified columnar epithelium', category:'Epithelial', features:['Multiple cell layers','Tall rectangular apical cells','Shorter basal cells','No apical cilia'], location:'Large ducts and parts of the male urethra; protection and secretion.', identified:'Multiple layers with columnar apical cells and no cilia.', kind:'stratifiedColumnar' },
+      ciliatedStratifiedColumnar: { name:'Ciliated stratified columnar epithelium', category:'Epithelial', features:['Multiple cell layers','Columnar apical cells','Shorter basal cells','Cilia at the free surface'], location:'Rare; found in parts of the fetal esophagus.', identified:'Multiple layers with columnar apical cells and cilia.', kind:'ciliatedStratifiedColumnar' },
+      transitional: { name:'Transitional epithelium', category:'Epithelial', features:['Multiple layers','Rounded or dome-shaped apical cells','Surface cells flatten when stretched','Built to change shape'], location:'Urinary bladder; stretches as it fills.', identified:'Multiple layers ending in dome-shaped or mixed-shape surface cells.', kind:'transitional' },
+      blood: { name:'Blood', category:'Connective', features:['Many small cells in fluid matrix','Red blood cells lack nuclei','A few larger nucleated white cells','Cells are separated by plasma'], location:'Inside blood vessels; transport and immune defense.', identified:'Separated cells, with many very small cells lacking nuclei.', kind:'blood' },
+      compactBone: { name:'Compact bone / osseous tissue', category:'Connective', features:['Concentric osteon rings','Central canal','Lacunae arranged around the rings','Hard mineralized matrix'], location:'Outer portions of bones; support and protection.', identified:'Lacunae arranged in target-like concentric rings.', kind:'compactBone' },
+      hyalineCartilage: { name:'Hyaline cartilage', category:'Connective', features:['Smooth, glassy matrix','Chondrocytes inside lacunae','No obvious visible fibers','Lacunae scattered through matrix'], location:'Tracheal rings and joint surfaces; support and cushioning.', identified:'Lacunae are present, but matrix fibers are not visible.', kind:'hyalineCartilage' },
+      elasticCartilage: { name:'Elastic cartilage', category:'Connective', features:['Chondrocytes in lacunae','Many thin branching elastic fibers','Relatively high lacuna density','Flexible matrix'], location:'External ear; flexible support.', identified:'Lacunae plus branching fibers that are not thick and parallel.', kind:'elasticCartilage' },
+      fibrocartilage: { name:'Fibrocartilage', category:'Connective', features:['Thick collagen fibers','Fibers run mostly one direction','Low density of lacunae','Chondrocytes between fiber bundles'], location:'Intervertebral discs; strong shock absorption.', identified:'Lacunae plus thick, mostly parallel fibers and few lacunae.', kind:'fibrocartilage' },
+      adipose: { name:'Adipose tissue', category:'Connective', features:['Large clear round adipocytes','Very little visible matrix','Nuclei pushed to cell edges','Honeycomb-like appearance'], location:'Under skin and around organs; energy storage and insulation.', identified:'Large clear cells with edge-positioned nuclei.', kind:'adipose' },
+      areolar: { name:'Areolar loose connective tissue', category:'Connective', features:['Loose open matrix','Thick collagen fibers','Thin branching elastic fibers','Scattered fibroblast nuclei'], location:'Under epithelia; wraps and cushions organs.', identified:'Loose fibers with open space, including thick and thin fiber types.', kind:'areolar' },
+      denseRegular: { name:'Dense regular connective tissue', category:'Connective', features:['Parallel collagen bundles','Fibers packed tightly','Flattened fibroblast nuclei','Strength mainly in one direction'], location:'Tendons and ligaments; strong attachment.', identified:'Densely packed extracellular fibers running parallel.', kind:'denseRegular' },
+      denseIrregular: { name:'Dense irregular connective tissue', category:'Connective', features:['Thick collagen bundles','Bundles cross in many directions','Scattered fibroblast nuclei','Strength in multiple directions'], location:'Dermis of skin; resists tension from many directions.', identified:'Dense extracellular fibers that do not run parallel.', kind:'denseIrregular' },
+      reticular: { name:'Reticular connective tissue', category:'Connective • gallery example', features:['Thin branching reticular fibers','Mesh-like supporting network','Many small cells in the spaces','A type of connective tissue proper'], location:'Lymph nodes and spleen; forms a soft supportive framework.', identified:'Additional study example; the provided key does not separate it as a final branch.', kind:'reticular', galleryOnly:true },
+      neuron: { name:'Nervous tissue, neuron cell body with glial cells', category:'Nervous', features:['Large neuron cell body','Large nucleus with visible nucleolus','Several long cell projections','Many smaller glial cells nearby'], location:'Brain and spinal cord; receives and transmits information.', identified:'One large projecting cell surrounded by many smaller cells.', kind:'neuron' },
+      nerveCross: { name:'Nervous tissue, nerve cross-section', category:'Nervous', features:['Round clusters of nerve fibers','Pale myelin rings','Darker axon centers','Donut-like cross-sectional profiles'], location:'Peripheral nerves; carries electrical signals.', identified:'Donut-shaped structures clustered in cross-section.', kind:'nerveCross' },
+      smoothMuscle: { name:'Smooth muscle', category:'Muscle', features:['Spindle-shaped cells','Single central elongated nuclei','No visible striations','Cells arranged in sheets'], location:'Walls of hollow organs; involuntary movement.', identified:'Closely packed tissue whose cells lack striations.', kind:'smoothMuscle' },
+      skeletalMuscle: { name:'Skeletal muscle', category:'Muscle', features:['Long parallel fibers','Clear repeating striations','Many nuclei near fiber edges','No branching or intercalated discs'], location:'Attached to bones; voluntary movement.', identified:'Striated fibers without intercalated discs.', kind:'skeletalMuscle' },
+      cardiacMuscle: { name:'Cardiac muscle', category:'Muscle', features:['Striated branching cells','One or two central nuclei','Dark perpendicular intercalated discs','Connected contractile network'], location:'Heart wall; pumps blood.', identified:'Striations interrupted by thick dark intercalated discs.', kind:'cardiacMuscle' }
+    };
+
+    const key = {
+      A: { id:'A', question:'Does the tissue have a free surface? In other words, is there a continuous sheet of cells bounded by other cell tissue on only one side?', yes:'E1', no:'B', diagram:'freeSurface', highlight:'free surface', note:notes.free },
+      E1: { id:'1', question:'Is there a single, distinct layer of cells?', yes:'E1a', no:'E2', diagram:'layers', highlight:'one layer versus many', note:'Count complete cell layers from the basement membrane to the free surface.' },
+      E1a: { id:'1a', question:'Do the cells appear flat, with little cytoplasm around the nucleus?', yes:'simpleSquamous', no:'E1b', diagram:'flatCells', highlight:'flat cell shape', note:'Focus on the cell outline, not just the shape of the nucleus.' },
+      E1b: { id:'1b', question:'Do the cells appear square, with a round nucleus near the center?', yes:'simpleCuboidal', no:'E1c', diagram:'cuboidalCells', highlight:'cuboidal cell shape', note:'Cuboidal cells are about as tall as they are wide.' },
+      E1c: { id:'1c', question:'Do the cells appear rectangular, with an oval nucleus near the middle or toward the side furthest from the free surface? Nuclei of adjacent cells should be at about the same height.', yes:'ESCilia', no:'reconsiderE', diagram:'columnarCells', highlight:'aligned oval nuclei', note:notes.apical },
+      ESCilia: { id:'1d', question:'Are there cilia at the apical surface?', yes:'ciliatedSimpleColumnar', no:'simpleColumnar', diagram:'cilia', highlight:'moving apical cilia', note:notes.apical },
+      E2: { id:'2', question:'Do the cells appear to be predominantly column shaped but adjacent cells are of different heights with nuclei staggered up and down, with some cells not reaching the surface?', yes:'EPCilia', no:'E3a', diagram:'pseudo', highlight:'staggered nuclei', note:notes.pseudo },
+      EPCilia: { id:'2a', question:'Are there cilia at the apical surface?', yes:'ciliatedPseudostratified', no:'pseudostratified', diagram:'pseudoCilia', highlight:'apical cilia', note:notes.apical },
+      E3a: { id:'3a', question:'Do the cells at the apical/free surface appear flat, with little cytoplasm around the nucleus or with no visible nucleus?', yes:'ESKeratin', no:'E3b', diagram:'stratFlat', highlight:'flat apical cells', note:'Look only at the cells touching the free surface when naming stratified epithelia.' },
+      ESKeratin: { id:'3a-k', question:'Do the cells at the apical surface contain nuclei?', yes:'keratinizedStratifiedSquamous', no:'nonkeratinizedStratifiedSquamous', diagram:'keratin', highlight:'surface nuclei and keratin', note:'This Yes/No routing intentionally follows the provided source key exactly.' },
+      E3b: { id:'3b', question:'Do the cells at the apical surface appear square, with a round nucleus near the center?', yes:'stratifiedCuboidal', no:'E3c', diagram:'stratCube', highlight:'cuboidal apical cells', note:'For stratified tissue, classify by the topmost cell shape.' },
+      E3c: { id:'3c', question:'Do the cells at the apical surface appear rectangular, with an oval nucleus near the middle or toward the side furthest from the free surface?', yes:'E3CCilia', no:'E3d', diagram:'stratColumn', highlight:'columnar apical cells', note:notes.apical },
+      E3CCilia: { id:'3c-c', question:'Are there cilia at the apical surface?', yes:'ciliatedStratifiedColumnar', no:'stratifiedColumnar', diagram:'stratCilia', highlight:'apical cilia', note:notes.apical },
+      E3d: { id:'3d', question:'Do the cells at the apical surface appear dome-shaped or as a mixture of flat and dome-shaped?', yes:'transitional', no:'reconsiderE', diagram:'dome', highlight:'dome-shaped surface cells', note:'Transitional surface cells change from rounded to flatter as the organ stretches.' },
+      B: { id:'B', question:'Do you see relatively few cells or nuclei that appear to be separated by extracellular material? In other words, are adjacent cells separated from one another by other material or by a gap?', yes:'B1', no:'C', diagram:'matrix', highlight:'space and extracellular matrix', note:notes.matrix },
+      B1: { id:'B1', question:'Do you see a large cell with a large nucleus, visible nucleolus, and many projections surrounded by many smaller cells?', yes:'neuron', no:'B2', diagram:'neuron', highlight:'large projecting cell', note:'Compare the size of the central cell with the many small surrounding glial cells.' },
+      B2: { id:'B2', question:'Do you see many very small cells with no nucleus?', yes:'blood', no:'B3', diagram:'blood', highlight:'small cells without nuclei', note:'Most red blood cells do not contain a nucleus.' },
+      B3: { id:'B3', question:'Are there lacunae, meaning small cavities within the tissue, possibly with cells visible inside them?', yes:'B3a', no:'B4', diagram:'lacunae', highlight:'lacuna cavities', note:notes.lacunae },
+      B3a: { id:'B3a', question:'Are the lacunae arranged in concentric rings, like a target or rings of a tree trunk?', yes:'compactBone', no:'B3b1', diagram:'boneRings', highlight:'concentric rings', note:'An osteon is the circular structural unit of compact bone.' },
+      B3b1: { id:'B3b1', question:'Are fibers visible in the matrix?', yes:'B3b2', no:'hyalineCartilage', diagram:'cartilageFibers', highlight:'visible matrix fibers', note:notes.matrix },
+      B3b2: { id:'B3b2', question:'Are the fibers fairly thick, lightly stained, and running mostly in one direction with a low density of lacunae?', yes:'fibrocartilage', no:'elasticCartilage', diagram:'fiberDirection', highlight:'thick aligned fibers', note:'Compare both fiber thickness and the number of lacunae.' },
+      B4: { id:'B4', question:'Are there large, round, clear cells with their nuclei pushed to the edge?', yes:'adipose', no:'B5', diagram:'adipose', highlight:'edge-positioned nuclei', note:'The clear center represents a large lipid droplet.' },
+      B5: { id:'B5', question:'Are the extracellular fibers loosely packed, with visible space between fibers, and both thick fibers and thin branching fibers present?', yes:'areolar', no:'B6', diagram:'looseFibers', highlight:'loose thick and thin fibers', note:notes.matrix },
+      B6: { id:'B6', question:'Are the extracellular fibers running parallel to one another?', yes:'denseRegular', no:'denseIrregular', diagram:'fiberAlignment', highlight:'parallel versus crossing fibers', note:'Parallel bundles resist pulling in one main direction.' },
+      C: { id:'C', question:'Do there appear to be donut-shaped structures, a white ring around a dark center, found in round clusters?', yes:'nerveCross', no:'D', diagram:'nerveCross', highlight:'donut-like nerve profiles', note:'The pale ring is myelin around the darker axon center.' },
+      D: { id:'D', question:'Do the cells lack striations?', yes:'smoothMuscle', no:'D1', diagram:'striations', highlight:'repeating striation bands', note:notes.striations },
+      D1: { id:'D1', question:'Do you see intercalated discs? In other words, are the striations occasionally interrupted by thicker, darker bands running perpendicular to the length of the cell?', yes:'cardiacMuscle', no:'skeletalMuscle', diagram:'discs', highlight:'dark intercalated discs', note:notes.discs }
+    };
+
+    const esc = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const svgWrap = (content, label='Tissue diagram') => `<svg viewBox="0 0 640 420" role="img" aria-label="${esc(label)}" xmlns="${NS}"><rect class="tissue-bg" width="640" height="420" rx="18"/>${content}</svg>`;
+    const label = (x,y,text,w=130) => `<g><rect class="label-box" x="${x}" y="${y-24}" width="${w}" height="32" rx="8"/><text x="${x+10}" y="${y-3}" font-size="15">${esc(text)}</text></g>`;
+    const nuclei = (items, cls='') => items.map(([x,y,rx=11,ry=16]) => `<ellipse class="nucleus ${cls}" cx="${x}" cy="${y}" rx="${rx}" ry="${ry}"/>`).join('');
+    const cilia = (start=70,end=570,y=82) => Array.from({length:18},(_,i)=>{const x=start+i*(end-start)/17;return `<line class="cilia" x1="${x}" y1="${y}" x2="${x+(i%2?5:-5)}" y2="${y-27}"/>`;}).join('');
+    const membrane = (y=342) => `<line class="membrane" x1="55" y1="${y}" x2="585" y2="${y}"/><text x="60" y="${y+28}" font-size="15">basement membrane</text>`;
+    const freeSurface = (y=83) => `<line class="free-line" x1="55" y1="${y}" x2="585" y2="${y}"/><text x="440" y="${y-14}" font-size="15">free surface / lumen</text>`;
+
+    function epithelium(kind) {
+      const ciliated = kind.toLowerCase().includes('ciliated');
+      if (kind === 'simpleSquamous') {
+        let cells = Array.from({length:7},(_,i)=>`<path class="cell" d="M${55+i*76} 250 Q${93+i*76} 226 ${131+i*76} 250 L${131+i*76} 294 Q${93+i*76} 310 ${55+i*76} 294Z"/>`).join('');
+        return svgWrap(`${freeSurface(232)}${cells}${nuclei(Array.from({length:7},(_,i)=>[93+i*76,268,17,7]),'pulse')}${membrane(310)}${label(65,180,'one flat layer',135)}`, 'One thin layer of flat epithelial cells');
+      }
+      if (kind === 'simpleCuboidal') {
+        let cells = Array.from({length:7},(_,i)=>`<rect class="cell" x="${55+i*76}" y="145" width="76" height="150"/>`).join('');
+        return svgWrap(`${freeSurface(132)}${cells}${nuclei(Array.from({length:7},(_,i)=>[93+i*76,220,17,17]))}${membrane(305)}${label(64,105,'one cube layer',145)}`, 'One layer of cuboidal epithelial cells');
+      }
+      if (kind === 'simpleColumnar' || kind === 'ciliatedSimpleColumnar') {
+        let cells = Array.from({length:7},(_,i)=>`<path class="cell" d="M${55+i*76} 95 L${131+i*76} 95 L${131+i*76} 330 L${55+i*76} 330Z"/>`).join('');
+        return svgWrap(`${freeSurface(82)}${ciliated?cilia(64,577,92):''}${cells}${nuclei(Array.from({length:7},(_,i)=>[93+i*76,260,13,24]))}${membrane(340)}${label(67,66,ciliated?'apical cilia':'aligned nuclei',135)}`, ciliated?'Ciliated simple columnar epithelium':'Simple columnar epithelium');
+      }
+      if (kind === 'pseudostratified' || kind === 'ciliatedPseudostratified') {
+        const cells = [
+          '<path class="cell" d="M55 95H130V340H55Z"/>','<path class="cell alt" d="M130 160H205V340H130Z"/>',
+          '<path class="cell" d="M205 95H280V340H205Z"/>','<path class="cell alt" d="M280 205H355V340H280Z"/>',
+          '<path class="cell" d="M355 95H430V340H355Z"/>','<path class="cell alt" d="M430 145H505V340H430Z"/>','<path class="cell" d="M505 95H580V340H505Z"/>'
+        ].join('');
+        return svgWrap(`${freeSurface(82)}${ciliated?cilia(64,574,92):''}${cells}${nuclei([[91,245],[166,278],[241,175],[316,292],[391,225],[466,260],[541,160]],'pulse')}${membrane(350)}${label(70,64,'staggered nuclei',160)}`, ciliated?'Ciliated pseudostratified epithelium':'Pseudostratified epithelium');
+      }
+      if (kind === 'stratifiedCuboidal') {
+        let cells=''; for(let r=0;r<2;r++) for(let i=0;i<7;i++) cells+=`<rect class="cell ${r?'alt':''}" x="${55+i*76}" y="${155+r*88}" width="76" height="88"/>`;
+        let ns=[]; for(let r=0;r<2;r++) for(let i=0;i<7;i++) ns.push([93+i*76,199+r*88,13,13]);
+        return svgWrap(`${freeSurface(142)}${cells}${nuclei(ns)}${membrane(340)}${label(70,102,'two cube layers',155)}`, 'Stratified cuboidal epithelium');
+      }
+      if (kind === 'stratifiedColumnar' || kind === 'ciliatedStratifiedColumnar') {
+        let basal=Array.from({length:9},(_,i)=>`<rect class="cell alt" x="${55+i*58.4}" y="265" width="59" height="75"/>`).join('');
+        let top=Array.from({length:7},(_,i)=>`<rect class="cell" x="${55+i*76}" y="105" width="76" height="160"/>`).join('');
+        let ns=Array.from({length:9},(_,i)=>[84+i*58.4,303,10,12]).concat(Array.from({length:7},(_,i)=>[93+i*76,210,11,20]));
+        return svgWrap(`${freeSurface(92)}${ciliated?cilia(64,577,102):''}${top}${basal}${nuclei(ns)}${membrane(350)}${label(67,70,ciliated?'cilia':'tall apical cells',140)}`, ciliated?'Ciliated stratified columnar epithelium':'Stratified columnar epithelium');
+      }
+      if (kind === 'transitional') {
+        let rows='';
+        for(let i=0;i<8;i++) rows+=`<ellipse class="cell alt" cx="${88+i*67}" cy="303" rx="36" ry="36"/>`;
+        for(let i=0;i<7;i++) rows+=`<ellipse class="cell" cx="${120+i*72}" cy="240" rx="40" ry="38"/>`;
+        for(let i=0;i<6;i++) rows+=`<path class="cell" d="M${67+i*87} 198 Q${110+i*87} 118 ${153+i*87} 198 L${151+i*87} 224 L${69+i*87} 224Z"/>`;
+        let ns=Array.from({length:8},(_,i)=>[88+i*67,303,10,12]).concat(Array.from({length:7},(_,i)=>[120+i*72,240,11,13]),Array.from({length:6},(_,i)=>[110+i*87,184,13,10]));
+        return svgWrap(`${freeSurface(116)}${rows}${nuclei(ns)}${membrane(350)}${label(68,92,'dome surface',140)}`, 'Transitional epithelium with dome-shaped surface cells');
+      }
+      const keratinized = kind === 'keratinizedStratifiedSquamous';
+      let basal=Array.from({length:10},(_,i)=>`<ellipse class="cell alt" cx="${78+i*54}" cy="305" rx="31" ry="34"/>`).join('');
+      let middle=Array.from({length:9},(_,i)=>`<ellipse class="cell" cx="${92+i*58}" cy="247" rx="34" ry="29"/>`).join('');
+      let upper=Array.from({length:8},(_,i)=>`<ellipse class="cell" cx="${105+i*61}" cy="198" rx="38" ry="20"/>`).join('');
+      let surface=Array.from({length:7},(_,i)=>`<ellipse class="cell" cx="${117+i*67}" cy="158" rx="42" ry="13"/>`).join('');
+      let ns=Array.from({length:10},(_,i)=>[78+i*54,305,9,13]).concat(Array.from({length:9},(_,i)=>[92+i*58,247,10,11]),Array.from({length:8},(_,i)=>[105+i*61,198,12,7]),Array.from({length:7},(_,i)=>[117+i*67,158,12,5]));
+      return svgWrap(`${freeSurface(126)}${keratinized?'<path d="M58 125 Q180 96 300 119 T582 112 L582 144H58Z" fill="#e8c67a" stroke="#8e6034" stroke-width="2"/>':''}${basal}${middle}${upper}${surface}${nuclei(ns)}${membrane(350)}${label(68,92,keratinized?'keratin layer':'flat surface cells',145)}`, keratinized?'Keratinized stratified squamous epithelium':'Nonkeratinized stratified squamous epithelium');
+    }
+
+    function connective(kind) {
+      if (kind === 'blood') {
+        let rbcs=Array.from({length:28},(_,i)=>{let x=50+(i*83)%540,y=70+(i*59)%285;return `<g><ellipse cx="${x}" cy="${y}" rx="25" ry="18" fill="#d78375" stroke="#713f42" stroke-width="2"/><ellipse cx="${x}" cy="${y}" rx="10" ry="6" fill="#efb6a8"/></g>`}).join('');
+        return svgWrap(`<rect x="25" y="25" width="590" height="370" rx="30" fill="#f5d7c8"/>${rbcs}<g class="pulse"><circle cx="235" cy="188" r="34" fill="#eef3df" stroke="#315c62" stroke-width="3"/><path d="M216 188q18-27 38 0q-18 30-38 0" fill="#765382"/></g>${label(402,374,'plasma + blood cells',175)}`, 'Blood cells suspended in plasma');
+      }
+      if (kind === 'compactBone') {
+        let rings=[145,112,78,45].map(r=>`<circle cx="320" cy="205" r="${r}" fill="none" stroke="#9f7253" stroke-width="17" opacity="${.35+(145-r)/250}" class="pulse"/>`).join('');
+        let lac=Array.from({length:18},(_,i)=>{let a=i*Math.PI*2/18,r=i%2?95:130;return `<ellipse class="lacuna" cx="${320+Math.cos(a)*r}" cy="${205+Math.sin(a)*r}" rx="8" ry="4" transform="rotate(${i*20} ${320+Math.cos(a)*r} ${205+Math.sin(a)*r})"/>`}).join('');
+        return svgWrap(`${rings}<circle cx="320" cy="205" r="24" fill="#fcfbf6" stroke="#5d3c2e" stroke-width="5"/>${lac}${label(422,82,'concentric rings',160)}${label(290,214,'canal',70)}`, 'Compact bone osteon with concentric rings');
+      }
+      if (['hyalineCartilage','elasticCartilage','fibrocartilage'].includes(kind)) {
+        const elastic=kind==='elasticCartilage', fibro=kind==='fibrocartilage';
+        let matrix=`<rect x="35" y="35" width="570" height="350" rx="32" fill="${fibro?'#efe0c6':'#dcebe8'}" stroke="#7eaaa4" stroke-width="3"/>`;
+        let fibers='';
+        if(elastic) fibers=Array.from({length:13},(_,i)=>`<path class="fiber thin" d="M${40+i*43} 45q${i%2?55:-35} 70 0 140t0 180"/>`).join('');
+        if(fibro) fibers=Array.from({length:9},(_,i)=>`<path class="fiber" d="M45 ${70+i*36} Q210 ${45+i*39} 600 ${75+i*35}"/>`).join('');
+        const pts=fibro?[[150,120],[315,220],[490,310]]:[[100,100],[210,170],[355,95],[500,165],[145,295],[290,320],[455,285],[550,350]];
+        let lacs=pts.map(([x,y])=>`<g><ellipse class="lacuna" cx="${x}" cy="${y}" rx="26" ry="18"/><ellipse class="nucleus" cx="${x}" cy="${y}" rx="9" ry="7"/></g>`).join('');
+        return svgWrap(`${matrix}${fibers}${lacs}${label(50,62,fibro?'thick aligned fibers':elastic?'branching fibers':'glassy matrix',165)}`, results[kind].name);
+      }
+      if (kind === 'adipose') {
+        let cells=''; let pts=[[100,110,65],[215,95,61],[335,115,70],[470,105,62],[550,175,58],[130,245,72],[275,245,66],[415,245,73],[535,305,64],[190,365,58],[350,355,65]];
+        pts.forEach(([x,y,r],i)=>{cells+=`<circle cx="${x}" cy="${y}" r="${r}" fill="#fffdf4" stroke="#47747a" stroke-width="4"/><ellipse class="nucleus pulse" cx="${x-r*.82}" cy="${y}" rx="8" ry="14"/>`;});
+        return svgWrap(`${cells}${label(390,398,'edge nuclei',120)}`, 'Adipose tissue with clear fat cells');
+      }
+      const random = kind==='denseIrregular', regular=kind==='denseRegular', reticular=kind==='reticular';
+      let fibers='';
+      if(regular) fibers=Array.from({length:10},(_,i)=>`<path class="fiber" d="M35 ${55+i*35} Q260 ${30+i*38} 605 ${58+i*34}"/>`).join('');
+      else if(random) fibers=Array.from({length:12},(_,i)=>`<path class="fiber" d="M${30+(i%4)*150} ${30+Math.floor(i/4)*150} Q${300+(i%3)*60} ${40+(i*31)%330} ${610-(i%4)*110} ${390-(i*25)%330}"/>`).join('');
+      else if(reticular) fibers=Array.from({length:12},(_,i)=>`<path class="fiber thin" d="M${40+i*47} 30 Q${120+(i*73)%450} ${110+(i*47)%250} ${40+(i*113)%560} 390"/>`).join('');
+      else fibers=Array.from({length:7},(_,i)=>`<path class="fiber" d="M35 ${70+i*50} Q${180+(i*57)%300} ${20+(i*83)%380} 605 ${90+(i*43)%300}"/>`).join('')+Array.from({length:8},(_,i)=>`<path class="fiber thin" d="M${55+i*68} 30q${i%2?80:-45} 100 0 190t${i%2?-70:60} 180"/>`).join('');
+      const count=reticular?34:regular?9:12;
+      let ns=Array.from({length:count},(_,i)=>{let x=45+(i*97)%550,y=45+(i*61)%330;return `<ellipse class="nucleus" cx="${x}" cy="${y}" rx="${reticular?6:12}" ry="${reticular?8:5}" transform="rotate(${(i*23)%160} ${x} ${y})"/>`}).join('');
+      return svgWrap(`${fibers}${ns}${label(55,55,regular?'parallel bundles':random?'crossing bundles':reticular?'branching meshwork':'loose open fibers',165)}`, results[kind].name);
+    }
+
+    function nervous(kind) {
+      if(kind==='nerveCross') {
+        let donuts=''; [[170,190],[230,135],[290,195],[360,130],[425,205],[215,270],[325,290],[430,285]].forEach(([x,y],i)=>{donuts+=`<g class="${i%2?'':'pulse'}"><circle cx="${x}" cy="${y}" r="43" fill="#fff" stroke="#87a9a7" stroke-width="14"/><circle cx="${x}" cy="${y}" r="12" fill="#4c3a55"/></g>`;});
+        return svgWrap(`<ellipse cx="310" cy="212" rx="250" ry="175" fill="#e4d7bd" stroke="#8e6034" stroke-width="4"/>${donuts}${label(420,380,'myelin ring + axon',170)}`, 'Nerve cross-section with myelin rings');
+      }
+      let glia=Array.from({length:22},(_,i)=>{let a=i*2.4,r=150+(i%3)*38;return `<circle class="nucleus" cx="${320+Math.cos(a)*r}" cy="${210+Math.sin(a)*r*.65}" r="7"/>`}).join('');
+      let dendrites=Array.from({length:9},(_,i)=>{let a=i*Math.PI*2/9,x=320+Math.cos(a)*185,y=210+Math.sin(a)*145;return `<path d="M320 210 Q${320+Math.cos(a+.35)*100} ${210+Math.sin(a+.35)*90} ${x} ${y}" fill="none" stroke="#376f69" stroke-width="15" stroke-linecap="round"/>`}).join('');
+      return svgWrap(`${dendrites}${glia}<ellipse class="cell" cx="320" cy="210" rx="90" ry="73"/><circle class="nucleus pulse" cx="320" cy="210" r="37"/><circle cx="320" cy="210" r="10" fill="#f2c564" stroke="#3f2f49" stroke-width="3"/>${label(255,116,'large soma',110)}${label(430,70,'small glial cells',155)}`, 'Neuron cell body with glial cells');
+    }
+
+    function muscle(kind) {
+      if(kind==='smoothMuscle') {
+        let cells=''; for(let r=0;r<6;r++) for(let i=0;i<4;i++){let x=35+i*145+(r%2)*55,y=45+r*58;cells+=`<path class="cell ${r%2?'alt':''}" d="M${x} ${y+25} Q${x+65} ${y-18} ${x+130} ${y+25} Q${x+65} ${y+68} ${x} ${y+25}Z"/><ellipse class="nucleus" cx="${x+65}" cy="${y+25}" rx="20" ry="7"/>`;}
+        return svgWrap(`${cells}${label(55,60,'no striations',130)}`, 'Smooth muscle spindle-shaped cells without striations');
+      }
+      const cardiac=kind==='cardiacMuscle'; let fibers='';
+      const ys=[80,170,260,350]; ys.forEach((y,i)=>{fibers+=`<path d="M25 ${y} Q170 ${y+(i%2?20:-15)} 615 ${y}" fill="none" stroke="${i%2?'#d8b98c':'#b9dcd7'}" stroke-width="68" stroke-linecap="round"/>`;});
+      if(cardiac) fibers+=`<path d="M300 170 Q410 210 540 260" fill="none" stroke="#d8b98c" stroke-width="62" stroke-linecap="round"/>`;
+      let bands=''; for(let x=70;x<600;x+=42) ys.forEach(y=>bands+=`<line class="striation" x1="${x}" y1="${y-31}" x2="${x}" y2="${y+31}"/>`);
+      let ns=cardiac?nuclei([[180,80,20,10],[370,170,20,10],[240,260,20,10],[460,350,20,10]]):nuclei([[70,55,13,7],[210,194,13,7],[380,235,13,7],[555,374,13,7],[470,104,13,7]]);
+      let discs=cardiac?'<line class="disc" x1="285" y1="137" x2="285" y2="202"/><line class="disc" x1="455" y1="228" x2="430" y2="288"/><line class="disc" x1="400" y1="318" x2="400" y2="382"/>':'';
+      return svgWrap(`${fibers}${bands}${ns}${discs}${label(60,40,'striations',110)}${cardiac?label(430,95,'intercalated disc',165):''}`, cardiac?'Cardiac muscle with striations and intercalated discs':'Skeletal muscle with parallel striated fibers');
+    }
+
+    function tissueSVG(kind) {
+      if(['simpleSquamous','simpleCuboidal','simpleColumnar','ciliatedSimpleColumnar','pseudostratified','ciliatedPseudostratified','nonkeratinizedStratifiedSquamous','keratinizedStratifiedSquamous','stratifiedCuboidal','stratifiedColumnar','ciliatedStratifiedColumnar','transitional'].includes(kind)) return epithelium(kind);
+      if(['blood','compactBone','hyalineCartilage','elasticCartilage','fibrocartilage','adipose','areolar','denseRegular','denseIrregular','reticular'].includes(kind)) return connective(kind);
+      if(['neuron','nerveCross'].includes(kind)) return nervous(kind);
+      return muscle(kind);
+    }
+
+    function questionSVG(type) {
+      const map={freeSurface:'simpleColumnar',layers:'nonkeratinizedStratifiedSquamous',flatCells:'simpleSquamous',cuboidalCells:'simpleCuboidal',columnarCells:'simpleColumnar',cilia:'ciliatedSimpleColumnar',pseudo:'pseudostratified',pseudoCilia:'ciliatedPseudostratified',stratFlat:'nonkeratinizedStratifiedSquamous',keratin:'keratinizedStratifiedSquamous',stratCube:'stratifiedCuboidal',stratColumn:'stratifiedColumnar',stratCilia:'ciliatedStratifiedColumnar',dome:'transitional',matrix:'areolar',neuron:'neuron',blood:'blood',lacunae:'hyalineCartilage',boneRings:'compactBone',cartilageFibers:'elasticCartilage',fiberDirection:'fibrocartilage',adipose:'adipose',looseFibers:'areolar',fiberAlignment:'denseRegular',nerveCross:'nerveCross',striations:'skeletalMuscle',discs:'cardiacMuscle'};
+      return tissueSVG(map[type]||'simpleColumnar');
+    }
+
+    let current='A', path=[], practiceTarget=null;
+    const $=id=>document.getElementById(id);
+
+    function renderStudyPrompt(node){
+      const terms = [
+        ['Apical','toward the free surface'],['Basal','toward the basement membrane'],['Matrix','material between cells'],['Lacuna','a small cavity that may contain a cell']
+      ];
+      $('studyStatus').textContent='What to look for';
+      $('studyBody').innerHTML=`<div class="study-icon" aria-hidden="true">?</div><h3>Look, then decide</h3><p>Use the highlighted structure in the center. Ask whether the feature is clearly present; do not try to name the tissue too early.</p><ul class="look-list"><li><b>Shape:</b> flat, square, tall, spindle, or dome?</li><li><b>Arrangement:</b> one layer, many layers, rings, or bundles?</li><li><b>Texture:</b> open matrix, fibers, spaces, or bands?</li></ul><div class="term-list">${terms.map(t=>`<div class="term"><b>${t[0]}:</b> ${t[1]}</div>`).join('')}</div>`;
+    }
+
+    function renderResult(id){
+      const r=results[id]; current=id;
+      const match=practiceTarget ? id===practiceTarget : null;
+      $('questionKicker').textContent='Identification complete';
+      $('question').textContent=r.name;
+      $('teachingNote').textContent=r.identified;
+      $('answers').hidden=true;
+      $('stepPill').textContent='Final answer';
+      $('diagramMode').textContent='Identified tissue';
+      $('clueBadge').textContent=r.name;
+      $('diagram').innerHTML=tissueSVG(r.kind);
+      $('studyStatus').textContent='Result';
+      $('studyBody').innerHTML=`<div class="result-card"><span class="category">${esc(r.category)}</span><h3>${esc(r.name)}</h3>${practiceTarget?`<div class="practice-result ${match?'correct':'incorrect'}">${match?'Correct identification!':`Not a match. The mystery tissue was ${esc(results[practiceTarget].name)}.`}</div>`:''}<div class="result-diagram">${tissueSVG(r.kind)}</div><h4>Key features</h4><ul class="feature-list">${r.features.map(f=>`<li>${esc(f)}</li>`).join('')}</ul><h4>Common location / function</h4><p>${esc(r.location)}</p><h4>How this key identified it</h4><p>${esc(r.identified)}</p><div class="result-actions"><button class="btn primary" data-study="${id}">Study this tissue</button><button class="btn secondary" data-reset>Start over</button><button class="btn secondary" data-practice>Try another tissue</button></div></div>`;
+      $('studyBody').querySelector('[data-study]').addEventListener('click',()=>openGallery(id));
+      $('studyBody').querySelector('[data-reset]').addEventListener('click',reset);
+      $('studyBody').querySelector('[data-practice]').addEventListener('click',startPractice);
+      $('backBtn').disabled=path.length===0;
+      renderHistory();
+      $('question').focus({preventScroll:true});
+    }
+
+    function renderReconsider(){
+      current='reconsiderE';
+      $('questionKicker').textContent='Check your observations';
+      $('question').textContent='Reconsider the previous options.';
+      $('teachingNote').textContent='Use Back to review the nearest cell-shape choice, or start over with a different sample.';
+      $('answers').hidden=true;
+      $('stepPill').textContent='Review';
+      $('clueBadge').textContent='Compare cell shapes again';
+      $('diagram').innerHTML=questionSVG('layers');
+      $('studyStatus').textContent='Observation tip';
+      $('studyBody').innerHTML='<div class="reconsider"><h3>No match yet</h3><p>A feature may be subtle or cut at an angle. Return one step and compare the highlighted shapes.</p></div>';
+      $('backBtn').disabled=path.length===0;
+      renderHistory();
+    }
+
+    function render(){
+      if(results[current]) return renderResult(current);
+      if(current==='reconsiderE') return renderReconsider();
+      const node=key[current];
+      $('answers').hidden=false;
+      $('questionKicker').textContent='Observe the sample';
+      $('question').textContent=node.question;
+      $('teachingNote').textContent=node.note||'';
+      $('stepPill').textContent=`Question ${node.id}`;
+      $('diagramMode').textContent=practiceTarget?'Mystery sample':'Guided diagram';
+      $('clueBadge').textContent=`Highlight: ${node.highlight}`;
+      $('diagram').innerHTML=practiceTarget?tissueSVG(results[practiceTarget].kind):questionSVG(node.diagram);
+      $('diagram').setAttribute('aria-label',practiceTarget?`Mystery tissue diagram. Current clue: ${node.highlight}`:`Animated diagram highlighting ${node.highlight}`);
+      renderStudyPrompt(node);
+      $('backBtn').disabled=path.length===0;
+      renderHistory();
+    }
+
+    function choose(answer){
+      if(!key[current]) return;
+      const node=key[current];
+      path.push({node:current,id:node.id,answer});
+      current=node[answer];
+      render();
+    }
+
+    function goBack(){
+      if(!path.length) return;
+      const last=path.pop(); current=last.node; render();
+    }
+
+    function reset(){
+      current='A'; path=[]; practiceTarget=null; $('practiceBanner').classList.remove('show'); render();
+    }
+
+    function renderHistory(){
+      $('history').innerHTML=path.length?path.map(p=>`<span class="crumb">${esc(p.id)}: <b>${p.answer==='yes'?'Yes':'No'}</b></span>`).join(''):'<span class="crumb">Start at Question A</span>';
+    }
+
+    function openGallery(focusId){
+      $('galleryGrid').innerHTML=Object.entries(results).map(([id,r])=>`<button class="gallery-card" data-id="${id}" aria-label="Study ${esc(r.name)}"><div class="thumb">${tissueSVG(r.kind)}</div><div class="gallery-text"><h3>${esc(r.name)}</h3><p>${esc(r.features.slice(0,3).join(' • '))}</p><span class="gallery-category">${esc(r.category)}</span></div></button>`).join('');
+      $('galleryDialog').showModal();
+      if(focusId){ const card=$('galleryGrid').querySelector(`[data-id="${focusId}"]`); card?.scrollIntoView({block:'center'}); card?.focus(); }
+      $('galleryGrid').querySelectorAll('.gallery-card').forEach(card=>card.addEventListener('click',()=>{
+        const r=results[card.dataset.id];
+        card.querySelector('.gallery-text').innerHTML=`<h3>${esc(r.name)}</h3><p><b>Features:</b> ${esc(r.features.join(' • '))}</p><p><b>Location/function:</b> ${esc(r.location)}</p><span class="gallery-category">${esc(r.category)}</span>`;
+      }));
+    }
+
+    function startPractice(){
+      const pool=Object.keys(results).filter(id=>!results[id].galleryOnly);
+      practiceTarget=pool[Math.floor(Math.random()*pool.length)];
+      $('mysteryDiagram').innerHTML=tissueSVG(results[practiceTarget].kind);
+      $('practiceDialog').showModal();
+    }
+
+    function beginPractice(){
+      $('practiceDialog').close(); current='A'; path=[]; $('practiceBanner').classList.add('show'); render();
+    }
+
+    $('yesBtn').addEventListener('click',()=>choose('yes'));
+    $('noBtn').addEventListener('click',()=>choose('no'));
+    $('backBtn').addEventListener('click',goBack);
+    $('resetBtn').addEventListener('click',reset);
+    $('galleryBtn').addEventListener('click',()=>openGallery());
+    $('practiceBtn').addEventListener('click',startPractice);
+    $('beginPracticeBtn').addEventListener('click',beginPractice);
+    document.querySelectorAll('[data-close]').forEach(btn=>btn.addEventListener('click',()=>$(btn.dataset.close).close()));
+    document.addEventListener('keydown',e=>{
+      if((e.key==='y'||e.key==='Y')&&!$('answers').hidden) choose('yes');
+      if((e.key==='n'||e.key==='N')&&!$('answers').hidden) choose('no');
+    });
+    render();
+    window.TISSUE_KEY={key,results,reset,choose};
+  </script>
+</body>
+</html>

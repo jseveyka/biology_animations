@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Local Control of Blood Flow in Systemic Capillaries</title>
+  <style>
+.animation-credit {
+  width: 100%;
+  text-align: center;
+  font-weight: bold;
+  font-size: 16px;
+  padding: 8px 0;
+  background: #f3f4f6;
+  color: #111827;
+  border-bottom: 1px solid #d1d5db;
+  box-sizing: border-box;
+}
+    :root {
+      --bg: #f6f8fb;
+      --surface: #ffffff;
+      --ink: #17212f;
+      --muted: #586579;
+      --line: #d8e0ea;
+      --red: #c9242f;
+      --red-dark: #8d1c26;
+      --teal: #197c8d;
+      --purple: #8f4ea5;
+      --purple-dark: #64347a;
+      --tan: #f4c9a8;
+      --green: #227a4c;
+      --warning: #b86219;
+      --shadow: 0 18px 45px rgba(29, 44, 65, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, #fbfcfe 0%, var(--bg) 42%, #eef3f6 100%);
+    }
+
+    .app {
+      min-height: 100vh;
+      padding: 18px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 14px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.45rem, 2.5vw, 2.35rem);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .mode-tabs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(170px, 1fr));
+      gap: 8px;
+      padding: 5px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.82);
+      box-shadow: 0 10px 25px rgba(33, 49, 69, 0.08);
+    }
+
+    .mode-tab,
+    .reset-button {
+      appearance: none;
+      border: 0;
+      border-radius: 6px;
+      min-height: 48px;
+      padding: 10px 16px;
+      font: inherit;
+      font-size: 1.02rem;
+      font-weight: 750;
+      color: var(--ink);
+      background: transparent;
+      cursor: pointer;
+      transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+    }
+
+    .mode-tab:hover,
+    .reset-button:hover {
+      transform: translateY(-1px);
+    }
+
+    .mode-tab.active {
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--teal), #245b94);
+      box-shadow: 0 10px 20px rgba(25, 124, 141, 0.28);
+    }
+
+    .layout {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(560px, 1fr) minmax(315px, 390px);
+      gap: 14px;
+    }
+
+    .scene-shell,
+    .side-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .scene-shell {
+      position: relative;
+      min-height: 550px;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 550px;
+      background:
+        radial-gradient(circle at 72% 24%, rgba(246, 201, 168, 0.32), transparent 22%),
+        linear-gradient(180deg, #fffdfb, #eef6f7 100%);
+    }
+
+    .side-panel {
+      min-height: 0;
+      padding: 16px;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 14px;
+    }
+
+    .readout {
+      display: grid;
+      gap: 10px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .state-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .state-line {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px;
+      align-items: baseline;
+      font-size: 1rem;
+    }
+
+    .state-line strong {
+      color: var(--muted);
+      font-size: 0.92rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .meter {
+      display: grid;
+      gap: 7px;
+    }
+
+    .meter-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.02rem;
+      font-weight: 760;
+    }
+
+    .meter-track {
+      position: relative;
+      height: 22px;
+      border-radius: 6px;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(172, 43, 53, 0.12), rgba(33, 122, 76, 0.12)),
+        #edf2f5;
+      border: 1px solid #d2dce5;
+    }
+
+    .meter-fill {
+      height: 100%;
+      width: 50%;
+      border-radius: 5px;
+      background: linear-gradient(90deg, #b73a45, #d94b38, #2d9a68);
+      transition: width 180ms ease;
+    }
+
+    .meter-scale {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .controls {
+      display: grid;
+      gap: 14px;
+    }
+
+    .control-row {
+      display: grid;
+      gap: 7px;
+    }
+
+    .control-row label {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 1.02rem;
+      font-weight: 760;
+    }
+
+    output {
+      min-width: 74px;
+      text-align: right;
+      color: var(--teal);
+      font-weight: 800;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--teal);
+      cursor: pointer;
+    }
+
+    .range-captions {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .explanation {
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+      color: #263346;
+      font-size: 1.02rem;
+      line-height: 1.45;
+    }
+
+    .reset-button {
+      color: #ffffff;
+      background: var(--ink);
+      box-shadow: 0 10px 22px rgba(23, 33, 47, 0.22);
+    }
+
+    .reset-button:focus-visible,
+    .mode-tab:focus-visible,
+    input[type="range"]:focus-visible {
+      outline: 3px solid rgba(25, 124, 141, 0.32);
+      outline-offset: 3px;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    @media (max-width: 980px) {
+      .app {
+        min-height: auto;
+      }
+
+      header {
+        grid-template-columns: 1fr;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .scene-shell,
+      canvas {
+        min-height: 500px;
+      }
+
+      .side-panel {
+        grid-template-rows: auto;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .app {
+        padding: 10px;
+      }
+
+      .mode-tabs {
+        grid-template-columns: 1fr;
+      }
+
+      .scene-shell,
+      canvas {
+        min-height: 430px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="animation-credit">
+  Animation Prompted by Jerred Seveyka for his biology class
+</div>
+  <div class="app">
+    <header>
+      <h1>Local Control of Blood Flow in Systemic Capillaries</h1>
+      <nav class="mode-tabs" aria-label="Control mode">
+        <button class="mode-tab active" id="metabolicTab" type="button" data-mode="metabolic" aria-pressed="true">Metabolic Control</button>
+        <button class="mode-tab" id="myogenicTab" type="button" data-mode="myogenic" aria-pressed="false">Myogenic Control</button>
+      </nav>
+    </header>
+
+    <main class="layout">
+      <section class="scene-shell" aria-label="Animated capillary bed model">
+        <canvas id="capillaryCanvas" aria-label="Animated arteriole, capillary bed, venule, and red blood cell flow"></canvas>
+      </section>
+
+      <aside class="side-panel">
+        <section class="readout" aria-live="polite">
+          <div class="state-grid">
+            <div class="state-line"><strong>Arteriole</strong><span id="arterioleState">moderately dilated</span></div>
+            <div class="state-line"><strong>Sphincters</strong><span id="sphincterState">partly open</span></div>
+            <div class="state-line"><strong>Relative flow</strong><span id="flowState">moderate</span></div>
+            <div class="state-line"><strong>Signal</strong><span id="signalState">balanced metabolic demand</span></div>
+          </div>
+
+          <div class="meter" aria-label="Relative blood flow meter">
+            <div class="meter-row">
+              <span>Relative blood flow</span>
+              <span id="flowPercent">50%</span>
+            </div>
+            <div class="meter-track">
+              <div class="meter-fill" id="flowFill"></div>
+            </div>
+            <div class="meter-scale"><span>low</span><span>high</span></div>
+          </div>
+        </section>
+
+        <section class="controls" id="metabolicControls">
+          <div class="control-row">
+            <label for="co2Slider"><span>Tissue CO2 level</span><output id="co2Value">50%</output></label>
+            <input id="co2Slider" type="range" min="0" max="100" value="50">
+            <div class="range-captions"><span>Low CO2</span><span>High CO2</span></div>
+          </div>
+
+          <div class="control-row">
+            <label for="phSlider"><span>Tissue fluid pH</span><output id="phValue">7.30</output></label>
+            <input id="phSlider" type="range" min="0" max="100" value="50">
+            <div class="range-captions"><span>Low pH</span><span>High pH</span></div>
+          </div>
+
+          <div class="control-row">
+            <label for="o2Slider"><span>Tissue O2 level</span><output id="o2Value">50%</output></label>
+            <input id="o2Slider" type="range" min="0" max="100" value="50">
+            <div class="range-captions"><span>Low O2</span><span>High O2</span></div>
+          </div>
+        </section>
+
+        <section class="controls" id="myogenicControls" hidden>
+          <div class="control-row">
+            <label for="pressureSlider"><span>Blood pressure</span><output id="pressureValue">100 mmHg</output></label>
+            <input id="pressureSlider" type="range" min="0" max="100" value="50">
+            <div class="range-captions"><span>Low pressure</span><span>High pressure</span></div>
+          </div>
+        </section>
+
+        <section class="explanation" id="explanationText">
+          Metabolically active tissues release more CO2, produce more acid, and consume more O2. High CO2, low pH, and low O2 relax arteriolar smooth muscle and precapillary sphincters, increasing local blood flow.
+        </section>
+
+        <button class="reset-button" id="resetButton" type="button">Reset Current Mode</button>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("capillaryCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const base = { w: 900, h: 520 };
+    const midY = 265;
+    const branches = [
+      { y: 105, threshold: 0.60, offset: 0.20 },
+      { y: 155, threshold: 0.40, offset: 0.42 },
+      { y: 210, threshold: 0.20, offset: 0.12 },
+      { y: 265, threshold: 0.08, offset: 0.64 },
+      { y: 320, threshold: 0.24, offset: 0.34 },
+      { y: 375, threshold: 0.44, offset: 0.56 },
+      { y: 425, threshold: 0.64, offset: 0.78 }
+    ];
+
+    const metabolicDefaults = { co2: 50, ph: 50, o2: 50 };
+    const myogenicDefaults = { pressure: 50 };
+
+    const state = {
+      mode: "metabolic",
+      metabolic: { ...metabolicDefaults },
+      myogenic: { ...myogenicDefaults },
+      target: {
+        diameter: 40,
+        sphincter: 0.5,
+        flow: 0.5,
+        demand: 0.5,
+        stretch: 0,
+        contraction: 0.5
+      },
+      visual: {
+        diameter: 40,
+        sphincter: 0.5,
+        flow: 0.5,
+        demand: 0.5,
+        stretch: 0,
+        contraction: 0.5
+      }
+    };
+
+    const elements = {
+      metabolicTab: document.getElementById("metabolicTab"),
+      myogenicTab: document.getElementById("myogenicTab"),
+      metabolicControls: document.getElementById("metabolicControls"),
+      myogenicControls: document.getElementById("myogenicControls"),
+      co2Slider: document.getElementById("co2Slider"),
+      phSlider: document.getElementById("phSlider"),
+      o2Slider: document.getElementById("o2Slider"),
+      pressureSlider: document.getElementById("pressureSlider"),
+      co2Value: document.getElementById("co2Value"),
+      phValue: document.getElementById("phValue"),
+      o2Value: document.getElementById("o2Value"),
+      pressureValue: document.getElementById("pressureValue"),
+      arterioleState: document.getElementById("arterioleState"),
+      sphincterState: document.getElementById("sphincterState"),
+      flowState: document.getElementById("flowState"),
+      signalState: document.getElementById("signalState"),
+      flowPercent: document.getElementById("flowPercent"),
+      flowFill: document.getElementById("flowFill"),
+      explanationText: document.getElementById("explanationText"),
+      resetButton: document.getElementById("resetButton")
+    };
+
+    const particles = [];
+    let branchPaths = [];
+    let lastTime = performance.now();
+    let labelUpdateClock = 0;
+
+    function clamp(value, min = 0, max = 1) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function lerp(current, target, amount) {
+      return current + (target - current) * amount;
+    }
+
+    function smoothstep(edge0, edge1, value) {
+      const x = clamp((value - edge0) / (edge1 - edge0));
+      return x * x * (3 - 2 * x);
+    }
+
+    function easeOut(value) {
+      return 1 - Math.pow(1 - clamp(value), 2);
+    }
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+      canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+      ctx.setTransform(
+        (rect.width * dpr) / base.w,
+        0,
+        0,
+        (rect.height * dpr) / base.h,
+        0,
+        0
+      );
+    }
+
+    function buildBranchPaths() {
+      branchPaths = branches.map((branch) => {
+        const points = [];
+        addLine(points, 34, midY, 205, midY, 18);
+        addBezier(points, 205, midY, 250, midY, 270, branch.y, 310, branch.y, 24);
+        addBezier(points, 310, branch.y, 395, branch.y + Math.sin(branch.offset * Math.PI) * 14, 545, branch.y - Math.cos(branch.offset * Math.PI) * 10, 650, branch.y, 42);
+        addBezier(points, 650, branch.y, 692, branch.y, 700, midY, 738, midY, 24);
+        addLine(points, 738, midY, 868, midY, 18);
+        return points;
+      });
+    }
+
+    function addLine(points, x1, y1, x2, y2, steps) {
+      for (let i = 0; i <= steps; i += 1) {
+        const t = i / steps;
+        points.push({ x: lerp(x1, x2, t), y: lerp(y1, y2, t) });
+      }
+    }
+
+    function addBezier(points, x1, y1, cx1, cy1, cx2, cy2, x2, y2, steps) {
+      for (let i = 1; i <= steps; i += 1) {
+        const t = i / steps;
+        const mt = 1 - t;
+        points.push({
+          x: mt * mt * mt * x1 + 3 * mt * mt * t * cx1 + 3 * mt * t * t * cx2 + t * t * t * x2,
+          y: mt * mt * mt * y1 + 3 * mt * mt * t * cy1 + 3 * mt * t * t * cy2 + t * t * t * y2
+        });
+      }
+    }
+
+    function updateMetabolicControl() {
+      const co2 = state.metabolic.co2 / 100;
+      const lowPh = 1 - state.metabolic.ph / 100;
+      const lowO2 = 1 - state.metabolic.o2 / 100;
+      const metabolicSignal = clamp((co2 + lowPh + lowO2) / 3);
+      const dilation = smoothstep(0.05, 0.95, metabolicSignal);
+
+      state.target.diameter = 24 + dilation * 34;
+      state.target.sphincter = 0.12 + dilation * 0.88;
+      state.target.flow = 0.10 + dilation * 0.90;
+      state.target.demand = metabolicSignal;
+      state.target.stretch = 0;
+      state.target.contraction = 1 - dilation;
+    }
+
+    function updateMyogenicControl() {
+      const pressure = state.myogenic.pressure / 100;
+      const relaxation = 1 - pressure;
+
+      state.target.diameter = 24 + relaxation * 34;
+      state.target.sphincter = 0.30 + relaxation * 0.55;
+      state.target.flow = 0.18 + relaxation * 0.76;
+      state.target.demand = 0.5;
+      state.target.stretch = pressure;
+      state.target.contraction = pressure;
+    }
+
+    function updateModeModel() {
+      if (state.mode === "metabolic") {
+        updateMetabolicControl();
+      } else {
+        updateMyogenicControl();
+      }
+    }
+
+    function updateVisualState() {
+      state.visual.diameter = lerp(state.visual.diameter, state.target.diameter, 0.08);
+      state.visual.sphincter = lerp(state.visual.sphincter, state.target.sphincter, 0.08);
+      state.visual.flow = lerp(state.visual.flow, state.target.flow, 0.08);
+      state.visual.demand = lerp(state.visual.demand, state.target.demand, 0.08);
+      state.visual.stretch = lerp(state.visual.stretch, state.target.stretch, 0.08);
+      state.visual.contraction = lerp(state.visual.contraction, state.target.contraction, 0.08);
+    }
+
+    function branchOpenness(index) {
+      const branch = branches[index];
+      return smoothstep(branch.threshold, branch.threshold + 0.26, state.visual.sphincter);
+    }
+
+    function targetParticleCount() {
+      return Math.round(10 + state.visual.flow * 84);
+    }
+
+    function chooseBranch() {
+      const weights = branches.map((_, index) => {
+        const open = branchOpenness(index);
+        return 0.02 + open * open * (0.85 + state.visual.flow);
+      });
+      const total = weights.reduce((sum, weight) => sum + weight, 0);
+      let roll = Math.random() * total;
+      for (let i = 0; i < weights.length; i += 1) {
+        roll -= weights[i];
+        if (roll <= 0) return i;
+      }
+      return 3;
+    }
+
+    function resetParticle(particle, startAnywhere = false) {
+      particle.branch = chooseBranch();
+      particle.t = startAnywhere ? Math.random() : -Math.random() * 0.14;
+      particle.speedNoise = 0.78 + Math.random() * 0.54;
+      particle.size = 4.6 + Math.random() * 1.7;
+    }
+
+    function animateRedBloodCellFlow(dt) {
+      const desired = targetParticleCount();
+      while (particles.length < desired) {
+        const particle = {};
+        resetParticle(particle, true);
+        particles.push(particle);
+      }
+      while (particles.length > desired) {
+        particles.pop();
+      }
+
+      const baseSpeed = 0.055 + state.visual.flow * 0.16;
+      particles.forEach((particle) => {
+        const open = branchOpenness(particle.branch);
+        if (open < 0.06 && Math.random() < 0.05) {
+          resetParticle(particle);
+          return;
+        }
+        particle.t += dt * baseSpeed * (0.25 + open * 0.95) * particle.speedNoise;
+        if (particle.t > 1.02) {
+          resetParticle(particle);
+        }
+      });
+    }
+
+    function pointOnPath(points, t) {
+      const clamped = clamp(t);
+      const position = clamped * (points.length - 1);
+      const index = Math.floor(position);
+      const next = Math.min(points.length - 1, index + 1);
+      const local = position - index;
+      return {
+        x: lerp(points[index].x, points[next].x, local),
+        y: lerp(points[index].y, points[next].y, local),
+        angle: Math.atan2(points[next].y - points[index].y, points[next].x - points[index].x)
+      };
+    }
+
+    function clearScene() {
+      ctx.clearRect(0, 0, base.w, base.h);
+    }
+
+    function drawCapillaryBed(time) {
+      clearScene();
+      drawTissueCells();
+      drawPressureBackdrop();
+      drawVessels();
+      drawSmoothMuscleBands(time);
+      drawSphincters();
+      drawFlowParticles();
+      drawLabels(time);
+    }
+
+    function drawTissueCells() {
+      const demand = state.visual.demand;
+      const warmth = state.mode === "metabolic" ? demand : 0.45;
+      const cells = [
+        { x: 385, y: 118, r: 30, s: 0.86 },
+        { x: 490, y: 133, r: 27, s: 1.05 },
+        { x: 590, y: 180, r: 30, s: 0.92 },
+        { x: 395, y: 253, r: 32, s: 1.0 },
+        { x: 538, y: 269, r: 29, s: 0.82 },
+        { x: 452, y: 380, r: 31, s: 0.96 },
+        { x: 575, y: 380, r: 28, s: 1.08 },
+        { x: 672, y: 324, r: 25, s: 0.9 }
+      ];
+
+      cells.forEach((cell, index) => {
+        const pulse = 1 + Math.sin(performance.now() * 0.0014 + index) * 0.018 * (0.35 + warmth);
+        const fill = mixColor([247, 211, 185], [242, 151, 135], warmth * 0.68);
+        ctx.save();
+        ctx.translate(cell.x, cell.y);
+        ctx.rotate((index % 2 ? -1 : 1) * 0.14);
+        ctx.fillStyle = fill;
+        ctx.strokeStyle = "rgba(163, 103, 93, 0.45)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, cell.r * cell.s * pulse, cell.r * 0.68 * pulse, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "rgba(138, 78, 111, 0.42)";
+        ctx.beginPath();
+        ctx.ellipse(4, -1, cell.r * 0.25, cell.r * 0.17, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+
+    function drawPressureBackdrop() {
+      if (state.mode !== "myogenic") return;
+      const stretch = state.visual.stretch;
+      if (stretch < 0.08) return;
+
+      const ghostDiameter = 38 + stretch * 34;
+      ctx.save();
+      ctx.setLineDash([10, 8]);
+      ctx.strokeStyle = `rgba(216, 101, 35, ${0.22 + stretch * 0.32})`;
+      ctx.lineWidth = ghostDiameter;
+      ctx.lineCap = "round";
+      drawPathStroke([{ x: 35, y: midY }, { x: 216, y: midY }]);
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
+    function drawVessels() {
+      const diameter = state.visual.diameter;
+      const flow = state.visual.flow;
+      const arterioleColor = mixColor([112, 30, 35], [219, 47, 53], flow);
+      const arterioleWall = mixColor([111, 46, 58], [157, 43, 62], 0.55 + flow * 0.45);
+
+      drawTube([{ x: 34, y: midY }, { x: 216, y: midY }], diameter + 8, arterioleWall, diameter, arterioleColor, "round");
+
+      branches.forEach((branch, index) => {
+        const open = branchOpenness(index);
+        const branchColor = mixColor([135, 81, 88], [224, 53, 57], open);
+        const wallColor = mixColor([171, 124, 128], [170, 54, 68], open);
+        const fanWidth = 9 + open * Math.max(6, diameter * 0.28);
+        const capWidth = 4.5 + open * 6;
+        const alpha = 0.28 + open * 0.72;
+
+        ctx.globalAlpha = alpha;
+        drawTube(bezierPoints(216, midY, 250, midY, 270, branch.y, 310, branch.y, 28), fanWidth + 4, wallColor, fanWidth, branchColor, "round");
+        drawTube(
+          bezierPoints(310, branch.y, 395, branch.y + Math.sin(branch.offset * Math.PI) * 14, 545, branch.y - Math.cos(branch.offset * Math.PI) * 10, 650, branch.y, 48),
+          capWidth + 3,
+          wallColor,
+          capWidth,
+          branchColor,
+          "round"
+        );
+        ctx.globalAlpha = 1;
+      });
+
+      branches.forEach((branch, index) => {
+        const open = branchOpenness(index);
+        const mergeColor = mixColor([93, 72, 129], [171, 49, 75], open * 0.75);
+        const fanWidth = 10 + open * 9;
+        ctx.globalAlpha = 0.35 + open * 0.65;
+        drawTube(bezierPoints(650, branch.y, 692, branch.y, 700, midY, 738, midY, 28), fanWidth + 4, "#8c7aa7", fanWidth, mergeColor, "round");
+        ctx.globalAlpha = 1;
+      });
+
+      drawTube([{ x: 738, y: midY }, { x: 868, y: midY }], 48, "#6e5d93", 40, "#955076", "round");
+    }
+
+    function drawTube(points, outerWidth, outerColor, innerWidth, innerColor, cap) {
+      ctx.save();
+      ctx.lineCap = cap || "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = outerColor;
+      ctx.lineWidth = outerWidth;
+      drawPathStroke(points);
+      ctx.strokeStyle = innerColor;
+      ctx.lineWidth = innerWidth;
+      drawPathStroke(points);
+      ctx.restore();
+    }
+
+    function drawPathStroke(points) {
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i += 1) {
+        ctx.lineTo(points[i].x, points[i].y);
+      }
+      ctx.stroke();
+    }
+
+    function bezierPoints(x1, y1, cx1, cy1, cx2, cy2, x2, y2, steps) {
+      const points = [];
+      addBezier(points, x1, y1, cx1, cy1, cx2, cy2, x2, y2, steps);
+      points.unshift({ x: x1, y: y1 });
+      return points;
+    }
+
+    function drawSmoothMuscleBands(time) {
+      const contraction = state.visual.contraction;
+      const diameter = state.visual.diameter;
+      const pulse = Math.sin(time * 0.004) * 0.8;
+      const xs = [76, 120, 164, 205];
+
+      xs.forEach((x, index) => {
+        const squeeze = 1 + contraction * 0.22;
+        ctx.save();
+        ctx.translate(x, midY);
+        ctx.strokeStyle = `rgba(128, 65, 151, ${0.58 + contraction * 0.30})`;
+        ctx.lineWidth = 4.5 + contraction * 3;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 9.5 + contraction * 2, (diameter * 0.52 + 10 + pulse * (index % 2 ? -1 : 1)) / squeeze, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+
+    function drawSphincters() {
+      branches.forEach((branch, index) => {
+        const open = branchOpenness(index);
+        const constrict = 1 - open;
+        const centerX = 306;
+        const ringWidth = 3.2 + constrict * 7.2;
+        const ringAlpha = 0.56 + constrict * 0.34;
+        ctx.save();
+        ctx.translate(centerX, branch.y);
+        ctx.strokeStyle = `rgba(112, 54, 140, ${ringAlpha})`;
+        ctx.lineWidth = ringWidth;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 11 + constrict * 3, 9 + constrict * 7, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        if (open < 0.2) {
+          ctx.fillStyle = `rgba(98, 49, 91, ${0.18 + constrict * 0.26})`;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 5 + constrict * 3, 3 + constrict * 5, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+    }
+
+    function drawFlowParticles() {
+      particles.forEach((particle) => {
+        const open = branchOpenness(particle.branch);
+        if (particle.t < 0 || open < 0.035) return;
+        const point = pointOnPath(branchPaths[particle.branch], particle.t);
+        const alpha = 0.42 + open * 0.58;
+
+        ctx.save();
+        ctx.translate(point.x, point.y);
+        ctx.rotate(point.angle);
+        ctx.fillStyle = `rgba(178, 22, 35, ${alpha})`;
+        ctx.strokeStyle = `rgba(122, 16, 26, ${alpha})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, particle.size * 1.35, particle.size * 0.72, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = `rgba(255, 156, 144, ${0.38 * alpha})`;
+        ctx.beginPath();
+        ctx.ellipse(-1.3, -0.9, particle.size * 0.48, particle.size * 0.22, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+
+    function drawLabels(time) {
+      drawCallout("arteriole", 92, 205, 118, 240, "#84323f");
+      drawCallout("venule", 790, 204, 792, 238, "#6d4b84");
+      drawCallout("precapillary sphincters", 286, 60, 306, 105, "#6d3a84");
+      drawCallout("tissue cells", 570, 455, 585, 406, "#9a604e");
+
+      if (state.mode === "metabolic") {
+        const demandText = state.visual.demand > 0.63 ? "high metabolic demand" : state.visual.demand < 0.36 ? "low metabolic demand" : "moderate metabolic demand";
+        drawBadge(demandText, 512, 38, state.visual.demand > 0.63 ? "#b84435" : state.visual.demand < 0.36 ? "#5d7580" : "#197c8d");
+      } else {
+        drawMyogenicArrows(time);
+      }
+    }
+
+    function drawMyogenicArrows(time) {
+      const stretch = state.visual.stretch;
+      const contraction = state.visual.contraction;
+      const pulse = 4 + Math.sin(time * 0.006) * 3;
+
+      if (stretch > 0.22) {
+        drawArrow(124, midY - 38, 124, midY - 70 - pulse * stretch, `rgba(199, 88, 36, ${0.42 + stretch * 0.45})`);
+        drawArrow(124, midY + 38, 124, midY + 70 + pulse * stretch, `rgba(199, 88, 36, ${0.42 + stretch * 0.45})`);
+        drawBadge("stretch", 96, 150, "#b86219");
+      } else {
+        drawBadge("low stretch", 90, 150, "#197c8d");
+      }
+
+      if (contraction > 0.42) {
+        drawArrow(190, midY - 73, 190, midY - 38, `rgba(111, 54, 139, ${0.45 + contraction * 0.45})`);
+        drawArrow(190, midY + 73, 190, midY + 38, `rgba(111, 54, 139, ${0.45 + contraction * 0.45})`);
+        drawBadge("smooth muscle contracts", 205, 150, "#6d3a84");
+      } else {
+        drawBadge("smooth muscle relaxes", 205, 150, "#197c8d");
+      }
+    }
+
+    function drawCallout(text, x, y, anchorX, anchorY, color) {
+      ctx.save();
+      ctx.font = "700 17px system-ui, sans-serif";
+      const metrics = ctx.measureText(text);
+      const padX = 10;
+      const width = metrics.width + padX * 2;
+      const height = 30;
+      roundedRect(ctx, x - padX, y - 21, width, height, 7);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.86)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(76, 92, 112, 0.28)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.fillText(text, x, y);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(x + Math.min(width - 10, width * 0.5), y + 8);
+      ctx.lineTo(anchorX, anchorY);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawBadge(text, x, y, color) {
+      ctx.save();
+      ctx.font = "800 18px system-ui, sans-serif";
+      const metrics = ctx.measureText(text);
+      roundedRect(ctx, x, y, metrics.width + 22, 34, 7);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(text, x + 11, y + 23);
+      ctx.restore();
+    }
+
+    function drawArrow(x1, y1, x2, y2, color) {
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 4;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.translate(x2, y2);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-12, -7);
+      ctx.lineTo(-12, 7);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function roundedRect(context, x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      context.beginPath();
+      context.moveTo(x + r, y);
+      context.arcTo(x + width, y, x + width, y + height, r);
+      context.arcTo(x + width, y + height, x, y + height, r);
+      context.arcTo(x, y + height, x, y, r);
+      context.arcTo(x, y, x + width, y, r);
+      context.closePath();
+    }
+
+    function mixColor(a, b, t) {
+      const amount = clamp(t);
+      const r = Math.round(lerp(a[0], b[0], amount));
+      const g = Math.round(lerp(a[1], b[1], amount));
+      const blue = Math.round(lerp(a[2], b[2], amount));
+      return `rgb(${r}, ${g}, ${blue})`;
+    }
+
+    function updateLabelsAndMeters() {
+      elements.co2Value.textContent = `${state.metabolic.co2}%`;
+      elements.phValue.textContent = (6.8 + state.metabolic.ph * 0.01).toFixed(2);
+      elements.o2Value.textContent = `${state.metabolic.o2}%`;
+      elements.pressureValue.textContent = `${50 + Math.round(state.myogenic.pressure)} mmHg`;
+
+      const flowPercent = Math.round(clamp(state.target.flow) * 100);
+      elements.flowPercent.textContent = `${flowPercent}%`;
+      elements.flowFill.style.width = `${flowPercent}%`;
+
+      elements.arterioleState.textContent = state.target.diameter > 47 ? "dilated" : state.target.diameter < 31 ? "constricted" : "moderately open";
+      elements.sphincterState.textContent = state.target.sphincter > 0.72 ? "open" : state.target.sphincter < 0.34 ? "mostly closed" : "partly open";
+      elements.flowState.textContent = flowPercent > 68 ? "high" : flowPercent < 36 ? "low" : "moderate";
+
+      if (state.mode === "metabolic") {
+        const demand = state.target.demand;
+        elements.signalState.textContent = demand > 0.63 ? "high metabolic demand" : demand < 0.36 ? "low metabolic demand" : "balanced metabolic demand";
+        elements.explanationText.textContent = "Metabolically active tissues release more CO2, produce more acid, and consume more O2. High CO2, low pH, and low O2 relax arteriolar smooth muscle and precapillary sphincters, increasing local blood flow.";
+      } else {
+        const pressure = state.myogenic.pressure / 100;
+        elements.signalState.textContent = pressure > 0.64 ? "high pressure stretch response" : pressure < 0.36 ? "low pressure, muscle relaxed" : "balanced pressure response";
+        elements.explanationText.textContent = "When blood pressure rises, arteriolar smooth muscle is stretched and responds by contracting. This limits excess flow. When pressure falls, stretch decreases, smooth muscle relaxes, and local flow increases.";
+      }
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      elements.metabolicTab.classList.toggle("active", mode === "metabolic");
+      elements.myogenicTab.classList.toggle("active", mode === "myogenic");
+      elements.metabolicTab.setAttribute("aria-pressed", String(mode === "metabolic"));
+      elements.myogenicTab.setAttribute("aria-pressed", String(mode === "myogenic"));
+      elements.metabolicControls.hidden = mode !== "metabolic";
+      elements.myogenicControls.hidden = mode !== "myogenic";
+      updateModeModel();
+      updateLabelsAndMeters();
+    }
+
+    function syncStateFromControls() {
+      state.metabolic.co2 = Number(elements.co2Slider.value);
+      state.metabolic.ph = Number(elements.phSlider.value);
+      state.metabolic.o2 = Number(elements.o2Slider.value);
+      state.myogenic.pressure = Number(elements.pressureSlider.value);
+      updateModeModel();
+      updateLabelsAndMeters();
+    }
+
+    function resetCurrentMode() {
+      if (state.mode === "metabolic") {
+        Object.assign(state.metabolic, metabolicDefaults);
+        elements.co2Slider.value = metabolicDefaults.co2;
+        elements.phSlider.value = metabolicDefaults.ph;
+        elements.o2Slider.value = metabolicDefaults.o2;
+      } else {
+        Object.assign(state.myogenic, myogenicDefaults);
+        elements.pressureSlider.value = myogenicDefaults.pressure;
+      }
+      syncStateFromControls();
+    }
+
+    function animationLoop(now) {
+      const dt = Math.min(0.05, (now - lastTime) / 1000);
+      lastTime = now;
+      labelUpdateClock += dt;
+
+      updateModeModel();
+      updateVisualState();
+      animateRedBloodCellFlow(dt);
+      drawCapillaryBed(now);
+
+      if (labelUpdateClock > 0.12) {
+        updateLabelsAndMeters();
+        labelUpdateClock = 0;
+      }
+
+      requestAnimationFrame(animationLoop);
+    }
+
+    document.querySelectorAll(".mode-tab").forEach((button) => {
+      button.addEventListener("click", () => setMode(button.dataset.mode));
+    });
+
+    [elements.co2Slider, elements.phSlider, elements.o2Slider, elements.pressureSlider].forEach((slider) => {
+      slider.addEventListener("input", syncStateFromControls);
+    });
+
+    elements.resetButton.addEventListener("click", resetCurrentMode);
+    window.addEventListener("resize", resizeCanvas);
+
+    resizeCanvas();
+    buildBranchPaths();
+    syncStateFromControls();
+    for (let i = 0; i < targetParticleCount(); i += 1) {
+      const particle = {};
+      resetParticle(particle, true);
+      particles.push(particle);
+    }
+    requestAnimationFrame(animationLoop);
+  </script>
+</body>
+</html>

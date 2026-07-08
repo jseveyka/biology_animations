@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Serial Dilution Estimator</title>
+  <style>
+    :root {
+      --bg: #f6f4ef;
+      --ink: #17212b;
+      --muted: #5d6b75;
+      --panel: #ffffff;
+      --line: #cfd8dc;
+      --teal: #177a74;
+      --teal-dark: #0f5753;
+      --coral: #c2573f;
+      --amber: #d99d2b;
+      --green: #3a7f52;
+      --blue: #2c6f9f;
+      --agar: #f2d7a7;
+      --saline: #bfe7f0;
+      --broth: #d6b363;
+      --shadow: 0 10px 28px rgba(23, 33, 43, 0.1);
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    button:disabled,
+    input:disabled,
+    select:disabled {
+      opacity: 0.58;
+      cursor: not-allowed;
+    }
+
+    .app {
+      width: min(1500px, 100%);
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    .attribution {
+      background: #fff4c9;
+      color: #352713;
+      border: 1px solid #e6c567;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 14px;
+      font-size: clamp(1rem, 1.2vw, 1.2rem);
+      text-align: center;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: clamp(1.7rem, 3vw, 2.7rem);
+      line-height: 1.05;
+      margin: 0;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 6px 0 0;
+      color: var(--muted);
+      max-width: 760px;
+      font-size: 1rem;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(315px, 380px);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .visual-area,
+    .control-panel,
+    .education-panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .visual-area {
+      padding: 16px;
+      min-width: 0;
+    }
+
+    .status-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .status-pill,
+    .rule-pill {
+      border-radius: 999px;
+      padding: 8px 12px;
+      line-height: 1.25;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .status-pill {
+      background: #e6f4f2;
+      color: var(--teal-dark);
+    }
+
+    .rule-pill {
+      background: #fbe8d7;
+      color: #743318;
+    }
+
+    .bench {
+      position: relative;
+      overflow-x: auto;
+      overflow-y: hidden;
+      border-radius: 8px;
+      border: 1px solid #d9dedc;
+      background:
+        linear-gradient(#fffaf0 0 54%, #edf3f5 54% 55%, #f8fbfc 55% 100%);
+      padding: 18px 12px 22px;
+    }
+
+    .sample-grid {
+      --columns: 7;
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(var(--columns), minmax(128px, 1fr));
+      gap: 12px;
+      min-width: calc(var(--columns) * 136px);
+      align-items: start;
+      z-index: 1;
+    }
+
+    .sample-column {
+      display: grid;
+      grid-template-rows: 40px 214px 36px 162px 72px;
+      justify-items: center;
+      align-items: center;
+      min-width: 0;
+      padding: 4px;
+      border-radius: 8px;
+    }
+
+    .tube-heading {
+      width: 100%;
+      text-align: center;
+      line-height: 1.15;
+      font-weight: 800;
+      color: #24313a;
+      font-size: 0.95rem;
+    }
+
+    .tube-heading small {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 0.78rem;
+    }
+
+    .tube-shell {
+      width: 94px;
+      height: 190px;
+      display: block;
+      overflow: visible;
+      filter: drop-shadow(0 8px 8px rgba(23, 33, 43, 0.12));
+    }
+
+    .tube-glass {
+      fill: rgba(255, 255, 255, 0.36);
+      stroke: rgba(63, 84, 96, 0.72);
+      stroke-width: 3;
+    }
+
+    .tube-liquid {
+      transition: fill 220ms ease, opacity 220ms ease;
+    }
+
+    .tube-highlight {
+      fill: rgba(255, 255, 255, 0.5);
+    }
+
+    .cell-dot {
+      fill: #5a3b1e;
+      opacity: 0.68;
+    }
+
+    .tube-caption {
+      text-align: center;
+      color: var(--muted);
+      line-height: 1.2;
+      font-size: 0.78rem;
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+    }
+
+    .plate-button {
+      width: 136px;
+      height: 136px;
+      border-radius: 50%;
+      background: transparent;
+      position: relative;
+      display: grid;
+      place-items: center;
+      outline: none;
+      transition: transform 140ms ease, box-shadow 140ms ease;
+    }
+
+    .plate-button:focus-visible {
+      box-shadow: 0 0 0 4px rgba(23, 122, 116, 0.24);
+    }
+
+    .plate-button:hover {
+      transform: translateY(-2px);
+    }
+
+    .plate-button.selected .plate-svg {
+      filter: drop-shadow(0 0 0 rgba(0, 0, 0, 0)) drop-shadow(0 0 12px rgba(23, 122, 116, 0.55));
+    }
+
+    .plate-svg {
+      width: 136px;
+      height: 136px;
+      display: block;
+      overflow: visible;
+    }
+
+    .plate-rim {
+      fill: #fbfdff;
+      stroke: #8ca0ad;
+      stroke-width: 4;
+    }
+
+    .agar {
+      fill: var(--agar);
+      stroke: rgba(142, 101, 43, 0.28);
+      stroke-width: 1.5;
+    }
+
+    .lawn {
+      fill: #d9b56d;
+      opacity: 0.82;
+    }
+
+    .lawn-speck {
+      fill: #87652f;
+      opacity: 0.35;
+    }
+
+    .colony {
+      stroke: rgba(107, 80, 35, 0.26);
+      stroke-width: 0.7;
+    }
+
+    .plate-text {
+      fill: #5a391d;
+      font-size: 16px;
+      font-weight: 900;
+      text-anchor: middle;
+    }
+
+    .empty-plate-note {
+      fill: #66757f;
+      font-size: 11px;
+      font-weight: 800;
+      text-anchor: middle;
+    }
+
+    .spread {
+      position: absolute;
+      inset: 26px;
+      border-radius: 50%;
+      background: rgba(44, 111, 159, 0.18);
+      transform: scale(0);
+      pointer-events: none;
+    }
+
+    .plate-button.plating .spread {
+      animation: spread 850ms ease-out;
+    }
+
+    @keyframes spread {
+      0% { transform: scale(0.08); opacity: 0.9; }
+      72% { transform: scale(1); opacity: 0.45; }
+      100% { transform: scale(1.08); opacity: 0; }
+    }
+
+    .plate-meta {
+      width: 100%;
+      min-height: 68px;
+      text-align: center;
+      font-size: 0.78rem;
+      line-height: 1.25;
+      color: #34444f;
+      display: grid;
+      align-content: start;
+      gap: 2px;
+      padding: 0 4px;
+    }
+
+    .plate-meta strong {
+      color: #1e2b34;
+      font-size: 0.85rem;
+    }
+
+    .transfer-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .transfer-arrow {
+      position: absolute;
+      height: 38px;
+      transform: translateY(-10px);
+      display: flex;
+      align-items: center;
+      color: var(--coral);
+      font-weight: 900;
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      opacity: 0;
+      transition: opacity 130ms ease;
+    }
+
+    .transfer-arrow.active {
+      opacity: 1;
+    }
+
+    .transfer-arrow .line {
+      height: 4px;
+      flex: 1;
+      min-width: 48px;
+      background: var(--coral);
+      border-radius: 999px;
+      position: relative;
+      margin: 0 6px;
+    }
+
+    .transfer-arrow .line::after {
+      content: "";
+      position: absolute;
+      right: -1px;
+      top: 50%;
+      width: 13px;
+      height: 13px;
+      border-right: 4px solid var(--coral);
+      border-top: 4px solid var(--coral);
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    .transfer-arrow .drop {
+      width: 13px;
+      height: 20px;
+      background: var(--broth);
+      border: 2px solid #7b5420;
+      border-radius: 50% 50% 60% 60%;
+      transform: rotate(15deg);
+    }
+
+    .mixing .tube-shell {
+      animation: mixTube 520ms ease-in-out 2;
+      transform-origin: center 150px;
+    }
+
+    @keyframes mixTube {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-5deg); }
+      50% { transform: rotate(5deg); }
+      75% { transform: rotate(-3deg); }
+    }
+
+    .control-panel {
+      padding: 16px;
+      position: sticky;
+      top: 12px;
+    }
+
+    .panel-title {
+      margin: 0 0 12px;
+      font-size: 1.15rem;
+      line-height: 1.2;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label,
+    .answer-label {
+      color: #26343d;
+      font-weight: 800;
+      font-size: 0.9rem;
+    }
+
+    select,
+    input[type="text"] {
+      width: 100%;
+      border: 1px solid #b8c5ca;
+      border-radius: 6px;
+      min-height: 42px;
+      padding: 9px 10px;
+      color: var(--ink);
+      background: #fbfcfc;
+    }
+
+    select:focus,
+    input[type="text"]:focus {
+      outline: 3px solid rgba(23, 122, 116, 0.2);
+      border-color: var(--teal);
+    }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .button-grid .wide {
+      grid-column: 1 / -1;
+    }
+
+    .btn {
+      min-height: 42px;
+      border-radius: 6px;
+      padding: 9px 11px;
+      background: #e8eef0;
+      color: #20313b;
+      font-weight: 900;
+      line-height: 1.15;
+      transition: transform 120ms ease, background 120ms ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      background: #dbe5e8;
+    }
+
+    .btn.primary {
+      background: var(--teal);
+      color: #fff;
+    }
+
+    .btn.primary:hover:not(:disabled) {
+      background: var(--teal-dark);
+    }
+
+    .btn.warn {
+      background: #f5dfbf;
+      color: #673d10;
+    }
+
+    .btn.warn:hover:not(:disabled) {
+      background: #edcc99;
+    }
+
+    .progress-box,
+    .feedback-box,
+    .calculation-box,
+    .help-box,
+    .truth-box {
+      border-radius: 8px;
+      border: 1px solid #d6dee2;
+      background: #fbfcfc;
+      padding: 12px;
+    }
+
+    .progress-box {
+      display: grid;
+      gap: 8px;
+      margin: 14px 0;
+    }
+
+    .meter {
+      height: 10px;
+      border-radius: 999px;
+      background: #dbe5e8;
+      overflow: hidden;
+    }
+
+    .meter-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--teal), var(--amber));
+      transition: width 240ms ease;
+    }
+
+    .meter-text {
+      color: var(--muted);
+      font-size: 0.84rem;
+      font-weight: 800;
+    }
+
+    .answer-area {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .answer-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+
+    .feedback-box {
+      margin-top: 12px;
+      line-height: 1.35;
+      color: #33424b;
+      min-height: 48px;
+    }
+
+    .feedback-box.good {
+      border-color: rgba(58, 127, 82, 0.55);
+      background: #eef8f1;
+      color: #235333;
+    }
+
+    .feedback-box.warn {
+      border-color: rgba(194, 87, 63, 0.45);
+      background: #fff0ec;
+      color: #743522;
+    }
+
+    .feedback-box.info {
+      border-color: rgba(44, 111, 159, 0.42);
+      background: #eef6fb;
+      color: #244f70;
+    }
+
+    .calculation-box {
+      margin-top: 12px;
+      display: none;
+      line-height: 1.45;
+      color: #273842;
+    }
+
+    .calculation-box.visible {
+      display: block;
+    }
+
+    .calculation-box h3,
+    .help-box h3,
+    .truth-box h3 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+
+    .calculation-box p,
+    .help-box p,
+    .truth-box p {
+      margin: 6px 0;
+    }
+
+    .help-box,
+    .truth-box {
+      display: none;
+      margin-top: 12px;
+      line-height: 1.45;
+    }
+
+    .help-box.visible,
+    .truth-box.visible {
+      display: block;
+    }
+
+    .education-panel {
+      margin-top: 16px;
+      padding: 16px;
+    }
+
+    .education-panel h2 {
+      margin: 0 0 10px;
+      font-size: 1.2rem;
+    }
+
+    .education-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(140px, 1fr));
+      gap: 10px;
+    }
+
+    .concept {
+      border-left: 4px solid var(--teal);
+      background: #f8fbfc;
+      border-radius: 6px;
+      padding: 10px;
+      color: #34444f;
+      line-height: 1.35;
+      min-height: 92px;
+    }
+
+    .concept:nth-child(2) { border-color: var(--amber); }
+    .concept:nth-child(3) { border-color: var(--coral); }
+    .concept:nth-child(4) { border-color: var(--blue); }
+    .concept:nth-child(5) { border-color: var(--green); }
+
+    .concept strong {
+      display: block;
+      color: #1e2b34;
+      margin-bottom: 4px;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 1100px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .control-panel {
+        position: static;
+      }
+
+      .education-grid {
+        grid-template-columns: repeat(2, minmax(180px, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app {
+        padding: 12px;
+      }
+
+      .title-row {
+        display: block;
+      }
+
+      .button-grid,
+      .answer-row,
+      .education-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .sample-grid {
+        grid-template-columns: repeat(var(--columns), 122px);
+        min-width: calc(var(--columns) * 130px);
+      }
+
+      .sample-column {
+        grid-template-rows: 44px 204px 40px 150px 78px;
+      }
+
+      .plate-button,
+      .plate-svg {
+        width: 126px;
+        height: 126px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="attribution"><strong>&ldquo;Animation Prompted by Jerred Seveyka for his biology class.&rdquo;</strong></div>
+
+    <div class="title-row">
+      <div>
+        <h1>Serial Dilution Estimator</h1>
+        <p class="subtitle">Choose a dilution series, plate measured samples, identify the countable plate, and estimate the original bacterial concentration.</p>
+      </div>
+    </div>
+
+    <div class="workspace">
+      <section class="visual-area" aria-labelledby="simulationHeading">
+        <div class="status-row">
+          <h2 id="simulationHeading" class="sr-only">Serial dilution simulation</h2>
+          <div id="statusLabel" class="status-pill" aria-live="polite">New unknown ready.</div>
+          <div class="rule-pill">Countable plate = 25–250 colonies</div>
+        </div>
+        <div id="bench" class="bench">
+          <div id="transferLayer" class="transfer-layer" aria-hidden="true"></div>
+          <div id="sampleGrid" class="sample-grid"></div>
+        </div>
+      </section>
+
+      <aside class="control-panel" aria-labelledby="controlsHeading">
+        <h2 id="controlsHeading" class="panel-title">Student Controls</h2>
+        <div class="form-grid">
+          <div class="field">
+            <label for="tubeCount">Number of dilution tubes</label>
+            <select id="tubeCount">
+              <option value="3">3 tubes</option>
+              <option value="4">4 tubes</option>
+              <option value="5">5 tubes</option>
+              <option value="6" selected>6 tubes</option>
+              <option value="7">7 tubes</option>
+              <option value="8">8 tubes</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="dilutionFactor">Dilution factor per transfer</label>
+            <select id="dilutionFactor">
+              <option value="10" selected>1/10 per tube</option>
+              <option value="100">1/100 per tube</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="platingVolume">Plating volume</label>
+            <select id="platingVolume">
+              <option value="1">1.0 mL</option>
+              <option value="0.1" selected>0.1 mL</option>
+            </select>
+          </div>
+
+          <div class="button-grid">
+            <button id="newUnknownBtn" class="btn warn" type="button">New Unknown</button>
+            <button id="transferBtn" class="btn" type="button">Transfer Step</button>
+            <button id="runBtn" class="btn primary" type="button">Run Dilution</button>
+            <button id="plateBtn" class="btn primary" type="button">Plate Samples</button>
+            <button id="helpBtn" class="btn wide" type="button" aria-expanded="false">Show Calculation Help</button>
+          </div>
+        </div>
+
+        <div class="progress-box" aria-live="polite">
+          <div class="meter" aria-hidden="true"><div id="meterFill" class="meter-fill"></div></div>
+          <div id="meterText" class="meter-text">0 of 6 transfers complete.</div>
+        </div>
+
+        <div class="answer-area">
+          <div class="answer-label">Original broth estimate</div>
+          <div class="answer-row">
+            <input id="answerInput" type="text" inputmode="decimal" placeholder="Example: 1.45e8">
+            <button id="submitBtn" class="btn primary" type="button">Submit</button>
+          </div>
+          <button id="truthBtn" class="btn" type="button" disabled>Show True Answer</button>
+        </div>
+
+        <div id="feedbackBox" class="feedback-box info" aria-live="polite">Set up the dilution series, then run transfers and plate the samples.</div>
+        <div id="calculationBox" class="calculation-box"></div>
+        <div id="helpBox" class="help-box">
+          <h3>Calculation Help</h3>
+          <p><strong>Formula:</strong> Original # of bacteria/mL = colony count &divide; (dilution &times; plated volume in mL)</p>
+          <p><strong>Colony count</strong> comes from the selected countable plate.</p>
+          <p><strong>Dilution</strong> is the tube label, such as 10<sup>-5</sup>.</p>
+          <p><strong>Plated volume</strong> is the volume chosen above.</p>
+        </div>
+        <div id="truthBox" class="truth-box"></div>
+      </aside>
+    </div>
+
+    <section class="education-panel" aria-labelledby="conceptHeading">
+      <h2 id="conceptHeading">Key Biology Ideas</h2>
+      <div class="education-grid">
+        <div class="concept"><strong>Serial dilution</strong>Each transfer reduces the bacterial concentration by a known factor.</div>
+        <div class="concept"><strong>Visible colonies</strong>Each colony is assumed to grow from one viable bacterium or a small group of bacteria.</div>
+        <div class="concept"><strong>Too many colonies</strong>Dense lawns and overlapping colonies cannot be accurately counted.</div>
+        <div class="concept"><strong>Too few colonies</strong>Small counts have higher sampling error because chance matters more.</div>
+        <div class="concept"><strong>Countable plates</strong>Microbiology labs often use plates with 25–250 colonies for estimates.</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const MIN_BACTERIA = 1e5;
+      const MAX_BACTERIA = 1e9;
+      const COUNTABLE_MIN = 25;
+      const COUNTABLE_MAX = 250;
+
+      const state = {
+        tubeCount: 6,
+        dilutionFactor: 10,
+        platingVolume: 0.1,
+        originalBacteria: 0,
+        problemId: 1,
+        transfersDone: 0,
+        plates: [],
+        selectedIndex: null,
+        answerAttempts: 0,
+        feedback: "Set up the dilution series, then run transfers and plate the samples.",
+        feedbackType: "info",
+        status: "New unknown ready.",
+        running: false,
+        helpVisible: false,
+        truthVisible: false
+      };
+
+      const els = {};
+
+      document.addEventListener("DOMContentLoaded", init);
+
+      function init() {
+        [
+          "tubeCount", "dilutionFactor", "platingVolume", "newUnknownBtn",
+          "transferBtn", "runBtn", "plateBtn", "helpBtn", "answerInput",
+          "submitBtn", "truthBtn", "statusLabel", "sampleGrid",
+          "transferLayer", "bench", "meterFill", "meterText",
+          "feedbackBox", "calculationBox", "helpBox", "truthBox"
+        ].forEach((id) => { els[id] = document.getElementById(id); });
+
+        els.tubeCount.addEventListener("change", setupChanged);
+        els.dilutionFactor.addEventListener("change", setupChanged);
+        els.platingVolume.addEventListener("change", setupChanged);
+        els.newUnknownBtn.addEventListener("click", newUnknown);
+        els.transferBtn.addEventListener("click", transferStep);
+        els.runBtn.addEventListener("click", runDilution);
+        els.plateBtn.addEventListener("click", plateSamples);
+        els.helpBtn.addEventListener("click", toggleHelp);
+        els.submitBtn.addEventListener("click", submitAnswer);
+        els.truthBtn.addEventListener("click", showTrueAnswer);
+        els.answerInput.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") submitAnswer();
+        });
+        els.sampleGrid.addEventListener("click", (event) => {
+          const plateButton = event.target.closest(".plate-button");
+          if (plateButton) selectPlate(Number(plateButton.dataset.index));
+        });
+
+        newUnknown();
+      }
+
+      function setupChanged() {
+        state.tubeCount = Number(els.tubeCount.value);
+        state.dilutionFactor = Number(els.dilutionFactor.value);
+        state.platingVolume = Number(els.platingVolume.value);
+        newUnknown("Setup changed. A new unknown was generated for this series.");
+      }
+
+      function newUnknown(customStatus) {
+        state.tubeCount = Number(els.tubeCount.value);
+        state.dilutionFactor = Number(els.dilutionFactor.value);
+        state.platingVolume = Number(els.platingVolume.value);
+        state.problemId += 1;
+        state.originalBacteria = chooseOriginalBacteria();
+        state.transfersDone = 0;
+        state.plates = [];
+        state.selectedIndex = null;
+        state.answerAttempts = 0;
+        state.feedback = "Unknown bacterial broth is ready. The true bacteria/mL value is hidden.";
+        state.feedbackType = "info";
+        state.status = customStatus || "New unknown ready.";
+        state.running = false;
+        state.truthVisible = false;
+        els.answerInput.value = "";
+        render();
+      }
+
+      async function transferStep() {
+        if (state.running) return;
+        if (state.transfersDone >= state.tubeCount) {
+          setFeedback("All dilution tubes have already been mixed. Plate the samples next.", "info");
+          return;
+        }
+
+        const fromIndex = state.transfersDone;
+        const toIndex = state.transfersDone + 1;
+        state.running = true;
+        state.status = `Transferring from ${plainDilutionLabel(fromIndex)} to ${plainDilutionLabel(toIndex)}.`;
+        render();
+        await animateTransfer(fromIndex, toIndex);
+        state.transfersDone += 1;
+        state.status = `${plainDilutionLabel(toIndex)} mixed.`;
+        state.running = false;
+        render();
+        pulseMixing(toIndex);
+      }
+
+      async function runDilution() {
+        if (state.running) return;
+        if (state.transfersDone >= state.tubeCount) {
+          setFeedback("The dilution series is complete. Plate the samples next.", "info");
+          return;
+        }
+
+        state.running = true;
+        render();
+        while (state.transfersDone < state.tubeCount) {
+          const fromIndex = state.transfersDone;
+          const toIndex = state.transfersDone + 1;
+          state.status = `Transferring from ${plainDilutionLabel(fromIndex)} to ${plainDilutionLabel(toIndex)}.`;
+          render();
+          await animateTransfer(fromIndex, toIndex);
+          state.transfersDone += 1;
+          state.status = `${plainDilutionLabel(toIndex)} mixed.`;
+          render();
+          pulseMixing(toIndex);
+          await wait(260);
+        }
+        state.running = false;
+        state.status = "Dilution series complete.";
+        state.feedback = "All tubes are mixed. Plate the measured samples.";
+        state.feedbackType = "info";
+        render();
+      }
+
+      async function plateSamples() {
+        if (state.running) return;
+        if (state.transfersDone < state.tubeCount) {
+          setFeedback("Finish the transfer steps first so every dilution tube has bacterial sample mixed into sterile broth.", "warn");
+          return;
+        }
+
+        state.running = true;
+        state.status = `Plating ${formatVolume(state.platingVolume)} from each tube.`;
+        state.feedback = "Samples are spreading across the agar before incubation.";
+        state.feedbackType = "info";
+        state.selectedIndex = null;
+        state.truthVisible = false;
+        state.answerAttempts = 0;
+        els.answerInput.value = "";
+        render();
+        await animatePlating();
+        state.plates = generatePlates();
+        state.running = false;
+        state.status = "Incubation complete.";
+
+        const countableCount = getCountablePlates().length;
+        if (countableCount > 0) {
+          state.feedback = "Incubation complete. Select a plate with 25-250 colonies.";
+          state.feedbackType = "info";
+        } else {
+          state.feedback = "No countable plate was produced. Try a different dilution series or plating volume.";
+          state.feedbackType = "warn";
+        }
+        render();
+      }
+
+      function selectPlate(index) {
+        if (!state.plates.length) {
+          setFeedback("Plate the samples before selecting a countable plate.", "info");
+          return;
+        }
+
+        state.selectedIndex = index;
+        const plate = state.plates[index];
+        if (plate.tmtc) {
+          state.feedback = "This plate has too many colonies. Choose a later dilution.";
+          state.feedbackType = "warn";
+        } else if (plate.observedCount < COUNTABLE_MIN) {
+          state.feedback = "This plate has too few colonies. Choose an earlier dilution because low counts have higher sampling error.";
+          state.feedbackType = "warn";
+        } else if (plate.observedCount > COUNTABLE_MAX) {
+          state.feedback = "This plate has too many colonies. Colonies overlap and are hard to count accurately.";
+          state.feedbackType = "warn";
+        } else {
+          const countables = getCountablePlates();
+          const middlePlate = countables.slice().sort((a, b) => Math.abs(a.observedCount - 120) - Math.abs(b.observedCount - 120))[0];
+          state.feedback = "Yes, this plate is countable. Use this colony count in the formula.";
+          if (middlePlate && middlePlate.index !== index && countables.length > 1) {
+            state.feedback += " Another countable plate is closer to the middle of the range, which can give a steadier estimate.";
+          }
+          state.feedbackType = "good";
+        }
+        render();
+      }
+
+      function submitAnswer() {
+        if (state.selectedIndex === null) {
+          setFeedback("Select a countable plate before submitting an estimate.", "warn");
+          return;
+        }
+
+        const plate = state.plates[state.selectedIndex];
+        if (!isCountable(plate)) {
+          setFeedback("The selected plate is not countable, so it should not be used for the bacteria/mL calculation.", "warn");
+          return;
+        }
+
+        const submitted = parseStudentNumber(els.answerInput.value);
+        if (!Number.isFinite(submitted) || submitted <= 0) {
+          setFeedback("Enter the original concentration as a number, such as 3.2e7, 3.2 x 10^7, or 32,000,000.", "warn");
+          return;
+        }
+
+        const estimate = calculateEstimate(plate);
+        const percentError = Math.abs(submitted - estimate) / estimate;
+        state.answerAttempts += 1;
+        state.truthVisible = false;
+        if (percentError <= 0.10) {
+          state.feedback = `Correct. Your answer is within 10% of ${formatScientificHtml(estimate)} bacteria/mL from the selected plate.`;
+          state.feedbackType = "good";
+        } else {
+          state.feedback = `Not quite. Recheck colony count divided by dilution times plated volume. The selected plate gives ${formatScientificHtml(estimate)} bacteria/mL.`;
+          state.feedbackType = "warn";
+        }
+        render();
+      }
+
+      function showTrueAnswer() {
+        if (state.answerAttempts < 1) return;
+        state.truthVisible = true;
+        render();
+      }
+
+      function toggleHelp() {
+        state.helpVisible = !state.helpVisible;
+        render();
+      }
+
+      function setFeedback(message, type) {
+        state.feedback = message;
+        state.feedbackType = type;
+        render();
+      }
+
+      function render() {
+        els.sampleGrid.style.setProperty("--columns", state.tubeCount + 1);
+        els.sampleGrid.innerHTML = Array.from({ length: state.tubeCount + 1 }, (_, index) => renderColumn(index)).join("");
+        els.statusLabel.textContent = state.status;
+        els.feedbackBox.className = `feedback-box ${state.feedbackType}`;
+        els.feedbackBox.innerHTML = state.feedback;
+
+        const transferPercent = state.tubeCount === 0 ? 0 : (state.transfersDone / state.tubeCount) * 100;
+        els.meterFill.style.width = `${transferPercent}%`;
+        els.meterText.textContent = `${state.transfersDone} of ${state.tubeCount} transfers complete.`;
+
+        const controlsDisabled = state.running;
+        els.tubeCount.disabled = controlsDisabled;
+        els.dilutionFactor.disabled = controlsDisabled;
+        els.platingVolume.disabled = controlsDisabled;
+        els.newUnknownBtn.disabled = controlsDisabled;
+        els.transferBtn.disabled = controlsDisabled || state.transfersDone >= state.tubeCount;
+        els.runBtn.disabled = controlsDisabled || state.transfersDone >= state.tubeCount;
+        els.plateBtn.disabled = controlsDisabled || state.transfersDone < state.tubeCount;
+        els.submitBtn.disabled = controlsDisabled;
+        els.answerInput.disabled = controlsDisabled;
+        els.truthBtn.disabled = controlsDisabled || state.answerAttempts < 1;
+
+        els.helpBtn.textContent = state.helpVisible ? "Hide Calculation Help" : "Show Calculation Help";
+        els.helpBtn.setAttribute("aria-expanded", String(state.helpVisible));
+        els.helpBox.classList.toggle("visible", state.helpVisible);
+
+        renderCalculation();
+        renderTruth();
+      }
+
+      function renderColumn(index) {
+        const ready = index === 0 || index <= state.transfersDone;
+        const plate = state.plates[index] || null;
+        const selected = state.selectedIndex === index;
+        const tubeTitle = index === 0 ? "Unknown bacterial broth" : `Dilution tube ${index}`;
+        const liquid = getTubeLiquid(index, ready);
+        const plateLabel = plate ? renderPlateMeta(plate) : renderEmptyPlateMeta(index);
+        const aria = plate ? plateAriaLabel(plate) : `${plainDilutionLabel(index)} plate, not plated yet`;
+        const disabledClass = state.plates.length ? "" : " empty";
+
+        return `
+          <article class="sample-column" data-index="${index}">
+            <div class="tube-heading">${tubeTitle}<small>${dilutionLabelHtml(index)}</small></div>
+            ${renderTubeSvg(index, ready, liquid)}
+            <div class="tube-caption">${fractionLabel(index)}${ready ? "" : "<br>sterile broth waiting"}</div>
+            <button class="plate-button${selected ? " selected" : ""}${disabledClass}" type="button" data-index="${index}" aria-label="${escapeAttr(aria)}">
+              ${renderPlateSvg(plate, index)}
+              <span class="spread" aria-hidden="true"></span>
+            </button>
+            <div class="plate-meta">${plateLabel}</div>
+          </article>
+        `;
+      }
+
+      function renderTubeSvg(index, ready, liquid) {
+        const clipId = `tubeClip-${state.problemId}-${index}`;
+        const dots = ready ? renderTubeDots(index, liquid.dotCount) : "";
+        const opacity = ready ? liquid.opacity : 0.72;
+        const fill = ready ? liquid.fill : "var(--saline)";
+        return `
+          <svg class="tube-shell" viewBox="0 0 94 190" role="img" aria-label="${escapeAttr(plainDilutionLabel(index))} tube">
+            <defs>
+              <clipPath id="${clipId}">
+                <path d="M24 14 H70 V137 C70 160 59 176 47 176 C35 176 24 160 24 137 Z"></path>
+              </clipPath>
+            </defs>
+            <path class="tube-glass" d="M22 12 H72 M26 15 V137 C26 158 36 173 47 173 C58 173 68 158 68 137 V15"></path>
+            <g clip-path="url(#${clipId})">
+              <rect x="24" y="58" width="46" height="118" fill="${fill}" opacity="${opacity}" class="tube-liquid"></rect>
+              <ellipse cx="47" cy="58" rx="23" ry="7" fill="${fill}" opacity="${Math.min(0.95, opacity + 0.1)}"></ellipse>
+              ${dots}
+              <rect x="31" y="20" width="8" height="146" rx="4" class="tube-highlight"></rect>
+            </g>
+            <path class="tube-glass" fill="none" d="M22 12 H72 M26 15 V137 C26 158 36 173 47 173 C58 173 68 158 68 137 V15"></path>
+          </svg>
+        `;
+      }
+
+      function renderTubeDots(index, count) {
+        if (count <= 0) return "";
+        const rng = mulberry32(hashSeed(`tube-${state.problemId}-${index}`));
+        let dots = "";
+        for (let i = 0; i < count; i += 1) {
+          const x = 30 + rng() * 34;
+          const y = 66 + rng() * 96;
+          const r = 1.15 + rng() * 1.55;
+          dots += `<circle class="cell-dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}"></circle>`;
+        }
+        return dots;
+      }
+
+      function renderPlateSvg(plate, index) {
+        if (!plate) {
+          return `
+            <svg class="plate-svg" viewBox="0 0 150 150" aria-hidden="true">
+              <circle class="plate-rim" cx="75" cy="75" r="67"></circle>
+              <circle class="agar" cx="75" cy="75" r="56"></circle>
+              <text class="empty-plate-note" x="75" y="72">not</text>
+              <text class="empty-plate-note" x="75" y="87">plated</text>
+            </svg>
+          `;
+        }
+
+        if (plate.tmtc) {
+          return renderTmtcPlate(index);
+        }
+
+        const colonies = plate.colonies.map((dot, dotIndex) => {
+          const color = dotIndex % 5 === 0 ? "#fff7d6" : dotIndex % 3 === 0 ? "#e8c86c" : "#f6e09a";
+          return `<circle class="colony" cx="${dot.x}" cy="${dot.y}" r="${dot.r}" fill="${color}"></circle>`;
+        }).join("");
+
+        const zeroText = plate.observedCount === 0 ? `<text class="plate-text" x="75" y="82">0</text>` : "";
+        return `
+          <svg class="plate-svg" viewBox="0 0 150 150" aria-hidden="true">
+            <circle class="plate-rim" cx="75" cy="75" r="67"></circle>
+            <circle class="agar" cx="75" cy="75" r="56"></circle>
+            ${colonies}
+            ${zeroText}
+          </svg>
+        `;
+      }
+
+      function renderTmtcPlate(index) {
+        const rng = mulberry32(hashSeed(`lawn-${state.problemId}-${index}`));
+        let specks = "";
+        for (let i = 0; i < 52; i += 1) {
+          const point = randomPointInCircle(rng, 75, 75, 52);
+          const r = 1.2 + rng() * 2.3;
+          specks += `<circle class="lawn-speck" cx="${point.x}" cy="${point.y}" r="${r.toFixed(1)}"></circle>`;
+        }
+
+        return `
+          <svg class="plate-svg" viewBox="0 0 150 150" aria-hidden="true">
+            <circle class="plate-rim" cx="75" cy="75" r="67"></circle>
+            <circle class="agar" cx="75" cy="75" r="56"></circle>
+            <circle class="lawn" cx="75" cy="75" r="53"></circle>
+            ${specks}
+            <text class="plate-text" x="75" y="80">TMTC</text>
+          </svg>
+        `;
+      }
+
+      function renderPlateMeta(plate) {
+        const count = plate.tmtc ? "TMTC" : String(plate.observedCount);
+        return `
+          <strong>${dilutionLabelHtml(plate.index)}</strong>
+          <span>${formatVolume(state.platingVolume)} plated</span>
+          <span>Colony count: ${count}</span>
+        `;
+      }
+
+      function renderEmptyPlateMeta(index) {
+        return `
+          <strong>${dilutionLabelHtml(index)}</strong>
+          <span>${formatVolume(state.platingVolume)} planned</span>
+          <span>Colony count: --</span>
+        `;
+      }
+
+      function renderCalculation() {
+        const plate = state.selectedIndex === null ? null : state.plates[state.selectedIndex];
+        if (!plate || !isCountable(plate)) {
+          els.calculationBox.classList.remove("visible");
+          els.calculationBox.innerHTML = "";
+          return;
+        }
+
+        const estimate = calculateEstimate(plate);
+        const denominator = getDilution(plate.index) * state.platingVolume;
+        const volumeText = formatVolume(state.platingVolume).replace(" mL", "");
+        const showSteps = state.answerAttempts > 0;
+        els.calculationBox.classList.add("visible");
+        els.calculationBox.innerHTML = `
+          <h3>Selected Plate</h3>
+          <p>Countable plate: <strong>${plate.observedCount} colonies</strong></p>
+          <p>Dilution plated: <strong>${dilutionLabelHtml(plate.index)}</strong> (${fractionLabel(plate.index)})</p>
+          <p>Volume plated: <strong>${formatVolume(state.platingVolume)}</strong></p>
+          ${showSteps ? `
+            <h3>Step-by-Step Calculation</h3>
+            <p>Original # of bacteria/mL = ${plate.observedCount} &divide; (${dilutionPlainHtml(plate.index)} &times; ${volumeText})</p>
+            <p>Original # of bacteria/mL = ${plate.observedCount} &divide; ${formatScientificHtml(denominator)}</p>
+            <p><strong>Original # of bacteria/mL = ${formatScientificHtml(estimate)} bacteria/mL</strong></p>
+          ` : ""}
+        `;
+      }
+
+      function renderTruth() {
+        if (!state.truthVisible || state.answerAttempts < 1) {
+          els.truthBox.classList.remove("visible");
+          els.truthBox.innerHTML = "";
+          return;
+        }
+
+        els.truthBox.classList.add("visible");
+        els.truthBox.innerHTML = `
+          <h3>True Hidden Concentration</h3>
+          <p>The original unknown broth was <strong>${formatScientificHtml(state.originalBacteria)} bacteria/mL</strong>.</p>
+          <p>Your estimate is based on random colony growth on the selected plate, so it may differ slightly from the true value.</p>
+        `;
+      }
+
+      function getTubeLiquid(index, ready) {
+        if (!ready) return { fill: "var(--saline)", opacity: 0.72, dotCount: 0 };
+        const concentration = state.originalBacteria * getDilution(index);
+        const logValue = Math.log10(Math.max(10, concentration));
+        const density = clamp((logValue - 2.2) / 6.8, 0, 1);
+        const dotCount = index === 0
+          ? Math.round(30 + density * 32)
+          : Math.max(1, Math.round(3 + density * 38));
+        const opacity = index === 0 ? 0.74 + density * 0.18 : 0.46 + density * 0.28;
+        const fill = index === 0 ? "var(--broth)" : `rgba(178, 211, 169, ${0.75 + density * 0.2})`;
+        return { fill, opacity, dotCount };
+      }
+
+      function generatePlates() {
+        const plates = [];
+        for (let index = 0; index <= state.tubeCount; index += 1) {
+          const dilution = getDilution(index);
+          const expected = state.originalBacteria * dilution * state.platingVolume;
+          let observed = expected > 900 ? Math.round(expected) : poissonLike(expected, hashSeed(`plate-${state.problemId}-${index}`));
+          const tmtc = expected > 800 || observed > COUNTABLE_MAX;
+          const plate = {
+            index,
+            dilution,
+            expected,
+            observedCount: tmtc ? null : observed,
+            tmtc,
+            colonies: []
+          };
+          if (!plate.tmtc) {
+            plate.colonies = makeColonies(plate.observedCount, hashSeed(`colonies-${state.problemId}-${index}-${plate.observedCount}`));
+          }
+          plates.push(plate);
+        }
+
+        if (!plates.some(isCountable)) {
+          const candidates = plates
+            .filter((plate) => plate.expected >= COUNTABLE_MIN && plate.expected <= COUNTABLE_MAX)
+            .sort((a, b) => Math.abs(a.expected - 120) - Math.abs(b.expected - 120));
+          if (candidates.length) {
+            const chosen = candidates[0];
+            const noise = 0.9 + mulberry32(hashSeed(`rescue-${state.problemId}`))() * 0.2;
+            chosen.observedCount = clamp(Math.round(chosen.expected * noise), COUNTABLE_MIN, COUNTABLE_MAX);
+            chosen.tmtc = false;
+            chosen.colonies = makeColonies(chosen.observedCount, hashSeed(`colonies-rescue-${state.problemId}-${chosen.index}`));
+          }
+        }
+
+        return plates;
+      }
+
+      function chooseOriginalBacteria() {
+        const ranges = [];
+        for (let index = 0; index <= state.tubeCount; index += 1) {
+          const dilution = getDilution(index);
+          const low = Math.max(MIN_BACTERIA, COUNTABLE_MIN / (dilution * state.platingVolume));
+          const high = Math.min(MAX_BACTERIA, COUNTABLE_MAX / (dilution * state.platingVolume));
+          if (low <= high) ranges.push({ low, high, width: Math.log10(high) - Math.log10(low) });
+        }
+
+        if (!ranges.length) {
+          return randomLog(MIN_BACTERIA, MAX_BACTERIA);
+        }
+
+        const totalWidth = ranges.reduce((sum, range) => sum + range.width, 0);
+        let pick = Math.random() * totalWidth;
+        for (const range of ranges) {
+          pick -= range.width;
+          if (pick <= 0) return randomLog(range.low, range.high);
+        }
+        const last = ranges[ranges.length - 1];
+        return randomLog(last.low, last.high);
+      }
+
+      function makeColonies(count, seed) {
+        if (count <= 0) return [];
+        const rng = mulberry32(seed);
+        const dots = [];
+        const minDistance = count > 180 ? 3.7 : count > 110 ? 4.5 : count > 50 ? 5.7 : 7.4;
+        const radius = count > 170 ? 2.3 : count > 90 ? 2.8 : count > 30 ? 3.4 : 4.2;
+        let attempts = 0;
+
+        while (dots.length < count && attempts < count * 95) {
+          attempts += 1;
+          const point = randomPointInCircle(rng, 75, 75, 51);
+          const tooClose = dots.some((dot) => {
+            const dx = dot.x - point.x;
+            const dy = dot.y - point.y;
+            return Math.sqrt(dx * dx + dy * dy) < minDistance;
+          });
+          if (!tooClose || attempts > count * 70) {
+            dots.push({
+              x: point.x,
+              y: point.y,
+              r: (radius * (0.78 + rng() * 0.45)).toFixed(1)
+            });
+          }
+        }
+
+        return dots;
+      }
+
+      function randomPointInCircle(rng, centerX, centerY, maxRadius) {
+        const angle = rng() * Math.PI * 2;
+        const radius = Math.sqrt(rng()) * maxRadius;
+        return {
+          x: (centerX + Math.cos(angle) * radius).toFixed(1),
+          y: (centerY + Math.sin(angle) * radius).toFixed(1)
+        };
+      }
+
+      function poissonLike(lambda, seed) {
+        if (lambda <= 0) return 0;
+        const rng = mulberry32(seed);
+        if (lambda < 35) {
+          const limit = Math.exp(-lambda);
+          let product = 1;
+          let k = 0;
+          do {
+            k += 1;
+            product *= rng();
+          } while (product > limit);
+          return k - 1;
+        }
+
+        const normal = gaussian(rng) * Math.sqrt(lambda) + lambda;
+        return Math.max(0, Math.round(normal));
+      }
+
+      function gaussian(rng) {
+        let u = 0;
+        let v = 0;
+        while (u === 0) u = rng();
+        while (v === 0) v = rng();
+        return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+      }
+
+      function calculateEstimate(plate) {
+        return plate.observedCount / (getDilution(plate.index) * state.platingVolume);
+      }
+
+      function isCountable(plate) {
+        return Boolean(plate && !plate.tmtc && plate.observedCount >= COUNTABLE_MIN && plate.observedCount <= COUNTABLE_MAX);
+      }
+
+      function getCountablePlates() {
+        return state.plates.filter(isCountable);
+      }
+
+      function getDilution(index) {
+        if (index === 0) return 1;
+        return Math.pow(state.dilutionFactor, -index);
+      }
+
+      function dilutionExponent(index) {
+        return index * Math.log10(state.dilutionFactor);
+      }
+
+      function dilutionLabelHtml(index) {
+        if (index === 0) return "Undiluted";
+        return `10<sup>-${dilutionExponent(index)}</sup>`;
+      }
+
+      function dilutionPlainHtml(index) {
+        if (index === 0) return "1";
+        return `10<sup>-${dilutionExponent(index)}</sup>`;
+      }
+
+      function plainDilutionLabel(index) {
+        if (index === 0) return "undiluted";
+        return `10^-${dilutionExponent(index)}`;
+      }
+
+      function fractionLabel(index) {
+        const exponent = dilutionExponent(index);
+        if (exponent === 0) return "1/1";
+        if (exponent <= 9) return `1/${formatInteger(Math.pow(10, exponent))}`;
+        return `1/10<sup>${exponent}</sup>`;
+      }
+
+      function formatVolume(value) {
+        return Number(value) === 1 ? "1.0 mL" : "0.1 mL";
+      }
+
+      function formatInteger(value) {
+        return Math.round(value).toLocaleString("en-US");
+      }
+
+      function formatScientificHtml(value) {
+        if (!Number.isFinite(value)) return "";
+        if (value === 0) return "0";
+        const exponent = Math.floor(Math.log10(Math.abs(value)));
+        const coefficient = value / Math.pow(10, exponent);
+        const rounded = Number(coefficient.toPrecision(3)).toString();
+        return `${rounded} &times; 10<sup>${exponent}</sup>`;
+      }
+
+      function parseStudentNumber(raw) {
+        if (!raw) return NaN;
+        let value = raw.trim().toLowerCase();
+        value = value.replace(/,/g, "");
+        value = value.replace(/\s+/g, "");
+        value = value.replace(/\u00d7/g, "x");
+        value = value.replace(/\*/g, "x");
+
+        if (/^[+-]?\d*\.?\d+(e[+-]?\d+)?$/.test(value)) {
+          return Number(value);
+        }
+
+        const scientific = value.match(/^([+-]?\d*\.?\d+)x10\^?([+-]?\d+)$/);
+        if (scientific) {
+          return Number(scientific[1]) * Math.pow(10, Number(scientific[2]));
+        }
+
+        return NaN;
+      }
+
+      function animateTransfer(fromIndex, toIndex) {
+        const fromColumn = els.sampleGrid.querySelector(`[data-index="${fromIndex}"]`);
+        const toColumn = els.sampleGrid.querySelector(`[data-index="${toIndex}"]`);
+        if (!fromColumn || !toColumn) return wait(1);
+
+        toColumn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        const benchRect = els.bench.getBoundingClientRect();
+        const fromRect = fromColumn.getBoundingClientRect();
+        const toRect = toColumn.getBoundingClientRect();
+        const startX = fromRect.left - benchRect.left + fromRect.width / 2 + els.bench.scrollLeft;
+        const endX = toRect.left - benchRect.left + toRect.width / 2 + els.bench.scrollLeft;
+        const width = Math.max(64, Math.abs(endX - startX));
+        const top = 72;
+        const left = Math.min(startX, endX);
+
+        const arrow = document.createElement("div");
+        arrow.className = "transfer-arrow";
+        arrow.style.left = `${left}px`;
+        arrow.style.top = `${top}px`;
+        arrow.style.width = `${width}px`;
+        arrow.innerHTML = `<span class="drop"></span><span class="line"></span><span>sample</span>`;
+        els.transferLayer.appendChild(arrow);
+        requestAnimationFrame(() => arrow.classList.add("active"));
+
+        return wait(720).then(() => {
+          arrow.classList.remove("active");
+          setTimeout(() => arrow.remove(), 160);
+        });
+      }
+
+      function animatePlating() {
+        const buttons = Array.from(els.sampleGrid.querySelectorAll(".plate-button"));
+        buttons.forEach((button, index) => {
+          setTimeout(() => button.classList.add("plating"), index * 65);
+          setTimeout(() => button.classList.remove("plating"), 980 + index * 65);
+        });
+        return wait(1120 + buttons.length * 40);
+      }
+
+      function pulseMixing(index) {
+        const column = els.sampleGrid.querySelector(`[data-index="${index}"]`);
+        if (!column) return;
+        column.classList.add("mixing");
+        setTimeout(() => column.classList.remove("mixing"), 1100);
+      }
+
+      function wait(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
+      function randomLog(low, high) {
+        const min = Math.log10(low);
+        const max = Math.log10(high);
+        return Math.pow(10, min + Math.random() * (max - min));
+      }
+
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      function hashSeed(text) {
+        let hash = 2166136261;
+        for (let i = 0; i < text.length; i += 1) {
+          hash ^= text.charCodeAt(i);
+          hash = Math.imul(hash, 16777619);
+        }
+        return hash >>> 0;
+      }
+
+      function mulberry32(seed) {
+        return function next() {
+          let value = seed += 0x6D2B79F5;
+          value = Math.imul(value ^ value >>> 15, value | 1);
+          value ^= value + Math.imul(value ^ value >>> 7, value | 61);
+          return ((value ^ value >>> 14) >>> 0) / 4294967296;
+        };
+      }
+
+      function plateAriaLabel(plate) {
+        const count = plate.tmtc ? "too many to count" : `${plate.observedCount} colonies`;
+        return `${plainDilutionLabel(plate.index)} plate, ${formatVolume(state.platingVolume)}, ${count}`;
+      }
+
+      function escapeAttr(value) {
+        return String(value).replace(/[&<>"']/g, (char) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          "\"": "&quot;",
+          "'": "&#39;"
+        }[char]));
+      }
+    })();
+  </script>
+</body>
+</html>

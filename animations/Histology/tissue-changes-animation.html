@@ -1,0 +1,1627 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tissue Changes: Atrophy, Hypertrophy, Hyperplasia, Metaplasia, Dysplasia, and Neoplasia</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f8fb;
+      --surface: #ffffff;
+      --surface-strong: #eef4f8;
+      --ink: #17212b;
+      --muted: #5d6976;
+      --line: #c8d3de;
+      --accent: #176e88;
+      --accent-strong: #0f566c;
+      --accent-soft: #dceff4;
+      --gold: #e6a817;
+      --danger: #a33b49;
+      --cell: #f4d4c4;
+      --cell-alt: #c9e6df;
+      --cell-blue: #cceafd;
+      --nucleus: #1d2834;
+      --membrane: #4f5965;
+      --shadow: 0 14px 35px rgba(25, 34, 45, 0.12);
+      --radius: 8px;
+      --duration: 1000ms;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.45;
+    }
+
+    main {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 44px;
+    }
+
+    header {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.45rem, 3vw, 2.55rem);
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .attribution {
+      margin: 0;
+      font-weight: 800;
+      color: #24313d;
+    }
+
+    .top-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      margin: 18px 0;
+      padding: 12px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .tabs,
+    .speed-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px;
+      background: #e7edf3;
+      border-radius: var(--radius);
+      border: 1px solid #d3dde7;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid transparent;
+      border-radius: 7px;
+      background: #f8fbfd;
+      color: var(--ink);
+      cursor: pointer;
+      transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+    }
+
+    button:hover {
+      border-color: #8fb9c7;
+      background: #eef8fb;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button:focus-visible,
+    input:focus-visible {
+      outline: 3px solid rgba(23, 110, 136, 0.32);
+      outline-offset: 2px;
+    }
+
+    .tab,
+    .speed-btn {
+      min-height: 38px;
+      padding: 7px 13px;
+      font-weight: 700;
+    }
+
+    .tab[aria-selected="true"],
+    .speed-btn[aria-pressed="true"],
+    .change-btn[aria-pressed="true"] {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent-strong);
+    }
+
+    .utility-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-left: auto;
+    }
+
+    .icon-btn,
+    .primary-btn,
+    .secondary-btn {
+      min-height: 40px;
+      padding: 8px 14px;
+      font-weight: 800;
+    }
+
+    .primary-btn {
+      background: var(--accent);
+      border-color: var(--accent-strong);
+      color: #fff;
+    }
+
+    .primary-btn:hover {
+      background: var(--accent-strong);
+      color: #fff;
+    }
+
+    .secondary-btn {
+      background: #f7fafc;
+      border-color: var(--line);
+    }
+
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 4px 6px;
+      color: var(--muted);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .toggle input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+    }
+
+    .change-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(120px, 1fr));
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .change-btn {
+      min-height: 54px;
+      padding: 9px 10px;
+      font-weight: 800;
+      text-align: center;
+      border-color: var(--line);
+      background: var(--surface);
+      box-shadow: 0 4px 14px rgba(24, 38, 52, 0.06);
+    }
+
+    .stage {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .stage-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfdfe;
+    }
+
+    .stage-title {
+      margin: 0;
+      font-size: 1.08rem;
+      letter-spacing: 0;
+    }
+
+    .definition {
+      margin: 0;
+      color: var(--muted);
+      font-weight: 650;
+    }
+
+    .visual-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 132px minmax(0, 1fr);
+      gap: 12px;
+      align-items: stretch;
+      padding: 16px;
+    }
+
+    .tissue-panel {
+      min-width: 0;
+      border: 1px solid #d8e2eb;
+      border-radius: var(--radius);
+      background: #fdfefe;
+      overflow: hidden;
+    }
+
+    .tissue-panel h3 {
+      margin: 0;
+      padding: 10px 12px;
+      font-size: 1rem;
+      background: var(--surface-strong);
+      border-bottom: 1px solid #d8e2eb;
+      letter-spacing: 0;
+    }
+
+    .svg-shell {
+      position: relative;
+      background: linear-gradient(180deg, #ffffff 0%, #f5f9fb 100%);
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 230px;
+    }
+
+    .transition {
+      min-height: 292px;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 8px;
+      color: var(--accent-strong);
+      font-weight: 850;
+      text-align: center;
+    }
+
+    .transition svg {
+      width: 98px;
+      min-height: 0;
+      height: 42px;
+      overflow: visible;
+    }
+
+    .arrow-body {
+      stroke: var(--accent);
+      stroke-width: 8;
+      stroke-linecap: round;
+      fill: none;
+      stroke-dasharray: 12 10;
+      animation: flow 1.2s linear infinite;
+    }
+
+    .arrow-head {
+      fill: var(--accent);
+    }
+
+    @keyframes flow {
+      to {
+        stroke-dashoffset: -44;
+      }
+    }
+
+    .transition-label {
+      min-height: 44px;
+      display: grid;
+      place-items: center;
+      padding: 8px 10px;
+      border: 1px solid #cfe0e7;
+      border-radius: var(--radius);
+      background: #eef8fb;
+      color: #104f62;
+      line-height: 1.2;
+    }
+
+    .explanation-box,
+    .quiz-card {
+      margin: 0 16px 16px;
+      padding: 14px 16px;
+      border: 1px solid #d8e2eb;
+      border-radius: var(--radius);
+      background: #fbfdfe;
+    }
+
+    .explanation-box p,
+    .quiz-card p {
+      margin: 0;
+    }
+
+    .quiz-card {
+      display: grid;
+      gap: 14px;
+    }
+
+    .answer-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(130px, 1fr));
+      gap: 8px;
+    }
+
+    .answer-btn {
+      min-height: 46px;
+      padding: 9px;
+      font-weight: 800;
+      border-color: var(--line);
+      background: #ffffff;
+    }
+
+    .answer-btn.correct {
+      background: #dff4e7;
+      border-color: #66a97d;
+      color: #174d2a;
+    }
+
+    .answer-btn.incorrect {
+      background: #f9e0e4;
+      border-color: #d68794;
+      color: #7a2633;
+    }
+
+    .answer-btn:disabled {
+      cursor: default;
+      opacity: 0.9;
+    }
+
+    .feedback {
+      position: relative;
+      min-height: 48px;
+      padding: 12px;
+      border: 1px solid #d8e2eb;
+      border-radius: var(--radius);
+      background: #ffffff;
+      color: var(--muted);
+      font-weight: 750;
+      overflow: hidden;
+    }
+
+    .feedback.good {
+      color: #174d2a;
+      border-color: #9ad1aa;
+      background: #effaf3;
+    }
+
+    .feedback.needs-work {
+      color: #7a2633;
+      border-color: #ebb1b8;
+      background: #fff5f6;
+    }
+
+    .stars {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .star {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: var(--gold);
+      clip-path: polygon(50% 0%, 61% 36%, 98% 36%, 68% 57%, 79% 94%, 50% 72%, 21% 94%, 32% 57%, 2% 36%, 39% 36%);
+      animation: star-pop 900ms ease forwards;
+      opacity: 0;
+    }
+
+    @keyframes star-pop {
+      0% {
+        transform: translateY(10px) scale(0.2) rotate(0deg);
+        opacity: 0;
+      }
+
+      40% {
+        opacity: 1;
+      }
+
+      100% {
+        transform: translateY(-32px) scale(1.2) rotate(160deg);
+        opacity: 0;
+      }
+    }
+
+    .quiz-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .comparison {
+      margin-top: 18px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .comparison h2 {
+      margin: 0;
+      padding: 14px 16px;
+      font-size: 1.1rem;
+      border-bottom: 1px solid var(--line);
+      background: #fbfdfe;
+      letter-spacing: 0;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+      font-size: 0.95rem;
+    }
+
+    th,
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #e1e8ef;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: #263441;
+      background: #eef4f8;
+      font-weight: 850;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .svg-cell,
+    .svg-nucleus,
+    .svg-label,
+    .svg-line,
+    .svg-marker,
+    .svg-path {
+      transition-property: x, y, width, height, rx, ry, cx, cy, r, opacity, transform, fill, stroke, d;
+      transition-duration: var(--duration);
+      transition-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1);
+    }
+
+    .svg-cell {
+      fill: var(--cell);
+      stroke: #69443b;
+      stroke-width: 2;
+    }
+
+    .svg-cell.alt {
+      fill: var(--cell-alt);
+      stroke: #35685f;
+    }
+
+    .svg-cell.blue {
+      fill: var(--cell-blue);
+      stroke: #36708b;
+    }
+
+    .svg-nucleus {
+      fill: var(--nucleus);
+      opacity: 0.95;
+    }
+
+    .svg-line {
+      stroke: var(--membrane);
+      stroke-width: 4;
+      stroke-linecap: round;
+    }
+
+    .svg-label {
+      fill: #2f3f4f;
+      font-size: 16px;
+      font-weight: 800;
+      paint-order: stroke;
+      stroke: rgba(255, 255, 255, 0.9);
+      stroke-width: 4px;
+      stroke-linejoin: round;
+    }
+
+    .svg-small {
+      font-size: 13px;
+      font-weight: 760;
+    }
+
+    .svg-note {
+      fill: #10566b;
+      font-size: 15px;
+      font-weight: 850;
+    }
+
+    .mass-outline {
+      fill: rgba(163, 59, 73, 0.1);
+      stroke: rgba(163, 59, 73, 0.72);
+      stroke-width: 2;
+      stroke-dasharray: 7 7;
+      transition: opacity var(--duration) ease, transform var(--duration) ease;
+    }
+
+    .no-motion *,
+    .no-motion {
+      animation-duration: 1ms !important;
+      transition-duration: 1ms !important;
+    }
+
+    @media (max-width: 980px) {
+      main {
+        width: min(100% - 22px, 980px);
+        padding-top: 18px;
+      }
+
+      .change-grid {
+        grid-template-columns: repeat(4, minmax(116px, 1fr));
+      }
+
+      .visual-row {
+        grid-template-columns: 1fr;
+      }
+
+      .transition {
+        min-height: auto;
+        padding: 4px 0;
+      }
+
+      .transition svg {
+        transform: rotate(90deg);
+      }
+
+      .answer-grid {
+        grid-template-columns: repeat(2, minmax(130px, 1fr));
+      }
+    }
+
+    @media (max-width: 560px) {
+      main {
+        width: min(100% - 16px, 560px);
+      }
+
+      .top-bar {
+        align-items: stretch;
+      }
+
+      .tabs,
+      .speed-control,
+      .utility-actions {
+        width: 100%;
+      }
+
+      .tab,
+      .speed-btn,
+      .utility-actions > button {
+        flex: 1;
+      }
+
+      .utility-actions {
+        margin-left: 0;
+      }
+
+      .change-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .change-btn {
+        min-height: 48px;
+      }
+
+      .stage-header {
+        align-items: flex-start;
+      }
+
+      .answer-grid {
+        grid-template-columns: 1fr;
+      }
+
+      table {
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Tissue Changes: Atrophy, Hypertrophy, Hyperplasia, Metaplasia, Dysplasia, and Neoplasia</h1>
+      <p class="attribution">Animation Prompted by Jerred Seveyka for his biology class.</p>
+    </header>
+
+    <section class="top-bar" aria-label="Animation controls">
+      <div class="tabs" role="tablist" aria-label="Mode">
+        <button class="tab" id="exploreTab" type="button" role="tab" aria-selected="true" aria-controls="explorePanel">Explore mode</button>
+        <button class="tab" id="quizTab" type="button" role="tab" aria-selected="false" aria-controls="quizPanel">Quiz mode</button>
+      </div>
+
+      <div class="speed-control" aria-label="Animation speed">
+        <button class="speed-btn" type="button" data-speed="slow" aria-pressed="false">Slow</button>
+        <button class="speed-btn" type="button" data-speed="normal" aria-pressed="true">Normal</button>
+        <button class="speed-btn" type="button" data-speed="fast" aria-pressed="false">Fast</button>
+      </div>
+
+      <div class="utility-actions">
+        <label class="toggle">
+          <input id="labelsToggle" type="checkbox" checked>
+          Show labels
+        </label>
+        <button class="secondary-btn" id="resetBtn" type="button">Reset</button>
+      </div>
+    </section>
+
+    <section id="explorePanel" aria-labelledby="exploreTab">
+      <nav class="change-grid" aria-label="Tissue change choices" id="changeGrid"></nav>
+      <section class="stage" aria-label="Explore tissue change animation">
+        <div class="stage-header">
+          <div>
+            <h2 class="stage-title" id="selectedTitle">Normal</h2>
+            <p class="definition" id="selectedDefinition"></p>
+          </div>
+          <button class="primary-btn" id="replayExplore" type="button">Replay animation</button>
+        </div>
+        <div class="visual-row">
+          <article class="tissue-panel">
+            <h3>Original tissue</h3>
+            <div class="svg-shell"><svg id="exploreOriginal" viewBox="0 0 520 260" role="img" aria-label="Original normal epithelial tissue"></svg></div>
+          </article>
+
+          <div class="transition" aria-hidden="true">
+            <svg viewBox="0 0 110 48" focusable="false">
+              <path class="arrow-body" d="M10 24 H82"></path>
+              <path class="arrow-head" d="M80 9 L104 24 L80 39 Z"></path>
+            </svg>
+            <span class="transition-label" id="exploreTransition">Normal</span>
+          </div>
+
+          <article class="tissue-panel">
+            <h3>Changed tissue</h3>
+            <div class="svg-shell"><svg id="exploreChanged" viewBox="0 0 520 260" role="img" aria-label="Changed epithelial tissue"></svg></div>
+          </article>
+        </div>
+        <div class="explanation-box">
+          <p id="selectedExplanation"></p>
+        </div>
+      </section>
+    </section>
+
+    <section id="quizPanel" class="hidden" aria-labelledby="quizTab">
+      <section class="stage" aria-label="Quiz tissue change animation">
+        <div class="stage-header">
+          <div>
+            <h2 class="stage-title">What type of tissue change occurred?</h2>
+            <p class="definition">Use the animation evidence to choose the best answer.</p>
+          </div>
+          <button class="primary-btn" id="replayQuiz" type="button">Replay</button>
+        </div>
+        <div class="visual-row">
+          <article class="tissue-panel">
+            <h3>Original tissue</h3>
+            <div class="svg-shell"><svg id="quizOriginal" viewBox="0 0 520 260" role="img" aria-label="Quiz original normal epithelial tissue"></svg></div>
+          </article>
+
+          <div class="transition" aria-hidden="true">
+            <svg viewBox="0 0 110 48" focusable="false">
+              <path class="arrow-body" d="M10 24 H82"></path>
+              <path class="arrow-head" d="M80 9 L104 24 L80 39 Z"></path>
+            </svg>
+            <span class="transition-label">Tissue change</span>
+          </div>
+
+          <article class="tissue-panel">
+            <h3>Changed tissue</h3>
+            <div class="svg-shell"><svg id="quizChanged" viewBox="0 0 520 260" role="img" aria-label="Quiz changed epithelial tissue"></svg></div>
+          </article>
+        </div>
+
+        <div class="quiz-card">
+          <p><strong>What type of tissue change occurred?</strong></p>
+          <div class="answer-grid" id="answerGrid"></div>
+          <div class="feedback" id="quizFeedback" aria-live="polite">Choose an answer to check your understanding.</div>
+          <div class="quiz-actions">
+            <button class="primary-btn" id="tryAnother" type="button">Try another</button>
+            <button class="secondary-btn hidden" id="showExplanation" type="button">Show explanation</button>
+          </div>
+          <p class="hidden" id="quizExplanation"></p>
+        </div>
+      </section>
+    </section>
+
+    <section class="comparison" aria-labelledby="comparisonHeading">
+      <h2 id="comparisonHeading">Educational Comparison Table</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Change</th>
+              <th>Main feature</th>
+              <th>Cell size</th>
+              <th>Cell number</th>
+              <th>Organization</th>
+              <th>Example visual cue</th>
+            </tr>
+          </thead>
+          <tbody id="comparisonBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const NS = "http://www.w3.org/2000/svg";
+
+    const CHANGE_ORDER = ["normal", "atrophy", "hypertrophy", "hyperplasia", "metaplasia", "dysplasia", "neoplasia"];
+    const QUIZ_ORDER = ["atrophy", "hypertrophy", "hyperplasia", "metaplasia", "dysplasia", "neoplasia", "normal"];
+    const SPEEDS = {
+      slow: 1800,
+      normal: 1000,
+      fast: 560
+    };
+
+    const CHANGES = {
+      normal: {
+        label: "Normal",
+        answer: "No change / Normal",
+        definition: "Cells have expected size, shape, number, and organization.",
+        explanation: "Normal tissue has cells of expected size, shape, number, and organization.",
+        mainFeature: "Expected tissue organization",
+        cellSize: "Normal size",
+        cellNumber: "Normal number",
+        organization: "Organized",
+        cue: "Even row of cuboidal cells on an intact basement membrane"
+      },
+      atrophy: {
+        label: "Atrophy",
+        answer: "Atrophy",
+        definition: "Cells shrink, so the tissue becomes smaller.",
+        explanation: "Atrophy is a decrease in cell size, causing tissue to become smaller.",
+        mainFeature: "Smaller cells",
+        cellSize: "Decreased size",
+        cellNumber: "Same or fewer cells",
+        organization: "Organized but reduced",
+        cue: "Same row pattern with smaller cell bodies and nuclei"
+      },
+      hypertrophy: {
+        label: "Hypertrophy",
+        answer: "Hypertrophy",
+        definition: "Cells enlarge without adding more cells.",
+        explanation: "Hypertrophy is an increase in cell size, causing tissue enlargement without increasing cell number.",
+        mainFeature: "Larger cells",
+        cellSize: "Increased size",
+        cellNumber: "Same number",
+        organization: "Organized but enlarged",
+        cue: "Cells are bigger, and the row takes up more space"
+      },
+      hyperplasia: {
+        label: "Hyperplasia",
+        answer: "Hyperplasia",
+        definition: "More cells are produced in a regulated tissue layer.",
+        explanation: "Hyperplasia is an increase in cell number.",
+        mainFeature: "More cells",
+        cellSize: "Normal-ish size",
+        cellNumber: "Increased number",
+        organization: "Organized",
+        cue: "Additional similar cells appear in the epithelial sheet"
+      },
+      metaplasia: {
+        label: "Metaplasia",
+        answer: "Metaplasia",
+        definition: "One mature cell type is replaced by another mature cell type.",
+        explanation: "Metaplasia is replacement of one mature cell type by another mature cell type, often as an adaptation to stress.",
+        mainFeature: "One mature cell type replaced by another",
+        cellSize: "Variable",
+        cellNumber: "May be similar",
+        organization: "Organized but different cell type",
+        cue: "Columnar cells and pale blue goblet cells replace part of the row"
+      },
+      dysplasia: {
+        label: "Dysplasia",
+        answer: "Dysplasia",
+        definition: "Atypical cells grow with disturbed tissue architecture.",
+        explanation: "Dysplasia means abnormal cell growth and organization; cells look atypical and the tissue architecture is disturbed.",
+        mainFeature: "Abnormal or malformed cells",
+        cellSize: "Variable size",
+        cellNumber: "Variable number",
+        organization: "Disorganized; basement membrane intact",
+        cue: "Irregular shapes, varied nuclei, crowding, intact basement membrane"
+      },
+      neoplasia: {
+        label: "Neoplasia",
+        answer: "Neoplasia",
+        definition: "New abnormal growth expands in an uncontrolled mass.",
+        explanation: "Neoplasia is new, abnormal, uncontrolled growth that forms a tumor or mass. It is different from regulated hyperplasia.",
+        mainFeature: "Uncontrolled new growth",
+        cellSize: "Variable size",
+        cellNumber: "Increased abnormal cells",
+        organization: "Mass-like and disorganized",
+        cue: "Localized mound of abnormal cells expands beyond the flat row"
+      }
+    };
+
+    const state = {
+      mode: "explore",
+      selected: "normal",
+      speed: "normal",
+      showLabels: true,
+      quizKey: "",
+      lastQuizKey: "",
+      answerOrder: [],
+      answered: false,
+      chosenAnswer: "",
+      revealQuizExplanation: false,
+      renderNonce: 0
+    };
+
+    const els = {
+      exploreTab: document.getElementById("exploreTab"),
+      quizTab: document.getElementById("quizTab"),
+      explorePanel: document.getElementById("explorePanel"),
+      quizPanel: document.getElementById("quizPanel"),
+      changeGrid: document.getElementById("changeGrid"),
+      selectedTitle: document.getElementById("selectedTitle"),
+      selectedDefinition: document.getElementById("selectedDefinition"),
+      selectedExplanation: document.getElementById("selectedExplanation"),
+      exploreTransition: document.getElementById("exploreTransition"),
+      exploreOriginal: document.getElementById("exploreOriginal"),
+      exploreChanged: document.getElementById("exploreChanged"),
+      quizOriginal: document.getElementById("quizOriginal"),
+      quizChanged: document.getElementById("quizChanged"),
+      replayExplore: document.getElementById("replayExplore"),
+      replayQuiz: document.getElementById("replayQuiz"),
+      resetBtn: document.getElementById("resetBtn"),
+      labelsToggle: document.getElementById("labelsToggle"),
+      answerGrid: document.getElementById("answerGrid"),
+      quizFeedback: document.getElementById("quizFeedback"),
+      tryAnother: document.getElementById("tryAnother"),
+      showExplanation: document.getElementById("showExplanation"),
+      quizExplanation: document.getElementById("quizExplanation"),
+      comparisonBody: document.getElementById("comparisonBody")
+    };
+
+    function svgEl(name, attrs = {}, text = "") {
+      const el = document.createElementNS(NS, name);
+      Object.entries(attrs).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          el.setAttribute(key, value);
+        }
+      });
+      if (text) {
+        el.textContent = text;
+      }
+      return el;
+    }
+
+    function htmlEl(name, attrs = {}, text = "") {
+      const el = document.createElement(name);
+      Object.entries(attrs).forEach(([key, value]) => {
+        if (key === "class") el.className = value;
+        else if (key === "dataset") Object.assign(el.dataset, value);
+        else if (key.startsWith("aria")) el.setAttribute(key.replace(/[A-Z]/g, match => "-" + match.toLowerCase()), value);
+        else el.setAttribute(key, value);
+      });
+      if (text) {
+        el.textContent = text;
+      }
+      return el;
+    }
+
+    function clearSvg(svg) {
+      while (svg.firstChild) {
+        svg.removeChild(svg.firstChild);
+      }
+      svg.style.setProperty("--duration", `${SPEEDS[state.speed]}ms`);
+    }
+
+    function getRandomInt(max) {
+      if (window.crypto && window.crypto.getRandomValues) {
+        const buffer = new Uint32Array(1);
+        window.crypto.getRandomValues(buffer);
+        return buffer[0] % max;
+      }
+      return Math.floor(Math.random() * max);
+    }
+
+    function shuffle(values) {
+      const copy = values.slice();
+      for (let i = copy.length - 1; i > 0; i -= 1) {
+        const j = getRandomInt(i + 1);
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function normalCellStates() {
+      const base = 176;
+      const w = 58;
+      const h = 66;
+      const gap = 8;
+      const start = 92;
+      return Array.from({ length: 5 }, (_, i) => ({
+        x: start + i * (w + gap),
+        y: base - h,
+        w,
+        h,
+        rx: 9,
+        fillClass: "",
+        nucleus: {
+          cx: start + i * (w + gap) + w / 2,
+          cy: base - h / 2,
+          rx: 10,
+          ry: 13
+        },
+        rotation: 0,
+        opacity: 1
+      }));
+    }
+
+    function atrophyStates() {
+      return normalCellStates().map(cell => {
+        const w = 42;
+        const h = 45;
+        return {
+          ...cell,
+          x: cell.x + (cell.w - w) / 2,
+          y: 176 - h,
+          w,
+          h,
+          rx: 7,
+          nucleus: {
+            cx: cell.x + cell.w / 2,
+            cy: 176 - h / 2,
+            rx: 7,
+            ry: 9
+          }
+        };
+      });
+    }
+
+    function hypertrophyStates() {
+      const base = 176;
+      const w = 68;
+      const h = 86;
+      const gap = 5;
+      const total = 5 * w + 4 * gap;
+      const start = (520 - total) / 2;
+      return Array.from({ length: 5 }, (_, i) => ({
+        x: start + i * (w + gap),
+        y: base - h,
+        w,
+        h,
+        rx: 12,
+        fillClass: "",
+        nucleus: {
+          cx: start + i * (w + gap) + w / 2,
+          cy: base - h / 2,
+          rx: 13,
+          ry: 17
+        },
+        rotation: 0,
+        opacity: 1
+      }));
+    }
+
+    function hyperplasiaStates() {
+      const base = 176;
+      const w = 42;
+      const h = 64;
+      const gap = 5;
+      const count = 8;
+      const total = count * w + (count - 1) * gap;
+      const start = (520 - total) / 2;
+      return Array.from({ length: count }, (_, i) => ({
+        x: start + i * (w + gap),
+        y: base - h,
+        w,
+        h,
+        rx: 8,
+        fillClass: "",
+        nucleus: {
+          cx: start + i * (w + gap) + w / 2,
+          cy: base - h / 2,
+          rx: 8,
+          ry: 12
+        },
+        rotation: 0,
+        opacity: 1,
+        isNew: i === 1 || i === 3 || i === 5
+      }));
+    }
+
+    function metaplasiaStates() {
+      const base = 176;
+      const cells = [];
+      const cuboid = [
+        { x: 70, w: 54, h: 64 },
+        { x: 128, w: 54, h: 64 },
+        { x: 186, w: 54, h: 64 }
+      ];
+      cuboid.forEach((item, i) => {
+        cells.push({
+          x: item.x,
+          y: base - item.h,
+          w: item.w,
+          h: item.h,
+          rx: 9,
+          fillClass: "",
+          nucleus: {
+            cx: item.x + item.w / 2,
+            cy: base - item.h / 2,
+            rx: 9,
+            ry: 12
+          },
+          rotation: 0,
+          opacity: 1,
+          type: "cuboidal",
+          fromIndex: i
+        });
+      });
+      const columnar = [
+        { x: 256, w: 42, h: 94, type: "columnar" },
+        { x: 301, w: 42, h: 94, type: "goblet" },
+        { x: 346, w: 42, h: 94, type: "columnar" },
+        { x: 391, w: 42, h: 94, type: "goblet" }
+      ];
+      columnar.forEach((item, i) => {
+        cells.push({
+          x: item.x,
+          y: base - item.h,
+          w: item.w,
+          h: item.h,
+          rx: 12,
+          fillClass: item.type === "goblet" ? "blue" : "alt",
+          nucleus: {
+            cx: item.x + item.w / 2,
+            cy: base - 20,
+            rx: item.type === "goblet" ? 6 : 8,
+            ry: item.type === "goblet" ? 8 : 11
+          },
+          rotation: 0,
+          opacity: 1,
+          type: item.type,
+          fromIndex: 3 + (i % 2)
+        });
+      });
+      return cells;
+    }
+
+    function dysplasiaStates() {
+      return [
+        { x: 82, y: 116, w: 52, h: 60, rx: 10, rotation: -6, nucleus: { cx: 105, cy: 147, rx: 10, ry: 15 }, opacity: 1 },
+        { x: 130, y: 101, w: 44, h: 75, rx: 7, rotation: 4, nucleus: { cx: 153, cy: 124, rx: 13, ry: 11 }, opacity: 1 },
+        { x: 170, y: 122, w: 61, h: 54, rx: 14, rotation: -2, nucleus: { cx: 203, cy: 150, rx: 8, ry: 16 }, opacity: 1 },
+        { x: 220, y: 92, w: 46, h: 84, rx: 7, rotation: 7, nucleus: { cx: 239, cy: 133, rx: 14, ry: 18 }, opacity: 1 },
+        { x: 260, y: 115, w: 54, h: 61, rx: 16, rotation: -8, nucleus: { cx: 287, cy: 144, rx: 9, ry: 10 }, opacity: 1 },
+        { x: 306, y: 105, w: 47, h: 71, rx: 6, rotation: 3, nucleus: { cx: 327, cy: 157, rx: 12, ry: 12 }, opacity: 1 },
+        { x: 346, y: 126, w: 57, h: 50, rx: 11, rotation: -3, nucleus: { cx: 375, cy: 144, rx: 15, ry: 10 }, opacity: 1 },
+        { x: 396, y: 111, w: 43, h: 65, rx: 13, rotation: 5, nucleus: { cx: 416, cy: 132, rx: 8, ry: 14 }, opacity: 1 }
+      ];
+    }
+
+    function neoplasiaStates() {
+      return [
+        { x: 92, y: 112, w: 55, h: 64, rx: 10, rotation: 0, nucleus: { cx: 120, cy: 144, rx: 10, ry: 13 }, opacity: 1 },
+        { x: 154, y: 112, w: 55, h: 64, rx: 10, rotation: 0, nucleus: { cx: 182, cy: 144, rx: 10, ry: 13 }, opacity: 1 },
+        { x: 216, y: 111, w: 57, h: 65, rx: 10, rotation: -3, nucleus: { cx: 245, cy: 144, rx: 11, ry: 14 }, opacity: 1, abnormal: true },
+        { x: 274, y: 112, w: 55, h: 64, rx: 10, rotation: 2, nucleus: { cx: 300, cy: 145, rx: 10, ry: 14 }, opacity: 1, abnormal: true },
+        { x: 336, y: 112, w: 55, h: 64, rx: 10, rotation: 0, nucleus: { cx: 364, cy: 144, rx: 10, ry: 13 }, opacity: 1 },
+        { x: 221, y: 63, w: 50, h: 52, rx: 13, rotation: -10, nucleus: { cx: 247, cy: 88, rx: 11, ry: 12 }, opacity: 1, newMass: true, abnormal: true },
+        { x: 270, y: 58, w: 54, h: 56, rx: 10, rotation: 8, nucleus: { cx: 297, cy: 86, rx: 13, ry: 11 }, opacity: 1, newMass: true, abnormal: true },
+        { x: 246, y: 16, w: 52, h: 52, rx: 14, rotation: 3, nucleus: { cx: 271, cy: 42, rx: 10, ry: 15 }, opacity: 1, newMass: true, abnormal: true },
+        { x: 306, y: 82, w: 44, h: 46, rx: 12, rotation: 14, nucleus: { cx: 329, cy: 104, rx: 9, ry: 13 }, opacity: 1, newMass: true, abnormal: true }
+      ];
+    }
+
+    function finalStatesFor(kind) {
+      if (kind === "atrophy") return atrophyStates();
+      if (kind === "hypertrophy") return hypertrophyStates();
+      if (kind === "hyperplasia") return hyperplasiaStates();
+      if (kind === "metaplasia") return metaplasiaStates();
+      if (kind === "dysplasia") return dysplasiaStates();
+      if (kind === "neoplasia") return neoplasiaStates();
+      return normalCellStates();
+    }
+
+    function initialStateFor(finalCell, index, kind) {
+      const normal = normalCellStates();
+      const source = normal[Math.min(finalCell.fromIndex ?? index, normal.length - 1)];
+      if (kind === "hyperplasia" && finalCell.isNew) {
+        return {
+          ...source,
+          x: finalCell.x + finalCell.w * 0.35,
+          y: finalCell.y + finalCell.h * 0.35,
+          w: Math.max(14, finalCell.w * 0.3),
+          h: Math.max(18, finalCell.h * 0.3),
+          rx: 5,
+          opacity: 0,
+          nucleus: {
+            cx: finalCell.x + finalCell.w / 2,
+            cy: finalCell.y + finalCell.h / 2,
+            rx: 3,
+            ry: 4
+          }
+        };
+      }
+      if (kind === "metaplasia" && (finalCell.type === "columnar" || finalCell.type === "goblet")) {
+        if (finalCell.type === "goblet") {
+          return {
+            ...source,
+            fillClass: "",
+            opacity: 1,
+            type: "goblet",
+            mucusOpacity: 0
+          };
+        }
+        return {
+          ...source,
+          fillClass: "",
+          opacity: 1,
+          type: "cuboidal"
+        };
+      }
+      if (kind === "neoplasia" && finalCell.newMass) {
+        return {
+          ...source,
+          x: finalCell.x + finalCell.w * 0.25,
+          y: 176 - 22,
+          w: 22,
+          h: 22,
+          rx: 8,
+          opacity: 0,
+          nucleus: {
+            cx: finalCell.x + finalCell.w / 2,
+            cy: 166,
+            rx: 3,
+            ry: 4
+          },
+          abnormal: true,
+          newMass: true
+        };
+      }
+      if (kind === "dysplasia") {
+        return {
+          ...source,
+          fillClass: "",
+          opacity: 1
+        };
+      }
+      return {
+        ...source,
+        opacity: 1
+      };
+    }
+
+    function addText(svg, text, x, y, attrs = {}) {
+      if (!state.showLabels && !attrs.force) return null;
+      const label = svgEl("text", {
+        class: `svg-label ${attrs.small ? "svg-small" : ""} ${attrs.note ? "svg-note" : ""}`,
+        x,
+        y,
+        "text-anchor": attrs.anchor || "middle"
+      }, text);
+      svg.appendChild(label);
+      return label;
+    }
+
+    function addBasement(svg, options = {}) {
+      const y = 176;
+      svg.appendChild(svgEl("line", {
+        class: "svg-line",
+        x1: 62,
+        y1: y,
+        x2: 458,
+        y2: y
+      }));
+      if (options.intact) {
+        addText(svg, "basement membrane intact", 260, 217, { note: true });
+      } else {
+        addText(svg, "basement membrane", 260, 217, { small: true });
+      }
+    }
+
+    function drawCellShape(group, cell, prefix = "") {
+      const cls = ["svg-cell"];
+      if (cell.fillClass) cls.push(cell.fillClass);
+      if (cell.abnormal) cls.push("abnormal");
+      let body;
+      if (cell.type === "goblet") {
+        const bodyClass = `svg-cell ${cell.fillClass === "blue" ? "blue " : ""}svg-path`.trim();
+        body = svgEl("path", {
+          class: `${prefix}${bodyClass}`,
+          d: gobletPath(cell)
+        });
+        const mucus = svgEl("ellipse", {
+          class: `${prefix}svg-marker`,
+          cx: cell.x + cell.w / 2,
+          cy: cell.y + 26,
+          rx: cell.w * 0.28,
+          ry: 16,
+          fill: "#eaf8ff",
+          stroke: "#62a6bf",
+          "stroke-width": 1.5,
+          opacity: cell.mucusOpacity ?? 0.96
+        });
+        group.appendChild(body);
+        group.appendChild(mucus);
+      } else {
+        body = svgEl("rect", {
+          class: `${prefix}${cls.join(" ")}`,
+          x: cell.x,
+          y: cell.y,
+          width: cell.w,
+          height: cell.h,
+          rx: cell.rx,
+          ry: cell.rx
+        });
+        group.appendChild(body);
+      }
+
+      group.appendChild(svgEl("ellipse", {
+        class: `${prefix}svg-nucleus`,
+        cx: cell.nucleus.cx,
+        cy: cell.nucleus.cy,
+        rx: cell.nucleus.rx,
+        ry: cell.nucleus.ry
+      }));
+    }
+
+    function gobletPath(cell) {
+      const x = cell.x;
+      const y = cell.y;
+      const w = cell.w;
+      const h = cell.h;
+      return [
+        `M ${x + w * 0.18} ${y + 6}`,
+        `C ${x + w * 0.05} ${y + 24}, ${x + w * 0.1} ${y + h * 0.58}, ${x + w * 0.34} ${y + h - 5}`,
+        `L ${x + w * 0.66} ${y + h - 5}`,
+        `C ${x + w * 0.9} ${y + h * 0.58}, ${x + w * 0.95} ${y + 24}, ${x + w * 0.82} ${y + 6}`,
+        "Z"
+      ].join(" ");
+    }
+
+    function setCellAttrs(group, cell) {
+      const body = group.querySelector(".svg-cell");
+      const nucleus = group.querySelector(".svg-nucleus");
+      const mucus = group.querySelector(".svg-marker");
+      group.setAttribute("opacity", cell.opacity ?? 1);
+      group.setAttribute("transform", `rotate(${cell.rotation || 0} ${cell.x + cell.w / 2} ${cell.y + cell.h / 2})`);
+      if (cell.type === "goblet") {
+        body.setAttribute("d", gobletPath(cell));
+        body.setAttribute("class", `svg-cell ${cell.fillClass === "blue" ? "blue " : ""}svg-path`.trim());
+        if (mucus) {
+          mucus.setAttribute("cx", cell.x + cell.w / 2);
+          mucus.setAttribute("cy", cell.y + 26);
+          mucus.setAttribute("rx", cell.w * 0.28);
+          mucus.setAttribute("ry", 16);
+          mucus.setAttribute("opacity", cell.mucusOpacity ?? 0.96);
+        }
+      } else if (body.tagName.toLowerCase() === "rect") {
+        body.setAttribute("x", cell.x);
+        body.setAttribute("y", cell.y);
+        body.setAttribute("width", cell.w);
+        body.setAttribute("height", cell.h);
+        body.setAttribute("rx", cell.rx);
+        body.setAttribute("ry", cell.rx);
+        body.setAttribute("class", `svg-cell ${cell.fillClass || ""}`.trim());
+      }
+      nucleus.setAttribute("cx", cell.nucleus.cx);
+      nucleus.setAttribute("cy", cell.nucleus.cy);
+      nucleus.setAttribute("rx", cell.nucleus.rx);
+      nucleus.setAttribute("ry", cell.nucleus.ry);
+    }
+
+    function drawCellGroups(svg, cells, kind, animate) {
+      const groups = [];
+      cells.forEach((finalCell, index) => {
+        const initialCell = animate ? initialStateFor(finalCell, index, kind) : finalCell;
+        const group = svgEl("g", {
+          opacity: initialCell.opacity ?? 1,
+          transform: `rotate(${initialCell.rotation || 0} ${initialCell.x + initialCell.w / 2} ${initialCell.y + initialCell.h / 2})`
+        });
+        drawCellShape(group, initialCell);
+        svg.appendChild(group);
+        groups.push({ group, finalCell });
+      });
+
+      if (animate) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            groups.forEach(({ group, finalCell }) => setCellAttrs(group, finalCell));
+          });
+        });
+      }
+    }
+
+    function addMitosisMarks(svg, cells, animate) {
+      if (animate) {
+        cells.filter(cell => cell.isNew).forEach(cell => {
+          const mark = svgEl("text", {
+            class: "svg-label svg-note",
+            x: cell.x + cell.w / 2,
+            y: cell.y - 9,
+            "text-anchor": "middle",
+            opacity: 0
+          }, "+");
+          svg.appendChild(mark);
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              mark.setAttribute("opacity", "1");
+            });
+          });
+        });
+      }
+    }
+
+    function drawNeoplasiaOutline(svg, animate) {
+      const outline = svgEl("ellipse", {
+        class: "mass-outline",
+        cx: 278,
+        cy: 92,
+        rx: animate ? 18 : 86,
+        ry: animate ? 10 : 78,
+        opacity: animate ? 0 : 1
+      });
+      svg.insertBefore(outline, svg.firstChild);
+      if (animate) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            outline.setAttribute("rx", "86");
+            outline.setAttribute("ry", "78");
+            outline.setAttribute("opacity", "1");
+          });
+        });
+      }
+    }
+
+    function drawScene(svg, kind, options = {}) {
+      const animate = options.animate && SPEEDS[state.speed] > 1;
+      clearSvg(svg);
+      addBasement(svg, { intact: kind === "dysplasia" });
+
+      const cells = finalStatesFor(kind);
+      if (kind === "neoplasia") {
+        drawNeoplasiaOutline(svg, animate);
+      }
+
+      drawCellGroups(svg, cells, kind, animate);
+
+      if (kind === "hyperplasia") {
+        addMitosisMarks(svg, cells, animate);
+      }
+
+      if (kind === "metaplasia") {
+        addText(svg, "cuboidal", 154, 66, { small: true });
+        addText(svg, "columnar + goblet", 344, 50, { small: true });
+      }
+
+      if (kind === "neoplasia") {
+        addText(svg, "abnormal growth", 284, 28, { note: true });
+      }
+
+      if (kind === "normal") {
+        addText(svg, "organized cuboidal epithelium", 260, 70, { small: true });
+      }
+    }
+
+    function renderExploreChoices() {
+      els.changeGrid.innerHTML = "";
+      CHANGE_ORDER.forEach(key => {
+        const button = htmlEl("button", {
+          type: "button",
+          class: "change-btn",
+          dataset: { change: key },
+          ariaPressed: String(key === state.selected)
+        }, CHANGES[key].label);
+        button.addEventListener("click", () => {
+          state.selected = key;
+          state.mode = "explore";
+          render();
+        });
+        els.changeGrid.appendChild(button);
+      });
+    }
+
+    function renderComparisonTable() {
+      els.comparisonBody.innerHTML = "";
+      CHANGE_ORDER.forEach(key => {
+        const item = CHANGES[key];
+        const tr = document.createElement("tr");
+        [item.label, item.mainFeature, item.cellSize, item.cellNumber, item.organization, item.cue].forEach(value => {
+          const td = document.createElement("td");
+          td.textContent = value;
+          tr.appendChild(td);
+        });
+        els.comparisonBody.appendChild(tr);
+      });
+    }
+
+    function renderExplore() {
+      const item = CHANGES[state.selected];
+      els.selectedTitle.textContent = item.label;
+      els.selectedDefinition.textContent = item.definition;
+      els.selectedExplanation.textContent = item.explanation;
+      els.exploreTransition.textContent = item.label;
+      Array.from(els.changeGrid.querySelectorAll(".change-btn")).forEach(button => {
+        button.setAttribute("aria-pressed", String(button.dataset.change === state.selected));
+      });
+      drawScene(els.exploreOriginal, "normal", { animate: false });
+      drawScene(els.exploreChanged, state.selected, { animate: true });
+    }
+
+    function chooseQuizKey() {
+      let candidates = QUIZ_ORDER.slice();
+      if (state.lastQuizKey && candidates.length > 1) {
+        candidates = candidates.filter(key => key !== state.lastQuizKey);
+      }
+      const key = candidates[getRandomInt(candidates.length)];
+      state.quizKey = key;
+      state.lastQuizKey = key;
+      state.answered = false;
+      state.chosenAnswer = "";
+      state.revealQuizExplanation = false;
+      state.answerOrder = shuffle(QUIZ_ORDER);
+    }
+
+    function renderAnswers() {
+      els.answerGrid.innerHTML = "";
+      if (!state.answerOrder.length) {
+        state.answerOrder = shuffle(QUIZ_ORDER);
+      }
+      const answerKeys = state.answerOrder;
+      answerKeys.forEach(key => {
+        const button = htmlEl("button", {
+          type: "button",
+          class: "answer-btn",
+          dataset: { answer: key }
+        }, CHANGES[key].answer);
+        if (state.answered) {
+          button.disabled = true;
+          if (key === state.quizKey) {
+            button.classList.add("correct");
+          }
+          if (key === state.chosenAnswer && key !== state.quizKey) {
+            button.classList.add("incorrect");
+          }
+        }
+        button.addEventListener("click", () => answerQuiz(key));
+        els.answerGrid.appendChild(button);
+      });
+    }
+
+    function renderQuizFeedback() {
+      els.quizFeedback.className = "feedback";
+      els.quizFeedback.innerHTML = "";
+      if (!state.answered) {
+        els.quizFeedback.textContent = "Choose an answer to check your understanding.";
+        els.showExplanation.classList.add("hidden");
+        els.quizExplanation.classList.add("hidden");
+        return;
+      }
+
+      if (state.chosenAnswer === state.quizKey) {
+        els.quizFeedback.classList.add("good");
+        els.quizFeedback.textContent = "Correct. You matched the visual pattern to the tissue change.";
+        addStars(els.quizFeedback);
+      } else {
+        els.quizFeedback.classList.add("needs-work");
+        els.quizFeedback.textContent = `Good try. The best answer is ${CHANGES[state.quizKey].answer}.`;
+      }
+      els.showExplanation.classList.remove("hidden");
+      els.quizExplanation.textContent = CHANGES[state.quizKey].explanation;
+      els.quizExplanation.classList.toggle("hidden", !state.revealQuizExplanation);
+    }
+
+    function addStars(container) {
+      const stars = htmlEl("span", { class: "stars", ariaHidden: "true" });
+      for (let i = 0; i < 16; i += 1) {
+        const star = htmlEl("span", { class: "star" });
+        star.style.left = `${8 + getRandomInt(84)}%`;
+        star.style.top = `${38 + getRandomInt(44)}%`;
+        star.style.animationDelay = `${getRandomInt(240)}ms`;
+        stars.appendChild(star);
+      }
+      container.appendChild(stars);
+    }
+
+    function renderQuiz() {
+      if (!state.quizKey) {
+        chooseQuizKey();
+      }
+      drawScene(els.quizOriginal, "normal", { animate: false });
+      drawScene(els.quizChanged, state.quizKey, { animate: true });
+      renderAnswers();
+      renderQuizFeedback();
+    }
+
+    function answerQuiz(key) {
+      if (state.answered) return;
+      state.answered = true;
+      state.chosenAnswer = key;
+      renderAnswers();
+      renderQuizFeedback();
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      els.exploreTab.setAttribute("aria-selected", String(mode === "explore"));
+      els.quizTab.setAttribute("aria-selected", String(mode === "quiz"));
+      els.explorePanel.classList.toggle("hidden", mode !== "explore");
+      els.quizPanel.classList.toggle("hidden", mode !== "quiz");
+      if (mode === "quiz" && !state.quizKey) {
+        chooseQuizKey();
+      }
+      render();
+    }
+
+    function replayCurrent() {
+      state.renderNonce += 1;
+      render();
+    }
+
+    function resetAll() {
+      state.selected = "normal";
+      state.speed = "normal";
+      state.showLabels = true;
+      state.quizKey = "";
+      state.lastQuizKey = "";
+      state.answerOrder = [];
+      state.answered = false;
+      state.chosenAnswer = "";
+      state.revealQuizExplanation = false;
+      els.labelsToggle.checked = true;
+      document.querySelectorAll(".speed-btn").forEach(button => {
+        button.setAttribute("aria-pressed", String(button.dataset.speed === state.speed));
+      });
+      render();
+    }
+
+    function setSpeed(speed) {
+      state.speed = speed;
+      document.querySelectorAll(".speed-btn").forEach(button => {
+        button.setAttribute("aria-pressed", String(button.dataset.speed === speed));
+      });
+      render();
+    }
+
+    function render() {
+      document.documentElement.style.setProperty("--duration", `${SPEEDS[state.speed]}ms`);
+      renderExploreChoices();
+      if (state.mode === "explore") {
+        renderExplore();
+      } else {
+        renderQuiz();
+      }
+    }
+
+    els.exploreTab.addEventListener("click", () => setMode("explore"));
+    els.quizTab.addEventListener("click", () => setMode("quiz"));
+    els.replayExplore.addEventListener("click", replayCurrent);
+    els.replayQuiz.addEventListener("click", replayCurrent);
+    els.resetBtn.addEventListener("click", resetAll);
+    els.tryAnother.addEventListener("click", () => {
+      chooseQuizKey();
+      renderQuiz();
+    });
+    els.showExplanation.addEventListener("click", () => {
+      state.revealQuizExplanation = true;
+      renderQuizFeedback();
+    });
+    els.labelsToggle.addEventListener("change", event => {
+      state.showLabels = event.target.checked;
+      render();
+    });
+    document.querySelectorAll(".speed-btn").forEach(button => {
+      button.addEventListener("click", () => setSpeed(button.dataset.speed));
+    });
+
+    renderComparisonTable();
+    render();
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,1298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drugs and Neurons Synapse Animation</title>
+<style>
+  :root {
+    --ink: #172033;
+    --muted: #586679;
+    --line: #d4deeb;
+    --panel: #ffffff;
+    --page: #eef4f8;
+    --blue: #2769a8;
+    --blue-dark: #1d4f80;
+    --slate: #465467;
+    --good: #16856d;
+    font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--ink);
+    background: linear-gradient(#fbfdff, #e9f1f7);
+  }
+
+  header, .app {
+    width: min(1240px, calc(100vw - 24px));
+    margin: 0 auto;
+  }
+
+  header {
+    padding: 14px 0 10px;
+    text-align: center;
+  }
+
+  .attribution {
+    margin: 0 0 8px;
+    font-weight: 900;
+    font-size: clamp(1rem, 1.35vw, 1.18rem);
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(1.65rem, 3vw, 2.75rem);
+    line-height: 1.04;
+    letter-spacing: 0;
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    gap: 14px;
+    align-items: start;
+    padding-bottom: 24px;
+  }
+
+  .stage, .side {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+    box-shadow: 0 16px 36px rgba(23, 32, 51, 0.16);
+    overflow: hidden;
+  }
+
+  .drug-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    padding: 10px;
+    border-bottom: 1px solid var(--line);
+    background: #f8fbff;
+  }
+
+  button {
+    min-height: 44px;
+    border: 1px solid #275b87;
+    border-radius: 7px;
+    padding: 9px 11px;
+    background: var(--blue);
+    color: #fff;
+    font: 900 0.98rem/1.12 "Segoe UI", system-ui, sans-serif;
+    cursor: pointer;
+    transition: transform 0.12s ease, background 0.12s ease, opacity 0.12s ease;
+  }
+
+  button:hover:not(:disabled) {
+    background: var(--blue-dark);
+    transform: translateY(-1px);
+  }
+
+  button:active:not(:disabled) { transform: translateY(1px); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+  .drug-button {
+    background: #fff;
+    color: #23415e;
+    border-color: #b8cadb;
+    box-shadow: none;
+  }
+
+  .drug-button.active {
+    background: #8f3c70;
+    color: #fff;
+    border-color: #78305d;
+  }
+
+  .scene-shell {
+    background: #edf5fb;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .side {
+    display: grid;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .side h2, .side h3 {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.2;
+  }
+
+  .controls {
+    display: grid;
+    grid-template-columns: minmax(280px, 1.9fr) minmax(84px, 0.8fr) minmax(84px, 0.8fr);
+    gap: 8px;
+    padding: 10px;
+    border-bottom: 1px solid var(--line);
+    background: #fbfcff;
+  }
+
+  .controls button {
+    min-height: 50px;
+    font-size: clamp(0.76rem, 1vw, 0.98rem);
+  }
+
+  #stimBtn {
+    background: #c93636;
+    border-color: #a92b2b;
+    color: #fff;
+  }
+
+  #stimBtn:hover:not(:disabled) {
+    background: #a92b2b;
+  }
+
+  .secondary {
+    background: #fff;
+    color: #1f415f;
+    border-color: #a7bacb;
+  }
+
+  .secondary:hover:not(:disabled) {
+    background: #edf5fb;
+  }
+
+  .reset {
+    background: var(--slate);
+    border-color: var(--slate);
+  }
+
+  .drug-on {
+    background: #8f3c70;
+    border-color: #78305d;
+  }
+
+  .status {
+    min-height: 78px;
+    padding: 11px 12px;
+    border: 1px solid #bcd4da;
+    border-left: 5px solid #238199;
+    border-radius: 7px;
+    background: #f5feff;
+    font-weight: 750;
+    line-height: 1.32;
+  }
+
+  .mode-note {
+    margin: 0;
+    color: #3e5060;
+    font-size: 0.94rem;
+    line-height: 1.38;
+  }
+
+  .readouts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .readout {
+    min-height: 66px;
+    padding: 9px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: #f8fafc;
+  }
+
+  .readout span {
+    display: block;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    line-height: 1.12;
+  }
+
+  .readout strong {
+    display: block;
+    margin-top: 5px;
+    font-size: 1.55rem;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .footer-note {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.82rem;
+    line-height: 1.35;
+  }
+
+  @media (max-width: 980px) {
+    .app { grid-template-columns: 1fr; }
+    .side { grid-template-columns: 1fr 1fr; }
+    .status, .mode-note, .footer-note { grid-column: 1 / -1; }
+  }
+
+  @media (max-width: 660px) {
+    header, .app { width: calc(100vw - 14px); }
+    .drug-row, .side, .readouts { grid-template-columns: 1fr; }
+    .controls { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <p class="attribution">Animation Prompted by Jerred Seveyka for his biology class.</p>
+  <h1>Drugs and Neurons</h1>
+</header>
+
+<main class="app">
+  <section class="stage" aria-label="Synapse animation">
+    <div class="controls" aria-label="Animation controls">
+      <button type="button" id="stimBtn">Stimulate Pre-synaptic Neuron: Press Repeatedly To Stimulate More</button>
+      <button type="button" id="playBtn">Pause</button>
+      <button type="button" id="resetBtn" class="reset">Reset</button>
+    </div>
+    <div class="drug-row" aria-label="Drug controls">
+      <button class="drug-button" type="button" data-mode="cocaine" aria-pressed="false">Add Cocaine</button>
+      <button class="drug-button" type="button" data-mode="methamphetamine" aria-pressed="false">Add Methamphetamine</button>
+      <button class="drug-button" type="button" data-mode="benzodiazepine" aria-pressed="false">Add Benzodiazepine</button>
+      <button class="drug-button" type="button" data-mode="ssri" aria-pressed="false">Add SSRI</button>
+    </div>
+    <div class="scene-shell">
+      <canvas id="scene" width="1120" height="720" aria-label="Animated synapse model showing vesicle fusion, neurotransmitter diffusion, receptor binding, reuptake, drug action, chloride flow, and a response trace"></canvas>
+    </div>
+  </section>
+
+  <aside class="side" aria-label="Animation controls and labels">
+    <div>
+      <h2 id="modeTitle">Cocaine: dopamine synapse</h2>
+      <p class="mode-note" id="modeNote">Dopamine binds receptors, triggers a simplified G-protein signal, opens a Cl- channel, and hyperpolarizes the postsynaptic neuron.</p>
+    </div>
+
+    <div class="status" id="status" aria-live="polite">Press the stimulation button to watch vesicles fuse and dopamine diffuse through the synaptic cleft.</div>
+
+    <div class="readouts" aria-label="Current model readouts">
+      <div class="readout"><span>Drug present</span><strong id="drugState">No</strong></div>
+      <div class="readout"><span id="traceLabel">Membrane trace</span><strong id="traceValue">-70 mV</strong></div>
+    </div>
+
+    <p class="footer-note">Teaching note: receptor coupling, ion flow, and postsynaptic response are visual models, not quantitative pharmacology.</p>
+  </aside>
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  const W = 1120;
+  const H = 720;
+  const CLEFT = { left: 382, right: 642, top: 122, bottom: 585 };
+  const PRE = { x: 48, y: 124, w: 320, h: 460 };
+  const POST = { x: 648, y: 104, w: 424, h: 500 };
+  const RESTING_MV = -70;
+  const canvas = document.getElementById("scene");
+  const ctx = canvas.getContext("2d");
+  const drugButtons = Array.from(document.querySelectorAll(".drug-button"));
+  const els = {
+    play: document.getElementById("playBtn"),
+    reset: document.getElementById("resetBtn"),
+    stim: document.getElementById("stimBtn"),
+    status: document.getElementById("status"),
+    modeTitle: document.getElementById("modeTitle"),
+    modeNote: document.getElementById("modeNote"),
+    drugState: document.getElementById("drugState"),
+    traceLabel: document.getElementById("traceLabel"),
+    traceValue: document.getElementById("traceValue")
+  };
+
+  const modes = {
+    cocaine: {
+      tab: "Cocaine",
+      title: "Cocaine: dopamine synapse",
+      note: "Dopamine binds receptors, triggers a simplified G-protein signal, opens a Cl- channel, and hyperpolarizes the postsynaptic neuron.",
+      transmitter: "Dopamine",
+      short: "DA",
+      receptor: "Dopamine receptor",
+      transporter: "Dopamine reuptake transporter",
+      drug: "Cocaine",
+      drugColor: "#d94f84",
+      txColor: "#f3bc36",
+      txEdge: "#8e640d",
+      vesicleTint: "#fff3c4",
+      receptorType: "dopamine",
+      traceKind: "voltage",
+      drugEffect: "blocks dopamine reuptake transporters",
+      releaseVesicles: 1,
+      transmitterPerVesicle: 9,
+      bindRate: 1.8,
+      unbindRate: 0.22,
+      diffusionRate: 0.05,
+      reuptakeRate: 1.15,
+      transporters: true,
+      chloride: true,
+      indirect: true
+    },
+    methamphetamine: {
+      tab: "Methamphetamine",
+      title: "Methamphetamine: increased dopamine release",
+      note: "Methamphetamine acts at the presynaptic axon terminal in this teaching model, causing more dopamine vesicles to release and reducing dopamine reuptake.",
+      transmitter: "Dopamine",
+      short: "DA",
+      receptor: "Dopamine receptor",
+      transporter: "Dopamine reuptake transporter",
+      drug: "Methamphetamine",
+      drugColor: "#e4572e",
+      txColor: "#f3bc36",
+      txEdge: "#8e640d",
+      vesicleTint: "#fff3c4",
+      receptorType: "dopamine",
+      traceKind: "voltage",
+      drugEffect: "increases dopamine release from the axon terminal and reduces dopamine reuptake",
+      releaseVesicles: 1,
+      transmitterPerVesicle: 8,
+      drugReleaseVesicles: 3,
+      drugTransmitterPerVesicle: 9,
+      bindRate: 1.8,
+      unbindRate: 0.22,
+      diffusionRate: 0.05,
+      reuptakeRate: 1.0,
+      transporters: true,
+      chloride: true,
+      indirect: true
+    },
+    benzodiazepine: {
+      tab: "Benzodiazepine",
+      title: "Benzodiazepine: GABA_A receptor enhancement",
+      note: "GABA opens GABA_A Cl- channels. Benzodiazepine binds an allosteric site and enhances the response only when GABA is present.",
+      transmitter: "GABA",
+      short: "GABA",
+      receptor: "GABA_A receptor",
+      transporter: "",
+      drug: "Benzodiazepine",
+      drugColor: "#7d5ad7",
+      txColor: "#30b58f",
+      txEdge: "#126b55",
+      vesicleTint: "#dff8ee",
+      receptorType: "gaba",
+      traceKind: "voltage",
+      drugEffect: "binds the allosteric site and enhances GABA action",
+      releaseVesicles: 1,
+      transmitterPerVesicle: 8,
+      bindRate: 1.65,
+      unbindRate: 0.22,
+      diffusionRate: 0.06,
+      reuptakeRate: 0,
+      transporters: false,
+      chloride: true,
+      gabaChannel: true
+    },
+    ssri: {
+      tab: "SSRI",
+      title: "SSRI: serotonin reuptake blockade",
+      note: "Serotonin binds postsynaptic serotonin receptors. The trace shows a simplified postsynaptic response while SSRI blocks serotonin reuptake.",
+      transmitter: "Serotonin",
+      short: "5-HT",
+      receptor: "Serotonin receptor",
+      transporter: "Serotonin reuptake transporter",
+      drug: "SSRI",
+      drugColor: "#6d59d3",
+      txColor: "#ff8c42",
+      txEdge: "#a64b12",
+      vesicleTint: "#ffe5d0",
+      receptorType: "serotonin",
+      traceKind: "response",
+      drugEffect: "blocks serotonin reuptake transporters",
+      releaseVesicles: 1,
+      transmitterPerVesicle: 9,
+      bindRate: 1.7,
+      unbindRate: 0.2,
+      diffusionRate: 0.05,
+      reuptakeRate: 1.05,
+      transporters: true,
+      chloride: false,
+      simplifiedResponse: true
+    }
+  };
+
+  const receptorYs = [184, 256, 328, 400, 472];
+  const transporterYs = [226, 344, 462];
+  const staticVesicleSlots = [
+    { x: 128, y: 198 }, { x: 210, y: 176 }, { x: 292, y: 226 },
+    { x: 162, y: 326 }, { x: 276, y: 334 }, { x: 218, y: 452 }
+  ];
+
+  let state;
+  let currentMode = "cocaine";
+  let lastTime = 0;
+  let idCounter = 1;
+
+  function setupCanvas() {
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = W * ratio;
+    canvas.height = H * ratio;
+    canvas.style.aspectRatio = `${W} / ${H}`;
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  }
+
+  function random(min, max) {
+    return min + Math.random() * (max - min);
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function dist(a, b, c, d) {
+    return Math.hypot(a - c, b - d);
+  }
+
+  function rounded(x, y, w, h, r, fill, stroke, line = 2) {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+    if (fill) {
+      ctx.fillStyle = fill;
+      ctx.fill();
+    }
+    if (stroke) {
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = line;
+      ctx.stroke();
+    }
+  }
+
+  function label(text, x, y, size = 15, color = "#253244", align = "center", weight = 850) {
+    ctx.save();
+    ctx.font = `${weight} ${size}px "Segoe UI", system-ui, sans-serif`;
+    ctx.fillStyle = color;
+    ctx.textAlign = align;
+    ctx.textBaseline = "middle";
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "rgba(255,255,255,0.88)";
+    ctx.strokeText(text, x, y);
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+
+  function resetState({ keepDrug = false, drugActive = false } = {}) {
+    const nextDrugActive = drugActive || (state?.drugActive && keepDrug);
+    idCounter = 1;
+    state = {
+      playing: true,
+      drugActive: Boolean(nextDrugActive),
+      molecules: [],
+      vesicles: [],
+      receptors: receptorYs.map((y, i) => ({ id: i + 1, y, boundId: null, activeTimer: 0 })),
+      clIons: [],
+      voltage: RESTING_MV,
+      response: 0,
+      trace: [],
+      traceTimer: 0,
+      time: 0,
+      status: `Press the stimulation button to watch vesicles fuse and ${modes[currentMode].transmitter.toLowerCase()} diffuse through the synaptic cleft.`
+    };
+    const base = modes[currentMode].traceKind === "voltage" ? RESTING_MV : 0;
+    for (let i = 0; i < 120; i += 1) state.trace.push(base);
+    updateUi();
+  }
+
+  function setMode(modeKey, options = {}) {
+    currentMode = modeKey;
+    resetState({ drugActive: Boolean(options.drugActive) });
+  }
+
+  function toggleDrugMode(modeKey) {
+    if (state.drugActive && currentMode === modeKey) {
+      state.drugActive = false;
+      state.status = `${mode().drug} removed. Baseline transmitter release, diffusion, binding, unbinding, and reuptake resume.`;
+      updateUi();
+      return;
+    }
+    if (state.drugActive && currentMode !== modeKey) return;
+    currentMode = modeKey;
+    resetState({ drugActive: true });
+    state.status = drugAddedStatus();
+    updateUi();
+  }
+
+  function drugAddedStatus() {
+    const m = mode();
+    if (currentMode === "cocaine" || currentMode === "ssri") return `${m.drug} molecules now physically block the reuptake transporters. Unbound transmitter remains in the cleft longer.`;
+    if (currentMode === "methamphetamine") return "Methamphetamine is acting at the presynaptic axon terminal and reducing reuptake. The next stimulation releases more dopamine and leaves it in the cleft longer.";
+    if (currentMode === "benzodiazepine") return "Benzodiazepine is bound at allosteric sites. It enhances receptor opening only when GABA binds.";
+    return `${m.drug} added.`;
+  }
+
+  function mode() {
+    return modes[currentMode];
+  }
+
+  function drugBlocksReuptake() {
+    return state.drugActive && (currentMode === "cocaine" || currentMode === "methamphetamine" || currentMode === "ssri");
+  }
+
+  function effectiveUnbindRate() {
+    const m = mode();
+    if (currentMode === "benzodiazepine" && state.drugActive) return m.unbindRate * 0.38;
+    return m.unbindRate;
+  }
+
+  function stimulateRelease() {
+    const m = mode();
+    const vesicleCount = state.drugActive && currentMode === "methamphetamine" ? m.drugReleaseVesicles : m.releaseVesicles;
+    const perVesicle = state.drugActive && currentMode === "methamphetamine" ? m.drugTransmitterPerVesicle : m.transmitterPerVesicle;
+    for (let i = 0; i < vesicleCount; i += 1) {
+      const slot = staticVesicleSlots[(state.vesicles.length + i) % staticVesicleSlots.length];
+      state.vesicles.push({
+        x: slot.x + random(-12, 12),
+        y: slot.y + random(-12, 12),
+        startX: slot.x + random(-10, 10),
+        startY: slot.y + random(-10, 10),
+        targetX: PRE.x + PRE.w - 12,
+        targetY: random(CLEFT.top + 70, CLEFT.bottom - 70),
+        progress: 0,
+        fusion: 0,
+        spawned: false,
+        amount: perVesicle
+      });
+    }
+    state.playing = true;
+    state.status = state.drugActive && currentMode === "methamphetamine"
+      ? "Methamphetamine is present: more vesicles fuse, releasing extra dopamine into the cleft."
+      : `Vesicles move to the presynaptic membrane, fuse, and release ${m.transmitter}.`;
+    updateUi();
+  }
+
+  function spawnTransmitters(count, x, y) {
+    const m = mode();
+    for (let i = 0; i < count; i += 1) {
+      state.molecules.push({
+        id: idCounter++,
+        x: x + random(18, 54),
+        y: y + random(-24, 24),
+        vx: random(18, 72),
+        vy: random(-58, 58),
+        age: 0,
+        clearAfter: random(8.5, 13.5),
+        state: "free",
+        boundTo: null,
+        hasBoundBefore: false,
+        clearing: false,
+        alpha: 1,
+        target: null,
+        phase: random(0, Math.PI * 2),
+        label: m.short
+      });
+    }
+  }
+
+  function update(dt) {
+    if (!state.playing) return;
+    state.time += dt;
+    updateVesicles(dt);
+    updateMolecules(dt);
+    updateReceptors(dt);
+    updateChloride(dt);
+    updateTrace(dt);
+  }
+
+  function updateVesicles(dt) {
+    for (const vesicle of state.vesicles) {
+      if (vesicle.progress < 1) {
+        vesicle.progress = Math.min(1, vesicle.progress + dt * 0.72);
+        const ease = vesicle.progress * vesicle.progress * (3 - 2 * vesicle.progress);
+        vesicle.x = vesicle.startX + (vesicle.targetX - vesicle.startX) * ease;
+        vesicle.y = vesicle.startY + (vesicle.targetY - vesicle.startY) * ease;
+      } else {
+        if (!vesicle.spawned) {
+          vesicle.spawned = true;
+          spawnTransmitters(vesicle.amount, CLEFT.left + 4, vesicle.targetY);
+        }
+        vesicle.fusion += dt;
+      }
+    }
+    state.vesicles = state.vesicles.filter((vesicle) => vesicle.fusion < 0.55);
+  }
+
+  function updateMolecules(dt) {
+    const m = mode();
+    for (const mol of state.molecules) {
+      mol.age += dt;
+      if (mol.rebindCooldown) mol.rebindCooldown = Math.max(0, mol.rebindCooldown - dt);
+
+      if (mol.state === "bound") {
+        const receptor = state.receptors.find((item) => item.id === mol.boundTo);
+        if (!receptor) {
+          mol.state = "free";
+          mol.boundTo = null;
+          continue;
+        }
+        mol.x = CLEFT.right - 9;
+        mol.y = receptor.y;
+        if (Math.random() < effectiveUnbindRate() * dt) {
+          const releasedFrom = receptor.id;
+          receptor.boundId = null;
+          mol.boundTo = null;
+          mol.state = "free";
+          mol.rebindCooldown = 999;
+          mol.lastUnboundFrom = releasedFrom;
+          mol.hasBoundBefore = true;
+          mol.clearing = true;
+          mol.clearanceBias = 6;
+          mol.clearAfter = Math.min(mol.clearAfter, mol.age + random(1.8, 3.6));
+          mol.vx = random(-175, -118);
+          mol.vy = random(-92, 92);
+          mol.x -= 34;
+        }
+        continue;
+      }
+
+      if (mol.state === "reuptake") {
+        mol.x += (mol.target.x - mol.x) * Math.min(1, dt * 5.5);
+        mol.y += (mol.target.y - mol.y) * Math.min(1, dt * 5.5);
+        mol.alpha -= dt * 1.8;
+        if (mol.alpha <= 0.05 || dist(mol.x, mol.y, mol.target.x, mol.target.y) < 7) mol.remove = true;
+        continue;
+      }
+
+      if (mol.state === "diffuse") {
+        mol.x += mol.vx * dt;
+        mol.y += mol.vy * dt;
+        mol.alpha -= dt * 0.55;
+        if (mol.alpha <= 0.03 || mol.y < 62 || mol.y > H - 62 || mol.x < CLEFT.left - 70 || mol.x > CLEFT.right + 80) mol.remove = true;
+        continue;
+      }
+
+      const recentlyUnbound = (mol.rebindCooldown || 0) > 0;
+      const clearing = Boolean(mol.clearing);
+      if (mol.clearanceBias) mol.clearanceBias = Math.max(0, mol.clearanceBias - dt * 0.35);
+
+      mol.vx += random(-28, 28) * dt;
+      mol.vy += random(-34, 34) * dt;
+      if (recentlyUnbound || clearing) mol.vx -= 76 * dt;
+      mol.vx *= 0.995;
+      mol.vy *= 0.995;
+      mol.x += mol.vx * dt;
+      mol.y += mol.vy * dt;
+
+      if (mol.y < CLEFT.top + 10) { mol.y = CLEFT.top + 10; mol.vy = Math.abs(mol.vy) * 0.9; }
+      if (mol.y > CLEFT.bottom - 10) { mol.y = CLEFT.bottom - 10; mol.vy = -Math.abs(mol.vy) * 0.9; }
+      if (mol.x < CLEFT.left + 10) { mol.x = CLEFT.left + 10; mol.vx = Math.abs(mol.vx) * 0.86; }
+      if (mol.x > CLEFT.right - 13) { mol.x = CLEFT.right - 13; mol.vx = -Math.abs(mol.vx) * 0.86; }
+
+      if (m.transporters && !drugBlocksReuptake() && tryReuptake(mol, dt)) continue;
+
+      const lifetimeExpired = mol.age > mol.clearAfter;
+      const diffusionChance = m.diffusionRate * (1 + (mol.clearanceBias || 0)) * dt;
+      if (lifetimeExpired || ((mol.age > 1.2 || recentlyUnbound || clearing) && Math.random() < diffusionChance)) {
+        mol.state = "diffuse";
+        mol.vx = clearing ? random(-72, -24) : random(-38, 38);
+        mol.vy = Math.random() < 0.5 ? random(-104, -54) : random(54, 104);
+        state.status = `${m.transmitter} can also diffuse away from the synaptic cleft.`;
+        continue;
+      }
+
+      if (!recentlyUnbound && !clearing) {
+        guideTowardOpenReceptor(mol, dt);
+        if (tryBind(mol, dt)) continue;
+      }
+    }
+    state.molecules = state.molecules.filter((mol) => !mol.remove);
+  }
+
+  function guideTowardOpenReceptor(mol, dt) {
+    if ((mol.rebindCooldown || 0) > 0 || mol.clearing || mol.hasBoundBefore) return;
+    const open = state.receptors
+      .filter((receptor) => receptor.boundId === null)
+      .map((receptor) => ({
+        receptor,
+        d: dist(mol.x, mol.y, CLEFT.right - 9, receptor.y)
+      }))
+      .sort((a, b) => a.d - b.d);
+    if (!open.length || mol.x < CLEFT.left + 50) return;
+    const nearest = open[0];
+    const pull = clamp(1 - nearest.d / 150, 0, 1);
+    if (pull <= 0) return;
+    mol.vx += (CLEFT.right - 9 - mol.x) * dt * 1.35 * pull;
+    mol.vy += (nearest.receptor.y - mol.y) * dt * 1.75 * pull;
+  }
+
+  function tryBind(mol, dt) {
+    if ((mol.rebindCooldown || 0) > 0 || mol.clearing || mol.hasBoundBefore) return false;
+    const m = mode();
+    const open = state.receptors
+      .filter((receptor) => receptor.boundId === null)
+      .map((receptor) => ({
+        receptor,
+        d: dist(mol.x, mol.y, CLEFT.right - 9, receptor.y)
+      }))
+      .sort((a, b) => a.d - b.d);
+    for (const item of open) {
+      const receptor = item.receptor;
+      const siteX = CLEFT.right - 9;
+      const d = item.d;
+      const bindChance = m.bindRate * dt * clamp(1.45 - d / 42, 0, 1.25);
+      if (d < 42 && Math.random() < bindChance) {
+        receptor.boundId = mol.id;
+        receptor.activeTimer = Math.max(receptor.activeTimer, receptorHoldTime());
+        mol.boundTo = receptor.id;
+        mol.state = "bound";
+        mol.hasBoundBefore = true;
+        mol.x = siteX;
+        mol.y = receptor.y;
+        mol.vx = 0;
+        mol.vy = 0;
+        state.status = `${m.transmitter} bound one ${m.receptor}; each receptor can hold only one transmitter at a time.`;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function tryReuptake(mol, dt) {
+    let nearest = null;
+    let best = Infinity;
+    for (const y of transporterYs) {
+      const d = dist(mol.x, mol.y, CLEFT.left + 3, y);
+      if (d < best) {
+        best = d;
+        nearest = y;
+      }
+    }
+    if (best < 78) {
+      mol.vx -= 40 * dt;
+      mol.vy += (nearest - mol.y) * dt * 0.9;
+    }
+    if (best < 52 && Math.random() < mode().reuptakeRate * dt) {
+      mol.state = "reuptake";
+      mol.target = { x: CLEFT.left - 42, y: nearest };
+      state.status = `${mode().transmitter} reuptake is pulling in an unbound transmitter molecule, not one bound to a receptor.`;
+      return true;
+    }
+    return false;
+  }
+
+  function receptorHoldTime() {
+    if (currentMode === "benzodiazepine" && state.drugActive) return 1.2;
+    if (currentMode === "ssri") return 0.55;
+    return 0.65;
+  }
+
+  function updateReceptors(dt) {
+    const m = mode();
+    let activeScore = 0;
+    for (const receptor of state.receptors) {
+      const hasBound = receptor.boundId !== null && state.molecules.some((mol) => mol.id === receptor.boundId && mol.state === "bound");
+      if (hasBound) receptor.activeTimer = Math.max(receptor.activeTimer, receptorHoldTime());
+      else receptor.activeTimer = Math.max(0, receptor.activeTimer - dt);
+      if (receptor.activeTimer > 0) activeScore += currentMode === "benzodiazepine" && state.drugActive ? 1.75 : 1;
+    }
+
+    if (m.traceKind === "voltage") {
+      const target = RESTING_MV - Math.min(17, activeScore * 3.4);
+      state.voltage += (target - state.voltage) * Math.min(1, dt * 2.2);
+      state.voltage += (RESTING_MV - state.voltage) * dt * 0.18;
+      state.response = clamp((RESTING_MV - state.voltage) / 18, 0, 1);
+    } else {
+      const target = clamp(activeScore / state.receptors.length, 0, 1);
+      state.response += (target - state.response) * Math.min(1, dt * 2.4);
+      state.response *= 1 - dt * 0.08;
+      state.voltage = RESTING_MV;
+    }
+
+    if (m.chloride && activeScore > 0) {
+      state.clBudget = (state.clBudget || 0) + activeScore * dt * 5;
+      while (state.clBudget >= 1) {
+        state.clBudget -= 1;
+        spawnChloride();
+      }
+    }
+  }
+
+  function spawnChloride() {
+    const active = state.receptors.filter((receptor) => receptor.activeTimer > 0);
+    if (!active.length) return;
+    const receptor = active[Math.floor(Math.random() * active.length)];
+    const startX = currentMode === "benzodiazepine" ? CLEFT.right - 10 : CLEFT.right + 58;
+    state.clIons.push({
+      x: startX + random(-5, 5),
+      y: receptor.y + random(-13, 13),
+      vx: random(72, 122),
+      vy: random(-24, 24),
+      alpha: 1,
+      life: 0
+    });
+  }
+
+  function updateChloride(dt) {
+    for (const ion of state.clIons) {
+      ion.life += dt;
+      ion.x += ion.vx * dt;
+      ion.y += ion.vy * dt;
+      ion.alpha -= dt * 0.72;
+      if (ion.alpha <= 0.03 || ion.x > POST.x + POST.w - 38) ion.remove = true;
+    }
+    state.clIons = state.clIons.filter((ion) => !ion.remove);
+  }
+
+  function updateTrace(dt) {
+    state.traceTimer += dt;
+    if (state.traceTimer < 0.06) return;
+    state.traceTimer = 0;
+    state.trace.push(mode().traceKind === "voltage" ? state.voltage : state.response);
+    while (state.trace.length > 120) state.trace.shift();
+    updateUi();
+  }
+
+  function updateUi() {
+    const m = mode();
+    els.modeTitle.textContent = m.title;
+    els.modeNote.textContent = m.note;
+    els.play.textContent = state.playing ? "Pause" : "Play";
+    els.status.textContent = state.status;
+    els.drugState.textContent = state.drugActive ? "Yes" : "No";
+    els.traceLabel.textContent = m.traceKind === "voltage" ? "Hyperpolarization" : "Simplified response";
+    els.traceValue.textContent = m.traceKind === "voltage" ? `${Math.round(state.voltage)} mV` : `${Math.round(state.response * 100)}%`;
+    updateDrugButtons();
+  }
+
+  function updateDrugButtons() {
+    drugButtons.forEach((button) => {
+      const key = button.dataset.mode;
+      const drugName = modes[key].drug;
+      const isActive = state.drugActive && currentMode === key;
+      button.textContent = `${isActive ? "Remove" : "Add"} ${drugName}`;
+      button.disabled = state.drugActive && !isActive;
+      button.classList.toggle("active", isActive);
+      button.setAttribute("aria-pressed", String(isActive));
+    });
+  }
+
+  function draw() {
+    const m = mode();
+    drawBackground();
+    drawNeurons(m);
+    drawStaticVesicles(m);
+    drawTransporters(m);
+    drawReceptors(m);
+    drawDrugAction(m);
+    drawMovingVesicles(m);
+    drawMolecules(m);
+    drawChloride();
+    drawTracePanel(m);
+    drawModeBadges(m);
+  }
+
+  function drawBackground() {
+    const gradient = ctx.createLinearGradient(0, 0, 0, H);
+    gradient.addColorStop(0, "#f8fcff");
+    gradient.addColorStop(0.55, "#edf6fb");
+    gradient.addColorStop(1, "#fff6f7");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  function drawNeurons(m) {
+    rounded(15, 304, 80, 72, 35, "#d8ecff", "#5b83a8", 3);
+    rounded(PRE.x, PRE.y, PRE.w, PRE.h, 120, "#d8ecff", "#5b83a8", 3);
+    rounded(CLEFT.left, CLEFT.top, CLEFT.right - CLEFT.left, CLEFT.bottom - CLEFT.top, 8, "rgba(255,255,255,0.74)", "#cad9e5", 1.5);
+    rounded(POST.x, POST.y, POST.w, POST.h, 120, "#ffe9ef", "#b96b7c", 3);
+
+    ctx.strokeStyle = "#446b8d";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(PRE.x + PRE.w, PRE.y + 38);
+    ctx.lineTo(PRE.x + PRE.w, PRE.y + PRE.h - 38);
+    ctx.stroke();
+    ctx.strokeStyle = "#9d5064";
+    ctx.beginPath();
+    ctx.moveTo(POST.x, POST.y + 38);
+    ctx.lineTo(POST.x, POST.y + POST.h - 38);
+    ctx.stroke();
+
+    label("Presynaptic neuron", 170, 84, 18);
+    label("Axon terminal", 212, 138, 17);
+    label("Synaptic cleft", (CLEFT.left + CLEFT.right) / 2, 96, 17);
+    label("Postsynaptic neuron", 856, 76, 18);
+    label(m.title, 560, 36, 23, "#172033");
+  }
+
+  function drawStaticVesicles(m) {
+    for (let i = 0; i < staticVesicleSlots.length; i += 1) {
+      const slot = staticVesicleSlots[i];
+      const bob = Math.sin(state.time * 1.2 + i) * 3;
+      drawVesicle(slot.x, slot.y + bob, 31, m);
+    }
+    label("Synaptic vesicle", 170, 232, 14);
+    label(m.transmitter, 244, 502, 15, m.txEdge);
+  }
+
+  function drawVesicle(x, y, r, m) {
+    ctx.save();
+    ctx.fillStyle = m.vesicleTint;
+    ctx.strokeStyle = m.txEdge;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    for (let i = 0; i < 5; i += 1) {
+      const angle = i * 1.27 + 0.4;
+      drawSmallTransmitter(x + Math.cos(angle) * r * 0.42, y + Math.sin(angle) * r * 0.42, m, 0.86, false);
+    }
+    ctx.restore();
+  }
+
+  function drawMovingVesicles(m) {
+    for (const vesicle of state.vesicles) {
+      if (vesicle.progress < 1) {
+        drawVesicle(vesicle.x, vesicle.y, 29, m);
+      } else {
+        const alpha = 1 - vesicle.fusion / 0.55;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, alpha);
+        ctx.strokeStyle = m.txEdge;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(CLEFT.left - 5, vesicle.targetY, 24 + vesicle.fusion * 16, -Math.PI / 2, Math.PI / 2);
+        ctx.stroke();
+        label("vesicle fusion", CLEFT.left - 86, vesicle.targetY - 35, 13, m.txEdge);
+        ctx.restore();
+      }
+    }
+  }
+
+  function drawTransporters(m) {
+    if (!m.transporters) return;
+    for (const y of transporterYs) {
+      rounded(CLEFT.left - 16, y - 30, 26, 60, 12, "#bde6f4", "#316b86", 3);
+      rounded(CLEFT.left - 6, y - 18, 10, 36, 5, "#f8fdff", null);
+      ctx.strokeStyle = "#316b86";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(CLEFT.left + 4, y - 18);
+      ctx.quadraticCurveTo(CLEFT.left + 25, y, CLEFT.left + 4, y + 18);
+      ctx.stroke();
+      if (drugBlocksReuptake()) {
+        drawDrugMolecule(CLEFT.left + 18, y, m.drugColor, m.drug, 0.95);
+      }
+    }
+    label("Reuptake transporter", CLEFT.left - 76, transporterYs[0] - 52, 13);
+    if (drugBlocksReuptake()) label(m.drug, CLEFT.left + 50, transporterYs[1] + 56, 14, m.drugColor);
+  }
+
+  function drawReceptors(m) {
+    for (let i = 0; i < state.receptors.length; i += 1) {
+      const receptor = state.receptors[i];
+      const active = receptor.activeTimer > 0;
+      const y = receptor.y;
+      const glow = currentMode === "benzodiazepine" && state.drugActive ? "rgba(125,90,215,0.22)" : "rgba(51,148,230,0.18)";
+      if (active) {
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.ellipse(POST.x + 70, y, 86, 44, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      rounded(CLEFT.right - 5, y - 31, 55, 62, 13, "#cae7ff", "#246899", 3);
+      rounded(CLEFT.right + 2, y - 12, 18, 24, 7, "#fff", "#246899", 2);
+      ctx.fillStyle = active ? "#fff7ad" : "#f3f8ff";
+      ctx.beginPath();
+      ctx.arc(CLEFT.right - 8, y, 14, -Math.PI / 2, Math.PI / 2);
+      ctx.fill();
+      ctx.strokeStyle = "#246899";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      if (m.indirect) {
+        drawGProteinPath(y, active);
+        drawClChannel(CLEFT.right + 102, y, active);
+      }
+      if (m.gabaChannel) {
+        drawClChannel(CLEFT.right + 30, y, active);
+        drawAllostericSite(y, state.drugActive, m);
+      }
+      if (m.simplifiedResponse) {
+        drawResponseSignal(y, active);
+      }
+    }
+    label(m.receptor, POST.x + 96, receptorYs[0] - 54, 14);
+    if (m.indirect) {
+      label("G-protein signal", CLEFT.right + 92, receptorYs[1] - 55, 13, "#5c43b7");
+      label("Cl- channel", CLEFT.right + 162, receptorYs[1] + 53, 13);
+    }
+    if (m.gabaChannel) {
+      label("Cl- channel", CLEFT.right + 94, receptorYs[1] + 50, 13);
+      label("Allosteric site", CLEFT.right + 100, receptorYs[0] - 78, 13, "#6c4cc4");
+    }
+  }
+
+  function drawGProteinPath(y, active) {
+    ctx.strokeStyle = active ? "#6b55d8" : "#b9b4dc";
+    ctx.lineWidth = active ? 4 : 2.5;
+    ctx.setLineDash(active ? [] : [5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(CLEFT.right + 50, y);
+    ctx.bezierCurveTo(CLEFT.right + 70, y - 26, CLEFT.right + 82, y + 26, CLEFT.right + 102, y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = active ? "#7158e2" : "#c7c2e8";
+    ctx.beginPath();
+    ctx.arc(CLEFT.right + 76, y, 7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawClChannel(x, y, active) {
+    rounded(x - 18, y - 30, 36, 60, 13, active ? "#bdf2eb" : "#d6f0ed", "#23887d", 3);
+    rounded(x - 6, y - 22, 12, 44, 6, active ? "#ffffff" : "#8ccac2", null);
+    if (!active) {
+      ctx.strokeStyle = "#23887d";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(x - 12, y);
+      ctx.lineTo(x + 12, y);
+      ctx.stroke();
+    }
+  }
+
+  function drawAllostericSite(y, active, m) {
+    ctx.save();
+    ctx.translate(CLEFT.right + 56, y - 31);
+    ctx.rotate(Math.PI / 4);
+    rounded(-9, -9, 18, 18, 4, active ? m.drugColor : "#eee8ff", "#6c4cc4", 2);
+    ctx.restore();
+    if (active) drawDrugMolecule(CLEFT.right + 58, y - 31, m.drugColor, m.drug, 0.8);
+  }
+
+  function drawResponseSignal(y, active) {
+    ctx.strokeStyle = active ? "#ff8c42" : "#f0c6a7";
+    ctx.lineWidth = active ? 4 : 2;
+    ctx.beginPath();
+    ctx.arc(CLEFT.right + 72, y, active ? 28 : 18, -0.7, 0.7);
+    ctx.stroke();
+  }
+
+  function drawDrugAction(m) {
+    if (!state.drugActive) return;
+    if (currentMode === "methamphetamine") {
+      for (let i = 0; i < 6; i += 1) {
+        const x = 92 + i * 42 + Math.sin(state.time * 2 + i) * 5;
+        const y = 530 + Math.cos(state.time * 2.2 + i) * 9;
+        drawDrugMolecule(x, y, m.drugColor, m.drug, 0.86);
+      }
+      ctx.strokeStyle = m.drugColor;
+      ctx.lineWidth = 4;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(250, 526);
+      ctx.quadraticCurveTo(318, 492, 356, 430);
+      ctx.stroke();
+      drawArrowHead(356, 430, -0.78, m.drugColor);
+      label("increased dopamine release", 236, 562, 14, m.drugColor);
+      label("reduced reuptake", CLEFT.left + 56, transporterYs[1] + 56, 14, m.drugColor);
+    }
+    if (currentMode === "benzodiazepine") {
+      label("Benzodiazepine enhances GABA action; it does not replace GABA", 856, 628, 14, m.drugColor);
+    }
+  }
+
+  function drawArrowHead(x, y, angle, color) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-14, -7);
+    ctx.lineTo(-11, 0);
+    ctx.lineTo(-14, 7);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawMolecules(m) {
+    for (const mol of state.molecules) {
+      if (mol.alpha <= 0) continue;
+      ctx.save();
+      ctx.globalAlpha = mol.alpha;
+      const radius = mol.state === "bound" ? 15 : 13;
+      drawSmallTransmitter(mol.x, mol.y, m, mol.alpha, true, radius);
+      ctx.restore();
+    }
+  }
+
+  function drawSmallTransmitter(x, y, m, alpha = 1, withText = false, radius = 8) {
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.fillStyle = m.txColor;
+    ctx.strokeStyle = m.txEdge;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    if (withText && radius >= 10) {
+      ctx.fillStyle = "#172033";
+      ctx.font = `900 ${radius < 14 ? 9 : 10}px "Segoe UI", system-ui, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(m.short, x, y + 0.5);
+    }
+    ctx.restore();
+  }
+
+  function drawDrugMolecule(x, y, color, text, alpha = 1) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.strokeStyle = "#3a1d35";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, y - 15);
+    ctx.lineTo(x + 17, y);
+    ctx.lineTo(x, y + 15);
+    ctx.lineTo(x - 17, y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#fff";
+    ctx.font = "900 9px Segoe UI, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text.slice(0, 3), x, y + 0.5);
+    ctx.restore();
+  }
+
+  function drawChloride() {
+    for (const ion of state.clIons) {
+      ctx.save();
+      ctx.globalAlpha = ion.alpha;
+      ctx.fillStyle = "#76c9bf";
+      ctx.strokeStyle = "#1d7b72";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(ion.x, ion.y, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#0c403a";
+      ctx.font = "900 11px Segoe UI, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("Cl-", ion.x, ion.y);
+      ctx.restore();
+    }
+    if (mode().chloride) label("Cl- enters postsynaptic neuron", POST.x + 246, 170, 14, "#1d7b72");
+  }
+
+  function drawTracePanel(m) {
+    const x = 742;
+    const y = 502;
+    const w = 330;
+    const h = 164;
+    const pad = { left: 48, right: 18, top: 34, bottom: 34 };
+    const px = x + pad.left;
+    const py = y + pad.top;
+    const pw = w - pad.left - pad.right;
+    const ph = h - pad.top - pad.bottom;
+    rounded(x, y, w, h, 8, "rgba(255,255,255,0.92)", "#8796aa", 2);
+    label(m.traceKind === "voltage" ? "Hyperpolarization trace" : "Simplified postsynaptic response", x + w / 2, y + 20, 15);
+    ctx.strokeStyle = "#d4deeb";
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 3; i += 1) {
+      const yy = py + (ph / 3) * i;
+      ctx.beginPath();
+      ctx.moveTo(px, yy);
+      ctx.lineTo(px + pw, yy);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = "#334155";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(px, py);
+    ctx.lineTo(px, py + ph);
+    ctx.lineTo(px + pw, py + ph);
+    ctx.stroke();
+
+    let mapY;
+    if (m.traceKind === "voltage") {
+      mapY = (value) => py + ((-66 - clamp(value, -88, -66)) / 22) * ph;
+      label("-70", px - 16, mapY(-70), 11, "#344354", "right");
+      label("-88", px - 16, mapY(-88), 11, "#344354", "right");
+      ctx.setLineDash([5, 5]);
+      ctx.strokeStyle = "#718096";
+      ctx.beginPath();
+      ctx.moveTo(px, mapY(RESTING_MV));
+      ctx.lineTo(px + pw, mapY(RESTING_MV));
+      ctx.stroke();
+      ctx.setLineDash([]);
+    } else {
+      mapY = (value) => py + (1 - clamp(value, 0, 1)) * ph;
+      label("100%", px - 14, py, 11, "#344354", "right");
+      label("0", px - 14, py + ph, 11, "#344354", "right");
+    }
+
+    ctx.strokeStyle = m.traceKind === "voltage" ? "#1f8a70" : m.txColor;
+    ctx.lineWidth = 4;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    state.trace.forEach((value, index) => {
+      const xx = px + (index / Math.max(1, state.trace.length - 1)) * pw;
+      const yy = mapY(value);
+      if (index === 0) ctx.moveTo(xx, yy);
+      else ctx.lineTo(xx, yy);
+    });
+    ctx.stroke();
+    label("time", px + pw / 2, y + h - 13, 12, "#475569");
+  }
+
+  function drawModeBadges(m) {
+    label("*Simplified Model", 103, 648, 12, "#344354", "center", 800);
+  }
+
+  function loop(time) {
+    if (!lastTime) lastTime = time;
+    const dt = clamp((time - lastTime) / 1000, 0, 0.05);
+    lastTime = time;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  drugButtons.forEach((button) => button.addEventListener("click", () => toggleDrugMode(button.dataset.mode)));
+  els.play.addEventListener("click", () => {
+    state.playing = !state.playing;
+    state.status = state.playing ? "Animation running." : "Animation paused.";
+    updateUi();
+  });
+  els.reset.addEventListener("click", () => resetState());
+  els.stim.addEventListener("click", stimulateRelease);
+
+  window.addEventListener("resize", setupCanvas);
+  setupCanvas();
+  resetState();
+  requestAnimationFrame(loop);
+
+  window.DrugsAndNeuronsModel = {
+    getState: () => ({
+      mode: currentMode,
+      drugActive: state.drugActive,
+      freeTransmitters: state.molecules.filter((mol) => mol.state === "free").length,
+      boundReceptors: state.receptors.filter((receptor) => receptor.boundId !== null).length,
+      receptorBoundIds: state.receptors.map((receptor) => receptor.boundId),
+      traceKind: mode().traceKind,
+      voltage: state.voltage,
+      response: state.response
+    }),
+    stimulateRelease,
+    setMode,
+    reset: resetState
+  };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Limb Scaling, Bone Stress, and Posture</title>
+  <style>
+    :root {
+      --bg: #f7fbf8;
+      --panel: #ffffff;
+      --ink: #1f2933;
+      --muted: #58636f;
+      --line: #cbd7d2;
+      --accent: #257c76;
+      --accent-dark: #155f5a;
+      --tan: #d7ad72;
+      --tan-dark: #9a6d36;
+      --bone: #fff9e8;
+      --bone-edge: #6f6254;
+      --green: #70b85f;
+      --yellow: #f3cc4d;
+      --orange: #ef8b34;
+      --red: #d9483b;
+      --shadow: 0 12px 32px rgba(31, 41, 51, 0.10);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, rgba(234, 246, 241, 0.86), rgba(247, 251, 248, 0.96) 24rem),
+        var(--bg);
+      font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+    }
+
+    main {
+      width: min(1180px, calc(100vw - 24px));
+      margin: 0 auto;
+      padding: 18px 0 16px;
+    }
+
+    header {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.55rem, 2.6vw, 2.5rem);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 78ch;
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(1rem, 1.5vw, 1.14rem);
+      line-height: 1.45;
+    }
+
+    .attribution-top {
+      margin: 0;
+      color: var(--accent-dark);
+      font-size: 0.95rem;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .mode-tabs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin: 16px 0 12px;
+    }
+
+    button,
+    input[type="range"],
+    input[type="checkbox"] {
+      accent-color: var(--accent);
+    }
+
+    button {
+      min-height: 46px;
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--ink);
+      font: 700 1rem/1.1 "Segoe UI", Arial, Helvetica, sans-serif;
+      cursor: pointer;
+      transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      border-color: #88b7b2;
+    }
+
+    button.is-selected {
+      border-color: var(--accent-dark);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    button.secondary {
+      min-height: 40px;
+      padding: 0 14px;
+      font-size: 0.96rem;
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .stage,
+    .control-panel,
+    .text-panel,
+    .readout-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: var(--shadow);
+    }
+
+    .stage {
+      min-height: 520px;
+      overflow: hidden;
+    }
+
+    .stage svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 520px;
+      touch-action: none;
+    }
+
+    .side-stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .text-panel,
+    .control-panel,
+    .readout-panel {
+      padding: 16px;
+    }
+
+    .text-panel h2,
+    .control-panel h2,
+    .readout-panel h2 {
+      margin: 0 0 8px;
+      font-size: 1.08rem;
+      letter-spacing: 0;
+    }
+
+    .text-panel p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.02rem;
+      line-height: 1.45;
+    }
+
+    .controls {
+      display: grid;
+      gap: 16px;
+    }
+
+    .control-row {
+      display: grid;
+      gap: 8px;
+    }
+
+    .control-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 1rem;
+      font-weight: 750;
+    }
+
+    .control-label output {
+      color: var(--accent-dark);
+      font-variant-numeric: tabular-nums;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      min-height: 34px;
+      cursor: pointer;
+    }
+
+    .range-legend {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 0.86rem;
+      font-weight: 650;
+    }
+
+    .button-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .two-buttons {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--ink);
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .checkbox-row input {
+      width: 22px;
+      height: 22px;
+      flex: 0 0 auto;
+    }
+
+    .readout-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .readout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: baseline;
+      gap: 12px;
+      border-bottom: 1px solid #edf2ef;
+      padding: 7px 0;
+      font-size: 0.98rem;
+    }
+
+    .readout:last-child {
+      border-bottom: 0;
+    }
+
+    .readout span:first-child {
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .readout strong {
+      font-size: 1.08rem;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .definition-box {
+      margin-top: 12px;
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #eef7f6;
+      color: #285d59;
+      font-size: 0.95rem;
+      font-weight: 650;
+      line-height: 1.4;
+    }
+
+    .definition-box h3 {
+      margin: 0 0 6px;
+      color: var(--accent-dark);
+      font-size: 1rem;
+      line-height: 1.2;
+    }
+
+    .definition-box p {
+      margin: 0 0 8px;
+    }
+
+    .definition-box p:last-child {
+      margin-bottom: 0;
+    }
+
+    .warning {
+      margin-top: 12px;
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #eef7ed;
+      color: #265a28;
+      font-weight: 750;
+      line-height: 1.35;
+    }
+
+    .warning.moderate {
+      background: #fff5cd;
+      color: #755a00;
+    }
+
+    .warning.high {
+      background: #ffe0da;
+      color: #8f2119;
+    }
+
+    .mode-panel[hidden],
+    .control-set[hidden] {
+      display: none;
+    }
+
+    .svg-label {
+      fill: var(--ink);
+      font-size: 19px;
+      font-weight: 760;
+    }
+
+    .svg-small {
+      fill: var(--muted);
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .svg-value {
+      fill: var(--ink);
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .formula {
+      color: var(--muted);
+      font-size: 0.96rem;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 880px) {
+      main {
+        width: min(100vw - 18px, 740px);
+        padding-top: 12px;
+      }
+
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .stage,
+      .stage svg {
+        min-height: 420px;
+      }
+
+      .side-stack {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .mode-tabs,
+      .two-buttons {
+        grid-template-columns: 1fr;
+      }
+
+      .stage,
+      .stage svg {
+        min-height: 380px;
+      }
+
+      .text-panel,
+      .control-panel,
+      .readout-panel {
+        padding: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Limb Proportions, Bone Stress, and Upright Posture</h1>
+      <p class="subtitle">A manipulable model for seeing why linear length changes the mechanical problem faced by skeletons.</p>
+      <p class="attribution-top">Animation Prompted by Jerred Seveyka for his biology class.</p>
+    </header>
+
+    <nav class="mode-tabs" aria-label="Animation modes">
+      <button id="modeScaling" class="is-selected" type="button" aria-pressed="true">Scaling up a giant</button>
+      <button id="modePosture" type="button" aria-pressed="false">Bent limbs vs straight limbs</button>
+    </nav>
+
+    <section class="app-shell">
+      <div class="stage" aria-live="polite">
+        <svg id="scene" role="img" aria-label="Interactive educational animation" viewBox="0 0 900 560">
+          <defs>
+            <marker id="arrowDown" viewBox="0 0 10 10" refX="5" refY="9" markerWidth="7" markerHeight="7" orient="0">
+              <path d="M 1 1 L 9 1 L 5 9 z" fill="#9a6d36"></path>
+            </marker>
+            <marker id="arrowUp" viewBox="0 0 10 10" refX="5" refY="1" markerWidth="7" markerHeight="7" orient="0">
+              <path d="M 1 9 L 9 9 L 5 1 z" fill="#257c76"></path>
+            </marker>
+            <marker id="arrowMoment" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef8b34"></path>
+            </marker>
+          </defs>
+          <g id="sceneContent"></g>
+        </svg>
+      </div>
+
+      <aside class="side-stack">
+        <section class="text-panel" aria-labelledby="explainTitle">
+          <h2 id="explainTitle">What to notice</h2>
+          <p id="explainText"></p>
+        </section>
+
+        <section class="control-panel" aria-labelledby="controlsTitle">
+          <h2 id="controlsTitle">Controls</h2>
+
+          <div id="scalingControls" class="control-set controls">
+            <div class="control-row">
+              <label class="control-label" for="sizeScale">
+                <span>Body length scale</span>
+                <output id="sizeScaleValue" for="sizeScale">1.0x</output>
+              </label>
+              <input id="sizeScale" type="range" min="0.5" max="8" value="1" step="0.1">
+              <div class="range-legend"><span>0.5x</span><span>8x</span></div>
+            </div>
+            <button id="resetScaling" class="secondary" type="button">Reset</button>
+          </div>
+
+          <div id="postureControls" class="control-set controls" hidden>
+            <div class="control-row">
+              <label class="control-label" for="animalSize">
+                <span>Animal length scale</span>
+                <output id="animalSizeValue" for="animalSize">1.0x</output>
+              </label>
+              <input id="animalSize" type="range" min="0.5" max="8" value="1" step="0.1">
+              <div class="range-legend"><span>0.5x</span><span>8x</span></div>
+            </div>
+
+            <div class="control-row">
+              <label class="control-label" for="postureSlider">
+                <span>Limb posture</span>
+                <output id="postureValue" for="postureSlider">Bent/crouched</output>
+              </label>
+              <input id="postureSlider" type="range" min="0" max="2" value="0" step="0.01">
+              <div class="range-legend"><span>Bent</span><span>Intermediate</span><span>Straight</span></div>
+            </div>
+
+            <div class="button-grid two-buttons">
+              <button id="keepBent" class="secondary is-selected" type="button" aria-pressed="true">Keep limbs bent as length increases</button>
+              <button id="autoStraighten" class="secondary" type="button" aria-pressed="false">Straighten limbs as length increases</button>
+            </div>
+
+            <label class="checkbox-row">
+              <input id="compareToggle" type="checkbox">
+              <span>Show comparison at same length</span>
+            </label>
+
+            <label class="checkbox-row">
+              <input id="labelToggle" type="checkbox">
+              <span>Show labels</span>
+            </label>
+
+            <button id="resetPosture" class="secondary" type="button">Reset</button>
+          </div>
+        </section>
+
+        <section class="readout-panel" aria-labelledby="readoutTitle">
+          <h2 id="readoutTitle">Model readout</h2>
+          <div id="readouts" class="readout-grid"></div>
+          <div id="postureDefinition" class="definition-box" hidden></div>
+          <div id="warningBox" class="warning"></div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      mode: "scaling",
+      sizeScale: 1,
+      animalSize: 1,
+      posture: 0,
+      postureRule: "fixedBent",
+      showComparison: false,
+      showLabels: false,
+      framePending: false
+    };
+
+    const els = {
+      sceneContent: document.getElementById("sceneContent"),
+      modeScaling: document.getElementById("modeScaling"),
+      modePosture: document.getElementById("modePosture"),
+      scalingControls: document.getElementById("scalingControls"),
+      postureControls: document.getElementById("postureControls"),
+      explainText: document.getElementById("explainText"),
+      sizeScale: document.getElementById("sizeScale"),
+      sizeScaleValue: document.getElementById("sizeScaleValue"),
+      animalSize: document.getElementById("animalSize"),
+      animalSizeValue: document.getElementById("animalSizeValue"),
+      postureSlider: document.getElementById("postureSlider"),
+      postureValue: document.getElementById("postureValue"),
+      keepBent: document.getElementById("keepBent"),
+      autoStraighten: document.getElementById("autoStraighten"),
+      compareToggle: document.getElementById("compareToggle"),
+      labelToggle: document.getElementById("labelToggle"),
+      resetScaling: document.getElementById("resetScaling"),
+      resetPosture: document.getElementById("resetPosture"),
+      readouts: document.getElementById("readouts"),
+      postureDefinition: document.getElementById("postureDefinition"),
+      warningBox: document.getElementById("warningBox")
+    };
+
+    function svgEl(name, attrs = {}, children = []) {
+      const el = document.createElementNS("http://www.w3.org/2000/svg", name);
+      Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+      children.forEach(child => el.appendChild(child));
+      return el;
+    }
+
+    function addText(group, text, x, y, className = "svg-small", anchor = "middle") {
+      const t = svgEl("text", { x, y, class: className, "text-anchor": anchor });
+      t.textContent = text;
+      group.appendChild(t);
+      return t;
+    }
+
+    function line(group, x1, y1, x2, y2, attrs = {}) {
+      const el = svgEl("line", { x1, y1, x2, y2, ...attrs });
+      group.appendChild(el);
+      return el;
+    }
+
+    function rect(group, x, y, width, height, attrs = {}) {
+      const el = svgEl("rect", { x, y, width, height, ...attrs });
+      group.appendChild(el);
+      return el;
+    }
+
+    function circle(group, cx, cy, r, attrs = {}) {
+      const el = svgEl("circle", { cx, cy, r, ...attrs });
+      group.appendChild(el);
+      return el;
+    }
+
+    function ellipse(group, cx, cy, rx, ry, attrs = {}) {
+      const el = svgEl("ellipse", { cx, cy, rx, ry, ...attrs });
+      group.appendChild(el);
+      return el;
+    }
+
+    function path(group, d, attrs = {}) {
+      const el = svgEl("path", { d, ...attrs });
+      group.appendChild(el);
+      return el;
+    }
+
+    function fmt(value) {
+      return `${Number(value).toFixed(1)}x`;
+    }
+
+    function eqNum(value) {
+      const rounded = Math.round(Number(value) * 10) / 10;
+      return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+    }
+
+    function eqX(value) {
+      return `${eqNum(value)}x`;
+    }
+
+    function factorNum(value) {
+      return Number(value).toFixed(1);
+    }
+
+    function effectNum(value) {
+      if (Math.abs(value) < 0.005) return "0";
+      if (Math.abs(value - 1) < 0.005) return "1.0";
+      return (Math.round(value * 100) / 100).toFixed(2).replace(/0$/, "");
+    }
+
+    function scalingReadouts(s) {
+      const area = s * s;
+      const mass = s * s * s;
+      const stress = mass / area;
+      return [
+        ["Length scale =", eqX(s)],
+        [`Femur cross-sectional area ∝ length² = ${eqNum(s)} × ${eqNum(s)} =`, eqX(area)],
+        [`Body volume and mass ∝ length³ = ${eqNum(s)} × ${eqNum(s)} × ${eqNum(s)} =`, eqX(mass)],
+        [`Mass per unit bone area ∝ mass ÷ bone area = ${eqNum(mass)} ÷ ${eqNum(area)} =`, eqX(stress)]
+      ];
+    }
+
+    function limbAngleFromVertical(posture) {
+      if (posture <= 1) return 45 - 30 * posture;
+      return 15 * (2 - posture);
+    }
+
+    function angleEffectFromPosture(posture) {
+      return limbAngleFromVertical(posture) / 45;
+    }
+
+    function postureFactorFromAngle(angle) {
+      return 1 + 1.5 * (angle / 45);
+    }
+
+    function postureReadouts(s, posture) {
+      const angle = limbAngleFromVertical(posture);
+      const angleEffect = angle / 45;
+      const factor = postureFactorFromAngle(angle);
+      const area = s * s;
+      const mass = s * s * s;
+      const stress = mass / area * factor;
+      return [
+        ["Length scale =", eqX(s)],
+        [`Bone cross-sectional area ∝ length² = ${eqNum(s)} × ${eqNum(s)} =`, eqX(area)],
+        [`Body volume and mass ∝ length³ = ${eqNum(s)} × ${eqNum(s)} × ${eqNum(s)} =`, eqX(mass)],
+        ["Limb angle from vertical =", `${eqNum(angle)}°`],
+        ["Maximum bent reference angle =", "45°"],
+        [`Limb angle effect = current angle ÷ maximum bent angle = ${eqNum(angle)} ÷ 45 =`, effectNum(angleEffect)],
+        [`Posture factor = 1.0 + 1.5 × limb angle effect = 1.0 + 1.5 × ${effectNum(angleEffect)} =`, factorNum(factor)],
+        [`Relative limb stress ∝ mass ÷ bone area × posture factor = ${eqNum(mass)} ÷ ${eqNum(area)} × ${factorNum(factor)} =`, eqX(stress)]
+      ];
+    }
+
+    function comparisonReadouts(s, bentPosture, straightPosture) {
+      const bentAngle = limbAngleFromVertical(bentPosture);
+      const straightAngle = limbAngleFromVertical(straightPosture);
+      const bentEffect = bentAngle / 45;
+      const straightEffect = straightAngle / 45;
+      const bentFactor = postureFactorFromAngle(bentAngle);
+      const straightFactor = postureFactorFromAngle(straightAngle);
+      const area = s * s;
+      const mass = s * s * s;
+      const bentStress = mass / area * bentFactor;
+      const straightStress = mass / area * straightFactor;
+      return [
+        ["Same length scale =", eqX(s)],
+        [`Same bone cross-sectional area ∝ length² = ${eqNum(s)} × ${eqNum(s)} =`, eqX(area)],
+        [`Same body volume and mass ∝ length³ = ${eqNum(s)} × ${eqNum(s)} × ${eqNum(s)} =`, eqX(mass)],
+        ["Maximum bent reference angle =", "45°"],
+        ["Bent limb angle from vertical =", `${eqNum(bentAngle)}°`],
+        [`Bent limb angle effect = ${eqNum(bentAngle)} ÷ 45 =`, effectNum(bentEffect)],
+        [`Bent posture factor = 1.0 + 1.5 × ${effectNum(bentEffect)} =`, factorNum(bentFactor)],
+        [`Bent relative limb stress ∝ mass ÷ bone area × posture factor = ${eqNum(mass)} ÷ ${eqNum(area)} × ${factorNum(bentFactor)} =`, eqX(bentStress)],
+        ["Straight limb angle from vertical =", `${eqNum(straightAngle)}°`],
+        [`Straight limb angle effect = ${eqNum(straightAngle)} ÷ 45 =`, effectNum(straightEffect)],
+        [`Straight posture factor = 1.0 + 1.5 × ${effectNum(straightEffect)} =`, factorNum(straightFactor)],
+        [`Straight relative limb stress ∝ mass ÷ bone area × posture factor = ${eqNum(mass)} ÷ ${eqNum(area)} × ${factorNum(straightFactor)} =`, eqX(straightStress)]
+      ];
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function stressColor(stress, maxStress = 20) {
+      const t = clamp(stress / maxStress, 0, 1);
+      if (t < 0.18) return "#70b85f";
+      if (t < 0.36) return "#f3cc4d";
+      if (t < 0.62) return "#ef8b34";
+      return "#d9483b";
+    }
+
+    function postureFactor(posture) {
+      return postureFactorFromAngle(limbAngleFromVertical(posture));
+    }
+
+    function postureName(posture) {
+      if (posture < 0.55) return "Bent/crouched";
+      if (posture < 1.45) return "Intermediate";
+      return "Straight/upright";
+    }
+
+    function autoPostureForLength(length) {
+      return clamp((length - 1) / 3.5, 0, 2);
+    }
+
+    function effectivePosture() {
+      if (state.postureRule === "auto") return autoPostureForLength(state.animalSize);
+      return state.posture;
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      els.modeScaling.classList.toggle("is-selected", mode === "scaling");
+      els.modePosture.classList.toggle("is-selected", mode === "posture");
+      els.modeScaling.setAttribute("aria-pressed", mode === "scaling");
+      els.modePosture.setAttribute("aria-pressed", mode === "posture");
+      els.scalingControls.hidden = mode !== "scaling";
+      els.postureControls.hidden = mode !== "posture";
+      scheduleDraw();
+    }
+
+    function setPostureRule(rule) {
+      state.postureRule = rule;
+      if (rule === "fixedBent") state.posture = 0;
+      if (rule === "auto") state.posture = autoPostureForLength(state.animalSize);
+      els.keepBent.classList.toggle("is-selected", rule === "fixedBent");
+      els.autoStraighten.classList.toggle("is-selected", rule === "auto");
+      els.keepBent.setAttribute("aria-pressed", rule === "fixedBent");
+      els.autoStraighten.setAttribute("aria-pressed", rule === "auto");
+      scheduleDraw();
+    }
+
+    function setManualPosture(value) {
+      state.posture = Number(value);
+      state.postureRule = "manual";
+      els.keepBent.classList.remove("is-selected");
+      els.autoStraighten.classList.remove("is-selected");
+      els.keepBent.setAttribute("aria-pressed", "false");
+      els.autoStraighten.setAttribute("aria-pressed", "false");
+      scheduleDraw();
+    }
+
+    function scheduleDraw() {
+      if (state.framePending) return;
+      state.framePending = true;
+      requestAnimationFrame(() => {
+        state.framePending = false;
+        draw();
+      });
+    }
+
+    function clearScene() {
+      while (els.sceneContent.firstChild) els.sceneContent.removeChild(els.sceneContent.firstChild);
+    }
+
+    function drawPanelBackground(group, x, y, width, height, label) {
+      rect(group, x, y, width, height, {
+        rx: 8,
+        fill: "#ffffff",
+        stroke: "#d5ded9"
+      });
+      if (label) addText(group, label, x + 18, y + 30, "svg-label", "start");
+    }
+
+    function drawScalingMode() {
+      clearScene();
+      const g = els.sceneContent;
+      const s = state.sizeScale;
+      const area = s * s;
+      const mass = s * s * s;
+      const stress = mass / area;
+      const meterColor = stressColor(stress, 8);
+
+      drawPanelBackground(g, 24, 24, 408, 358, "Isometric human");
+      drawPanelBackground(g, 456, 24, 420, 358, "Femur cross-sectional area");
+      drawPanelBackground(g, 24, 398, 852, 134, "Scaling indices");
+
+      drawHuman(g, 230, 342, s);
+      drawFemurCrossSection(g, 666, 206, s);
+      drawScalingBars(g, 64, 430, 360, [
+        { label: "Length", value: s, color: "#257c76" },
+        { label: "Bone area", value: area, color: "#fff9e8", stroke: "#6f6254" },
+        { label: "Volume/mass", value: mass, color: "#d7ad72" },
+        { label: "Mass/area", value: stress, color: meterColor }
+      ]);
+      drawMeter(g, 630, 430, 210, 26, "Relative load per bone area", stress / 8, meterColor);
+
+      addText(g, "Area grows as length²", 666, 329, "svg-small");
+      addText(g, "Volume/mass grows as length³", 230, 378, "svg-small");
+      addText(g, `s = ${s.toFixed(1)}   s² = ${area.toFixed(1)}   s³ = ${mass.toFixed(1)}`, 666, 362, "svg-value");
+
+      els.explainText.textContent = "Length, height, width, and thickness scale together. With isometric scaling, bone area grows with length², but volume and mass grow with length³. A giant scaled up without changing proportions would place more mass on each unit of bone area.";
+      els.postureDefinition.hidden = true;
+      setReadouts(scalingReadouts(s));
+      setWarning(stress < 2 ? "Safe range in this simplified model." : stress < 5 ? "Moderate load: mass is pulling ahead of support area." : "High load: a giant with unchanged proportions would overload its bones.", stress);
+      els.sizeScaleValue.textContent = fmt(s);
+    }
+
+    function drawHuman(group, centerX, footY, scale) {
+      const visual = 0.48 + (scale - 0.5) / 7.5 * 0.70;
+      const ref = svgEl("g", { opacity: 0.28 });
+      group.appendChild(ref);
+      drawSimpleHuman(ref, centerX - 88, footY, 0.52, "#becac5", "#7f8b86", false);
+      addText(group, "1x reference", centerX - 92, footY + 24, "svg-small");
+      drawSimpleHuman(group, centerX + 24, footY, visual, "#d7ad72", "#9a6d36", true);
+      addText(group, `${scale.toFixed(1)}x linear length`, centerX + 24, 58, "svg-value");
+    }
+
+    function drawSimpleHuman(group, x, footY, v, fill, outline, showBones) {
+      const headR = 18 * v;
+      const torsoW = 48 * v;
+      const torsoH = 92 * v;
+      const legL = 88 * v;
+      const armL = 68 * v;
+      const yHead = footY - legL - torsoH - headR * 1.65;
+      circle(group, x, yHead, headR, { fill, stroke: outline, "stroke-width": 2.2 });
+      rect(group, x - torsoW / 2, yHead + headR + 8 * v, torsoW, torsoH, { rx: 18 * v, fill, stroke: outline, "stroke-width": 2.2 });
+      line(group, x - torsoW / 2, yHead + headR + 28 * v, x - torsoW / 2 - 28 * v, yHead + headR + 28 * v + armL, { stroke: outline, "stroke-width": 10 * v, "stroke-linecap": "round" });
+      line(group, x + torsoW / 2, yHead + headR + 28 * v, x + torsoW / 2 + 28 * v, yHead + headR + 28 * v + armL, { stroke: outline, "stroke-width": 10 * v, "stroke-linecap": "round" });
+      line(group, x - torsoW * 0.24, footY - legL, x - torsoW * 0.32, footY, { stroke: outline, "stroke-width": 12 * v, "stroke-linecap": "round" });
+      line(group, x + torsoW * 0.24, footY - legL, x + torsoW * 0.32, footY, { stroke: outline, "stroke-width": 12 * v, "stroke-linecap": "round" });
+      if (showBones) {
+        line(group, x - torsoW * 0.24, footY - legL + 8 * v, x - torsoW * 0.32, footY - 10 * v, { stroke: "#fff9e8", "stroke-width": 5.2 * v, "stroke-linecap": "round" });
+        line(group, x + torsoW * 0.24, footY - legL + 8 * v, x + torsoW * 0.32, footY - 10 * v, { stroke: "#fff9e8", "stroke-width": 5.2 * v, "stroke-linecap": "round" });
+      }
+    }
+
+    function drawFemurCrossSection(group, cx, cy, scale) {
+      const r = 16 * scale;
+      const rx = clamp(r * 1.08, 9, 136);
+      const ry = clamp(r * 0.92, 8, 118);
+      ellipse(group, cx, cy, rx, ry, { fill: "#fff9e8", stroke: "#6f6254", "stroke-width": 5 });
+      ellipse(group, cx, cy, rx * 0.45, ry * 0.45, { fill: "#f1d8a4", stroke: "#9a6d36", "stroke-width": 3 });
+      addText(group, `${(scale * scale).toFixed(1)}x area`, cx, cy + ry + 36, "svg-value");
+      addText(group, "The diameter grows with s, so the area grows with s².", cx, 82, "svg-small");
+    }
+
+    function drawScalingBars(group, x, y, maxWidth, bars) {
+      const maxLog = Math.log10(1 + 512);
+      bars.forEach((bar, i) => {
+        const yy = y + i * 24;
+        const width = Math.max(8, Math.log10(1 + bar.value) / maxLog * maxWidth);
+        addText(group, bar.label, x, yy + 15, "svg-small", "start");
+        rect(group, x + 116, yy, maxWidth, 16, { rx: 6, fill: "#edf4f0" });
+        rect(group, x + 116, yy, width, 16, { rx: 6, fill: bar.color, stroke: bar.stroke || "none", "stroke-width": bar.stroke ? 1.5 : 0 });
+        addText(group, fmt(bar.value), x + 126 + Math.min(width + 36, maxWidth + 50), yy + 14, "svg-value", "start");
+      });
+    }
+
+    function drawMeter(group, x, y, width, height, label, fraction, color) {
+      addText(group, label, x, y - 12, "svg-small", "start");
+      rect(group, x, y, width, height, { rx: 8, fill: "#edf4f0", stroke: "#d5ded9" });
+      rect(group, x, y, clamp(fraction, 0.04, 1) * width, height, { rx: 8, fill: color });
+      line(group, x + width * 0.35, y, x + width * 0.35, y + height, { stroke: "#ffffff", "stroke-width": 2, opacity: 0.8 });
+      line(group, x + width * 0.65, y, x + width * 0.65, y + height, { stroke: "#ffffff", "stroke-width": 2, opacity: 0.8 });
+    }
+
+    function drawPostureMode() {
+      clearScene();
+      const g = els.sceneContent;
+      const s = state.animalSize;
+      const p = effectivePosture();
+      const factor = postureFactor(p);
+      const mass = s * s * s;
+      const area = s * s;
+      const stress = s * factor;
+      const color = stressColor(stress, 20);
+      let readoutRows;
+
+      if (state.showComparison) {
+        const bentFactor = postureFactor(0);
+        drawPanelBackground(g, 20, 24, 410, 458, "Same length: bent limbs");
+        drawPanelBackground(g, 470, 24, 410, 458, "Same length: straight limbs");
+        drawAnimal(g, 225, 398, s, 0, s * bentFactor, { compact: true, labelMode: false, title: "Bent/crouched" });
+        const straightP = 2;
+        const straightFactor = postureFactor(straightP);
+        drawAnimal(g, 675, 398, s, straightP, s * straightFactor, { compact: true, labelMode: false, title: "Straight/upright" });
+        addText(g, `Stress: ${(s * bentFactor).toFixed(1)}x`, 225, 464, "svg-value");
+        addText(g, `Stress: ${(s * straightFactor).toFixed(1)}x`, 675, 464, "svg-value");
+        drawComparisonEquation(g, s);
+        readoutRows = comparisonReadouts(s, 0, straightP);
+      } else {
+        drawPanelBackground(g, 24, 24, 852, 458, "Quadruped limb loading");
+        drawAnimal(g, 450, 402, s, p, stress, { compact: false, labelMode: state.showLabels, title: postureName(p) });
+        drawPostureEquation(g, 54, 496, s, factor, stress);
+        readoutRows = postureReadouts(s, p);
+      }
+
+      els.explainText.textContent = postureCaption(s, p, state.showComparison);
+      els.postureDefinition.hidden = false;
+      els.postureDefinition.innerHTML = "<h3>Why limb angle matters</h3><p>Torque = force × moment arm. When a limb is more bent, the ground reaction force acts farther from the long axis of the limb bones and joints. This larger perpendicular distance, or moment arm, creates more bending torque and increases bending stress.</p><p>Limb angle effect is a simplified measure of how much the crouched angle increases bending. Larger limb angles from vertical create a larger moment arm and therefore a larger bending effect.</p><p>Posture factor is a simplified multiplier based on how crouched the limb is. Straighter limbs align the force more closely with the bones, making the moment arm smaller and lowering the posture factor.</p>";
+      setReadouts(readoutRows);
+      setWarning(postureWarning(s, p, stress), stress);
+
+      els.animalSizeValue.textContent = fmt(s);
+      els.postureSlider.value = p;
+      els.postureValue.textContent = postureName(p);
+    }
+
+    function drawAnimal(group, cx, groundY, scale, posture, stress, options = {}) {
+      const compact = Boolean(options.compact);
+      const showLabels = Boolean(options.labelMode);
+      const v = compact ? 0.50 + (scale - 0.5) / 7.5 * 0.34 : 0.52 + (scale - 0.5) / 7.5 * 0.42;
+      const bodyW = (compact ? 144 : 190) * v;
+      const bodyH = (compact ? 56 : 72) * v;
+      const legL = (compact ? 110 : 138) * v;
+      const topY = groundY - legL;
+      const bodyCy = topY - bodyH * 0.16;
+      const bodyColor = "#d7ad72";
+      const outline = "#9a6d36";
+      const boneStroke = stressColor(stress, 20);
+      const boneWidth = (compact ? 8 : 11) * v + Math.min(scale, 8) * 0.5;
+      const upright = posture / 2;
+      const bend = 1 - upright;
+
+      line(group, cx - bodyW * 0.8, groundY, cx + bodyW * 0.8, groundY, { stroke: "#b8c6bf", "stroke-width": 3, "stroke-linecap": "round" });
+
+      drawHiddenLeg(group, cx - bodyW * 0.19, topY + bodyH * 0.18, groundY, -1, bodyW, legL, bend, boneWidth, v);
+      drawHiddenLeg(group, cx + bodyW * 0.19, topY + bodyH * 0.18, groundY, 1, bodyW, legL, bend, boneWidth, v);
+
+      ellipse(group, cx, bodyCy, bodyW * 0.52, bodyH * 0.52, { fill: bodyColor, stroke: outline, "stroke-width": 3 });
+      const headCx = cx + bodyW * 0.58;
+      const headCy = bodyCy - bodyH * 0.12;
+      const headR = bodyH * 0.26;
+      path(group, `M ${headCx - headR * 0.66} ${headCy - headR * 0.52} Q ${headCx - headR * 0.72} ${headCy - headR * 1.18} ${headCx - headR * 0.25} ${headCy - headR * 0.78} Q ${headCx - headR * 0.10} ${headCy - headR * 0.45} ${headCx - headR * 0.66} ${headCy - headR * 0.52} Z`, { fill: bodyColor, stroke: outline, "stroke-width": 2 });
+      path(group, `M ${headCx - headR * 0.22} ${headCy - headR * 0.64} Q ${headCx - headR * 0.16} ${headCy - headR * 1.20} ${headCx + headR * 0.22} ${headCy - headR * 0.74} Q ${headCx + headR * 0.26} ${headCy - headR * 0.44} ${headCx - headR * 0.22} ${headCy - headR * 0.64} Z`, { fill: bodyColor, stroke: outline, "stroke-width": 2 });
+      circle(group, headCx, headCy, headR, { fill: bodyColor, stroke: outline, "stroke-width": 3 });
+      circle(group, cx + bodyW * 0.66, bodyCy - bodyH * 0.17, bodyH * 0.045, { fill: "#1f2933" });
+      path(group, `M ${cx - bodyW * 0.48} ${bodyCy - bodyH * 0.24} Q ${cx - bodyW * 0.72} ${bodyCy - bodyH * 0.34} ${cx - bodyW * 0.78} ${bodyCy - bodyH * 0.02}`, { fill: "none", stroke: outline, "stroke-width": 4, "stroke-linecap": "round" });
+
+      const backTop = { x: cx - bodyW * 0.24, y: topY + bodyH * 0.18 };
+      const frontTop = { x: cx + bodyW * 0.25, y: topY + bodyH * 0.18 };
+      const back = drawLeg(group, backTop, groundY, -1, bodyW, legL, bend, boneStroke, boneWidth, v);
+      const front = drawLeg(group, frontTop, groundY, 1, bodyW, legL, bend, boneStroke, boneWidth, v);
+
+      const forceLen = (compact ? 48 : 68) + Math.min(90, Math.log2(scale + 1) * 30);
+      [back, front].forEach(leg => {
+        line(group, leg.foot.x, groundY + 8 * v, leg.foot.x, groundY - forceLen, {
+          stroke: "#257c76",
+          "stroke-width": 5 * v,
+          "stroke-linecap": "round",
+          "marker-end": "url(#arrowUp)"
+        });
+      });
+
+      const massArrowLen = (compact ? 50 : 68) + Math.min(90, Math.log2(scale + 1) * 28);
+      line(group, cx, bodyCy - bodyH * 1.05 - massArrowLen, cx, bodyCy - bodyH * 0.62, {
+        stroke: "#9a6d36",
+        "stroke-width": 6 * v,
+        "stroke-linecap": "round",
+        "marker-end": "url(#arrowDown)"
+      });
+
+      drawAngleMarker(group, front.top, posture, v, compact);
+      drawOffsetGuide(group, front.top, front.foot, bend, compact);
+
+      if (!compact) {
+        drawMeter(group, cx - 132, 66, 264, 23, "Relative bone stress", stress / 20, boneStroke);
+        addText(group, `${stress.toFixed(1)}x`, cx + 148, 87, "svg-value", "start");
+      }
+      addText(group, options.title || postureName(posture), cx, compact ? 118 : 122, "svg-value");
+      addText(group, posture > 1.2 ? "more upright" : posture < 0.6 ? "more bent" : "partly upright", cx, compact ? groundY + 24 : groundY + 35, "svg-small");
+
+      if (showLabels && !compact) {
+        addText(group, "Ground reaction force", front.foot.x + 32, groundY - forceLen * 0.68, "svg-small", "start");
+        addText(group, "Bone cross-sectional area", cx - bodyW * 0.56, topY - 20, "svg-small", "start");
+        addText(group, posture > 1.2 ? "Straighter limb reduces bending" : "Bent limb increases bending moment", cx, topY + legL * 0.42, "svg-small");
+        addText(group, "Relative stress", cx - 122, 56, "svg-small", "start");
+      } else if (!compact) {
+        addText(group, "Ground reaction force", front.foot.x + 32, groundY - forceLen * 0.68, "svg-small", "start");
+      }
+    }
+
+    function drawHiddenLeg(group, topX, topY, groundY, side, bodyW, legL, bend, width, v) {
+      const joint = {
+        x: topX - bodyW * (0.035 + 0.14 * bend),
+        y: topY + legL * (0.45 + 0.06 * (1 - bend))
+      };
+      const foot = {
+        x: topX + side * bodyW * (0.025 + 0.075 * bend),
+        y: groundY
+      };
+      line(group, topX, topY, joint.x, joint.y, { stroke: "#c8b58f", "stroke-width": width * 0.82, "stroke-linecap": "round", opacity: 0.52 });
+      line(group, joint.x, joint.y, foot.x, foot.y, { stroke: "#c8b58f", "stroke-width": width * 0.82, "stroke-linecap": "round", opacity: 0.52 });
+      circle(group, joint.x, joint.y, width * 0.58, { fill: "#efdfb9", stroke: "#9a6d36", "stroke-width": 1.8, opacity: 0.55 });
+      rect(group, foot.x - 14 * v, groundY - 6 * v, 28 * v, 10 * v, { rx: 5 * v, fill: "#c8b58f", opacity: 0.55 });
+    }
+
+    function drawLeg(group, top, groundY, side, bodyW, legL, bend, stroke, width, v) {
+      const joint = {
+        x: top.x - bodyW * (0.035 + 0.15 * bend),
+        y: top.y + legL * (0.44 + 0.07 * (1 - bend))
+      };
+      const foot = {
+        x: top.x + side * bodyW * (0.03 + 0.08 * bend),
+        y: groundY
+      };
+      line(group, top.x, top.y, joint.x, joint.y, { stroke, "stroke-width": width, "stroke-linecap": "round" });
+      line(group, joint.x, joint.y, foot.x, foot.y, { stroke, "stroke-width": width, "stroke-linecap": "round" });
+      circle(group, top.x, top.y, width * 0.58, { fill: "#fff9e8", stroke: "#6f6254", "stroke-width": 2.2 });
+      circle(group, joint.x, joint.y, width * 0.66, { fill: "#fff9e8", stroke: "#6f6254", "stroke-width": 2.2 });
+      rect(group, foot.x - 17 * v, groundY - 6 * v, 34 * v, 11 * v, { rx: 5 * v, fill: "#6f6254" });
+      return { top, joint, foot };
+    }
+
+    function drawAngleMarker(group, top, posture, v, compact) {
+      const angle = limbAngleFromVertical(posture);
+      const r = (compact ? 20 : 29) * v;
+      const radians = angle * Math.PI / 180;
+      const verticalEnd = { x: top.x, y: top.y + r };
+      const angleEnd = {
+        x: top.x - Math.sin(radians) * r,
+        y: top.y + Math.cos(radians) * r
+      };
+      line(group, top.x, top.y, top.x, top.y + r + 5 * v, {
+        stroke: "#6f7d76",
+        "stroke-width": 1.8,
+        "stroke-dasharray": "4 4",
+        opacity: 0.8
+      });
+      line(group, top.x, top.y, angleEnd.x, angleEnd.y, {
+        stroke: "#6f7d76",
+        "stroke-width": 1.8,
+        opacity: 0.8
+      });
+      path(group, `M ${verticalEnd.x} ${verticalEnd.y} A ${r} ${r} 0 0 1 ${angleEnd.x} ${angleEnd.y}`, {
+        fill: "none",
+        stroke: "#ef8b34",
+        "stroke-width": compact ? 2.2 : 2.8,
+        "stroke-linecap": "round"
+      });
+      if (compact) {
+        addText(group, `${eqNum(angle)}°`, top.x + 22 * v, top.y - 7 * v, "svg-small", "start");
+      } else {
+        const labelX = top.x - 360 * v;
+        const labelY = top.y - 18 * v;
+        line(group, labelX + 155 * v, labelY + 8 * v, angleEnd.x, angleEnd.y, {
+          stroke: "#ef8b34",
+          "stroke-width": 1.6,
+          "stroke-dasharray": "4 4",
+          opacity: 0.75
+        });
+        addText(group, "limb angle from vertical", labelX, labelY, "svg-small", "start");
+        addText(group, `${eqNum(angle)}°`, labelX, labelY + 19 * v, "svg-small", "start");
+      }
+    }
+
+    function drawOffsetGuide(group, top, foot, bend, compact) {
+      const offset = Math.abs(foot.x - top.x);
+      if (offset < 4) return;
+      const y = foot.y - (compact ? 28 : 38);
+      const x1 = Math.min(top.x, foot.x);
+      const x2 = Math.max(top.x, foot.x);
+      line(group, top.x, top.y, top.x, foot.y, {
+        stroke: "#6f7d76",
+        "stroke-width": 1.7,
+        "stroke-dasharray": "5 5",
+        opacity: 0.62
+      });
+      line(group, x1, y, x2, y, {
+        stroke: "#ef8b34",
+        "stroke-width": compact ? 2.2 : 2.8,
+        "stroke-dasharray": "5 4",
+        "stroke-linecap": "round",
+        opacity: 0.92
+      });
+      line(group, x1, y - 6, x1, y + 6, { stroke: "#ef8b34", "stroke-width": 2, opacity: 0.92 });
+      line(group, x2, y - 6, x2, y + 6, { stroke: "#ef8b34", "stroke-width": 2, opacity: 0.92 });
+      if (compact) {
+        addText(group, "moment arm", (x1 + x2) / 2, y - 9, "svg-small");
+      } else {
+        const labelX = x2 + 22;
+        const labelY = y - 11;
+        line(group, x2, y, labelX - 6, labelY + 4, {
+          stroke: "#ef8b34",
+          "stroke-width": 1.7,
+          "stroke-linecap": "round",
+          opacity: 0.82
+        });
+        addText(group, "moment arm", labelX, labelY, "svg-small", "start");
+        addText(group, "larger moment arm = more bending torque", labelX, labelY + 26, "svg-small", "start");
+        addText(group, "bone axis", top.x - 7, top.y + 56, "svg-small", "end");
+      }
+    }
+
+    function drawMomentArm(group, top, foot, y, bend, compact) {
+      const dx = foot.x - top.x;
+      const minDraw = compact ? 14 : 18;
+      if (Math.abs(dx) < minDraw) return;
+      const width = 3 + Math.abs(dx) * 0.025;
+      line(group, top.x, y, foot.x, y, {
+        stroke: "#ef8b34",
+        "stroke-width": width,
+        "stroke-linecap": "round",
+        "marker-end": "url(#arrowMoment)",
+        opacity: 0.85
+      });
+      circle(group, top.x, y, 3.5, { fill: "#ef8b34", opacity: 0.85 });
+      if (bend > 0.35 && !compact) addText(group, "bending moment", (top.x + foot.x) / 2, y - 10, "svg-small");
+    }
+
+    function drawPostureEquation(group, x, y, length, factor, stress) {
+      addText(group, "Relative stress = mass ÷ bone area × posture effect", x, y, "svg-label", "start");
+      addText(group, `${(length ** 3).toFixed(1)} ÷ ${(length ** 2).toFixed(1)} × ${factor.toFixed(1)} = ${stress.toFixed(1)}x`, x, y + 28, "svg-value", "start");
+    }
+
+    function drawComparisonEquation(group, length) {
+      const bentStress = length * postureFactor(0);
+      const straightP = 2;
+      const straightStress = length * postureFactor(straightP);
+      addText(group, "Same mass and bone area; posture changes the bending load.", 450, 512, "svg-label");
+      addText(group, `Bent: ${bentStress.toFixed(1)}x     Upright: ${straightStress.toFixed(1)}x`, 450, 540, "svg-value");
+    }
+
+    function postureCaption(length, posture, comparing) {
+      if (comparing) return "At the same body length, bent limbs place the force farther from the long axis of the bones. Straighter limbs bring the force closer to the bones and reduce bending stress.";
+      if (length <= 1.25 && posture < 0.7) return "Small mammals can use crouched postures because their absolute loads are low.";
+      if (posture < 0.7 && length > 1.25) return "If a longer animal kept the same crouched posture, the force and bending moment on the limb bones would increase.";
+      if (posture > 1.2) return "Straighter limbs place the ground reaction force closer to the long axis of the bones, reducing bending stress.";
+      return "Intermediate postures reduce some bending, but the stress still rises as mass increases faster than bone area.";
+    }
+
+    function postureWarning(length, posture, stress) {
+      const bentStress = length * postureFactor(0);
+      if (stress >= 10 && posture < 0.8) return "High stress: crouched posture becomes costly at large length scales.";
+      if (length >= 3 && posture > 1.15 && stress < bentStress) return "Lower stress than the same-length crouched animal.";
+      if (stress >= 6) return "Moderate to high stress: posture and support area matter more at large length scales.";
+      return "Low to moderate stress in this simplified model.";
+    }
+
+    function setReadouts(rows) {
+      els.readouts.innerHTML = "";
+      rows.forEach(([label, value]) => {
+        const row = document.createElement("div");
+        row.className = "readout";
+        const labelEl = document.createElement("span");
+        const valueEl = document.createElement("strong");
+        labelEl.textContent = label;
+        valueEl.textContent = value;
+        row.append(labelEl, valueEl);
+        els.readouts.appendChild(row);
+      });
+    }
+
+    function setWarning(text, stress) {
+      els.warningBox.textContent = text;
+      els.warningBox.className = "warning";
+      if (stress >= 5) els.warningBox.classList.add(stress >= 10 ? "high" : "moderate");
+    }
+
+    function draw() {
+      if (state.mode === "scaling") drawScalingMode();
+      else drawPostureMode();
+    }
+
+    els.modeScaling.addEventListener("click", () => setMode("scaling"));
+    els.modePosture.addEventListener("click", () => setMode("posture"));
+    els.sizeScale.addEventListener("input", event => {
+      state.sizeScale = Number(event.target.value);
+      scheduleDraw();
+    });
+    els.animalSize.addEventListener("input", event => {
+      state.animalSize = Number(event.target.value);
+      if (state.postureRule === "auto") state.posture = autoPostureForLength(state.animalSize);
+      scheduleDraw();
+    });
+    els.postureSlider.addEventListener("input", event => setManualPosture(event.target.value));
+    els.keepBent.addEventListener("click", () => setPostureRule("fixedBent"));
+    els.autoStraighten.addEventListener("click", () => setPostureRule("auto"));
+    els.compareToggle.addEventListener("change", event => {
+      state.showComparison = event.target.checked;
+      scheduleDraw();
+    });
+    els.labelToggle.addEventListener("change", event => {
+      state.showLabels = event.target.checked;
+      scheduleDraw();
+    });
+    els.resetScaling.addEventListener("click", () => {
+      state.sizeScale = 1;
+      els.sizeScale.value = 1;
+      scheduleDraw();
+    });
+    els.resetPosture.addEventListener("click", () => {
+      state.animalSize = 1;
+      state.posture = 0;
+      state.postureRule = "fixedBent";
+      state.showComparison = false;
+      state.showLabels = false;
+      els.animalSize.value = 1;
+      els.postureSlider.value = 0;
+      els.compareToggle.checked = false;
+      els.labelToggle.checked = false;
+      els.keepBent.classList.add("is-selected");
+      els.autoStraighten.classList.remove("is-selected");
+      els.keepBent.setAttribute("aria-pressed", "true");
+      els.autoStraighten.setAttribute("aria-pressed", "false");
+      scheduleDraw();
+    });
+
+    draw();
+  </script>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Removal of Neurotransmitter</title>
+<style>
+:root{--ink:#17324d;--blue:#246b9e;--bg:#f6fbfd;--cell:#dff3f8;--red:#df3636;--pump:#45b8ca;--enz:#58bf6b;--block:#f28b35;--rec:#8f5fc4}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,Arial,sans-serif}
+header{text-align:center;padding:18px 10px 8px}h1{margin:0;font-size:clamp(1.6rem,4vw,2.45rem)}header p{margin:.25rem 0 0;color:#526a7b;font-size:.95rem}
+main{width:min(1180px,96vw);margin:auto;display:grid;grid-template-columns:minmax(0,3fr) minmax(240px,1fr);gap:16px;align-items:start}
+.stage,.panel{background:#fff;border:1px solid #cfe0e8;border-radius:18px;box-shadow:0 8px 24px #17324d12}.stage{padding:8px}.panel{padding:16px}
+svg{display:block;width:100%;height:auto}.label{font-weight:700;fill:var(--ink);font-size:16px}.small{font-size:13px;fill:#486273}.arrow{stroke:#587d92;stroke-width:3;fill:none;marker-end:url(#arrow)}
+.terminal,.cell{fill:var(--cell);stroke:var(--blue);stroke-width:4}.membrane{stroke:var(--blue);stroke-width:7;fill:none}
+.vesicle{fill:#fff9;stroke:#748da0;stroke-width:2}.nt{fill:var(--red);stroke:white;stroke-width:2}.frag{stroke:#8b3a16;stroke-width:1}
+.receptor{fill:var(--rec);stroke:#5d3484;stroke-width:2}.receptor.on{fill:#ffe24d;filter:drop-shadow(0 0 8px #ffb800)}
+.pump{fill:var(--pump);stroke:#176174;stroke-width:2}.plug,.inhib{fill:var(--block);stroke:#a84b16;stroke-width:2}.enzyme{fill:var(--enz);stroke:#227338;stroke-width:2}.hidden{display:none}
+button{border:2px solid #bfd5df;border-radius:10px;background:#f8fcfe;color:var(--ink);padding:11px;text-align:left;font:700 .94rem system-ui;cursor:pointer}button:hover{border-color:var(--blue)}button.active{background:var(--blue);border-color:var(--blue);color:white}.controls{display:grid;gap:9px}.replay{text-align:center;background:white;border-color:#7893a4}
+.info{margin-top:14px;padding:13px;border-radius:12px;background:#eef8fc;min-height:116px}.info h2{font-size:1.13rem;margin:0 0 6px}.info p{margin:0}
+.legend{display:flex;flex-wrap:wrap;gap:10px 13px;margin-top:13px;font-size:.8rem}.key{display:flex;align-items:center;gap:5px}.dot,.cup,.pill,.pac,.plugkey{display:inline-block}.dot{width:13px;height:13px;border-radius:50%;background:var(--red)}.cup{width:15px;height:16px;border:3px solid #5d3484;border-top:0;border-radius:0 0 8px 8px}.pill{width:18px;height:11px;border-radius:7px;background:var(--pump);border:1px solid #176174}.pac{width:15px;height:15px;border-radius:50%;background:conic-gradient(from 40deg,var(--enz) 0 285deg,#0000 0)}.plugkey{width:15px;height:10px;border-radius:7px;background:var(--block)}
+@media(max-width:820px){main{grid-template-columns:1fr}.controls{grid-template-columns:repeat(2,1fr)}.info{min-height:0}.panel{padding:14px}}
+</style>
+</head>
+<body>
+<header><h1>Removal of Neurotransmitter</h1><p>Animation Prompted by Jerred Seveyka for his biology class.</p></header>
+<main>
+<section class="stage" aria-label="Animated synapse diagram">
+<svg id="scene" viewBox="0 0 760 540" role="img" aria-labelledby="svgTitle svgDesc">
+<title id="svgTitle">Neurotransmitter removal from a synaptic cleft</title>
+<desc id="svgDesc">A presynaptic axon terminal releases red neurotransmitters into a cleft above a postsynaptic membrane with receptors.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4 0 8z" fill="#587d92"/></marker></defs>
+<path class="terminal" d="M76 0H684V105Q684 178 620 185H140Q76 178 76 105Z"/><path class="membrane" d="M140 185H620"/>
+<text class="label" x="96" y="32">Axon terminal (presynaptic)</text>
+<g id="vesicles"></g><text class="small" x="380" y="142" text-anchor="middle">vesicles dock, then release</text><path class="arrow" d="M380 147v34"/>
+<text class="label" x="96" y="233">Synaptic cleft</text>
+<path class="cell" d="M20 458Q100 422 180 448T340 448T500 448T740 448V540H20Z"/><path class="membrane" d="M20 458Q100 422 180 448T340 448T500 448T740 448"/>
+<text class="label" x="96" y="510">Target cell (postsynaptic)</text>
+<g id="receptors"></g><g id="pumps" class="hidden"></g><g id="enzymes" class="hidden"></g><g id="fragments"></g><g id="particles"></g>
+</svg>
+</section>
+<aside class="panel">
+<nav class="controls" aria-label="Removal mechanisms">
+<button data-mode="diffusion" class="active">1. Diffusion</button>
+<button data-mode="reuptake">2. Reuptake</button>
+<button data-mode="reuptakeInhibitor">3. Reuptake inhibitor</button>
+<button data-mode="enzyme">4. Enzyme degradation</button>
+<button data-mode="enzymeInhibitor">5. Enzyme inhibitor</button>
+<button id="replay" class="replay">Reset / Replay</button>
+</nav>
+<div class="info" aria-live="polite"><h2 id="modeTitle"></h2><p id="explanation"></p></div>
+<div class="legend">
+<span class="key"><i class="dot"></i>red neurotransmitter</span><span class="key"><i class="cup"></i>receptor</span>
+<span class="key"><i class="pill"></i>reuptake pump</span><span class="key"><i class="pac"></i>enzyme</span><span class="key"><i class="plugkey"></i>inhibitor</span>
+</div>
+</aside>
+</main>
+<script>
+const NS='http://www.w3.org/2000/svg',$=s=>document.querySelector(s),make=(t,a,p)=>{let n=document.createElementNS(NS,t);for(let k in a)n.setAttribute(k,a[k]);(p||$('#particles')).append(n);return n};
+const rg=$('#receptors'),pg=$('#particles'),fg=$('#fragments'),vg=$('#vesicles'),pumpG=$('#pumps'),enzG=$('#enzymes');
+const recX=[188,264,340,416,492,568],pumpX=[240,380,520],enzP=[[255,292],[380,330],[505,292]];
+const v0=[[270,88],[380,78],[490,88]],vd=[[270,154],[380,154],[490,154]];
+const modes={
+ diffusion:['Diffusion','Diffusion removes neurotransmitter by spreading it away from the synapse.'],
+ reuptake:['Reuptake','Reuptake transporters return neurotransmitter to the axon terminal.'],
+ reuptakeInhibitor:['Reuptake inhibitor','Reuptake inhibitor blocks transporters, leaving more neurotransmitter in the cleft.'],
+ enzyme:['Enzyme degradation','Acetylcholinesterase breaks acetylcholine into inactive fragments.'],
+ enzymeInhibitor:['Enzyme inhibitor','Enzyme inhibitor blocks acetylcholinesterase, so acetylcholine remains active longer.']
+};
+let mode='diffusion',start=0,raf,parts=[];
+const clamp=x=>Math.max(0,Math.min(1,x)),ease=x=>{x=clamp(x);return x<.5?2*x*x:1-(-2*x+2)**2/2},mix=(a,b,t)=>a+(b-a)*clamp(t),wave=(x)=>436+10*Math.sin(x/70);
+function pac(open){let r=23,a=open,b=[Math.cos(a)*r,-Math.sin(a)*r],c=[Math.cos(a)*r,Math.sin(a)*r];return`M0 0L${b[0]} ${b[1]}A${r} ${r} 0 1 0 ${c[0]} ${c[1]}Z`}
+function staticScene(){
+ rg.innerHTML='';recX.forEach(x=>{let y=wave(x)-2,g=make('g',{transform:`translate(${x} ${y})`},rg);make('path',{class:'receptor',d:'M-13 0v18q0 12 13 12t13-12V0h-8v16q0 6-5 6t-5-6V0Z'},g)});
+ pumpG.innerHTML='';pumpX.forEach(x=>{let g=make('g',{transform:`translate(${x} 185)`},pumpG);make('path',{class:'pump',d:'M-20 -8q20 23 40 0v27q-20 23-40 0Z'},g);make('path',{class:'arrow',d:'M0 36V-34'},g);if(mode==='reuptakeInhibitor')make('rect',{class:'plug',x:-17,y:12,width:34,height:15,rx:7},g)});
+ enzG.innerHTML='';enzP.forEach(([x,y])=>{let g=make('g',{transform:`translate(${x} ${y})`},enzG);make('path',{class:'enzyme mouth',d:pac(.65)},g);make('circle',{cx:-7,cy:-8,r:3,fill:'#17324d'},g);if(mode==='enzymeInhibitor')make('path',{class:'inhib',d:'M0 0L24 -12A24 24 0 0 1 24 12Z'},g)});
+ pumpG.classList.toggle('hidden',!mode.startsWith('reuptake'));enzG.classList.toggle('hidden',!mode.startsWith('enzyme'));
+}
+function reset(){
+ cancelAnimationFrame(raf);pg.innerHTML='';fg.innerHTML='';vg.innerHTML='';parts=[];staticScene();
+ v0.forEach((_,i)=>make('g',{id:'v'+i},vg).append(make('circle',{class:'vesicle',r:30,cx:0,cy:0},vg.lastChild)));
+ for(let i=0;i<16;i++){let v=i%3,o=[(i*17)%29-14,(i*11)%25-12],target=[155+(i*47)%450,245+(i*31)%105];parts.push({i,v,o,target,node:make('circle',{r:8,class:'nt'}),bits:0})}
+ start=performance.now();raf=requestAnimationFrame(tick);
+}
+function dock(t){return ease(t/1.7)}
+function release(p,t){
+ let d=dock(t),c=[mix(v0[p.v][0],vd[p.v][0],d),mix(v0[p.v][1],vd[p.v][1],d)],r=ease((t-1.55-(p.i%4)*.08)/1.45);
+ return [mix(c[0]+p.o[0],p.target[0],r),mix(c[1]+p.o[1],p.target[1],r)];
+}
+function recPoint(i){let x=recX[i%6];return[x,wave(x)-11]}
+function bind(p,t,count){
+ let [x,y]=release(p,t),bound=false;if(p.i>=count)return[x,y,bound];
+ let [rx,ry]=recPoint(p.i),k=ease((t-3.1-p.i*.04)/1.05);x=mix(x,rx,k);y=mix(y,ry,k);bound=k>.88;return[x,y,bound];
+}
+function diffuseFrom(x,y,p,t,when){
+ let k=ease((t-when)/2.8),side=p.i%2?-80:840;return[mix(x,side,k),mix(y,y+28*Math.sin(p.i+k*4),k)];
+}
+function pumpPath(x,y,p,t,when){
+ let px=pumpX[p.i%3],a=ease((t-when)/1.05),b=ease((t-when-1)/1.05);
+ x=mix(x,px,a);y=mix(y,214,a);if(b){x=px;y=mix(214,136,b)}return[x,y];
+}
+function blockedPath(p,t){
+ let px=pumpX[p.i%3],k=ease((t-4)/.95);if(k<1)return[mix(p.target[0],px,k),mix(p.target[1],222,k)];
+ let r=t-4.95,dir=p.i%2?-1:1,x=px+dir*(30+22*r)+24*Math.sin(r*1.1+p.i),y=260+(p.i*29)%88+18*Math.sin(r*.8+p.i*2);
+ return[Math.max(90,Math.min(670,x)),y];
+}
+function split(p,x,y,t){
+ if(p.bits)return;p.bits=[0,1,2].map(j=>make('circle',{r:3.5,class:'frag',fill:j?'#ffd166':'#df3636'},fg));p.split=t;p.sx=x;p.sy=y;
+}
+function moveFragments(p,t){let k=t-p.split;p.bits.forEach((n,j)=>{n.setAttribute('cx',p.sx+(j-1)*32*k);n.setAttribute('cy',p.sy+(j%2?18:-12)*k);n.setAttribute('opacity',Math.max(0,1-k/3))})}
+function tick(now){
+ let t=(now-start)/1000,active=new Set(),d=dock(t);
+ v0.forEach((a,i)=>$('#v'+i).setAttribute('transform',`translate(${mix(a[0],vd[i][0],d)} ${mix(a[1],vd[i][1],d)})`));
+ if(mode.startsWith('enzyme'))document.querySelectorAll('.mouth').forEach(m=>m.setAttribute('d',pac(mode==='enzyme'?(.25+.35*Math.abs(Math.sin(t*5))):.7)));
+ parts.forEach(p=>{let x,y,b=false,op=1;[x,y]=release(p,t);
+  if(mode==='diffusion'){[x,y,b]=bind(p,t,6);if(p.i>=6&&t>4.1)[x,y]=diffuseFrom(...release(p,4.1),p,t,4.1);if(p.i<4&&t>5.3){let [rx,ry]=recPoint(p.i),k=ease((t-5.3)/.55),px=rx+(p.i%2?32:-32),py=ry-58;[x,y]=t<5.85?[mix(rx,px,k),mix(ry,py,k)]:diffuseFrom(px,py,p,t,5.85);b=false}}
+  if(mode==='reuptake'){[x,y,b]=bind(p,t,5);if(p.i>=5&&p.i<14&&t>4)[x,y]=pumpPath(...release(p,4),p,t,4);if(p.i<2&&t>5.2){let [rx,ry]=recPoint(p.i),px=rx,py=ry-58;[x,y]=t<5.75?[rx,mix(ry,py,ease((t-5.2)/.55))]:pumpPath(px,py,p,t,5.75);b=false}}
+  if(mode==='reuptakeInhibitor'){[x,y,b]=bind(p,t,10);if(p.i>=10&&t>4)[x,y]=blockedPath(p,t)}
+  if(mode==='enzyme'){[x,y,b]=bind(p,t,4);if(p.i>=4&&t>3.7){let e=enzP[p.i%3],k=ease((t-3.7)/1.25);x=mix(p.target[0],e[0]+16,k);y=mix(p.target[1],e[1],k);if(k>.82){op=0;split(p,x,y,t)}}if(p.bits)moveFragments(p,t)}
+  if(mode==='enzymeInhibitor'){[x,y,b]=bind(p,t,10);if(p.i>=10&&t>4){x=p.target[0]+Math.sin(t+p.i)*18;y=p.target[1]+Math.cos(t*.7+p.i)*10}}
+  p.node.setAttribute('cx',x);p.node.setAttribute('cy',y);p.node.setAttribute('opacity',op);if(b)active.add(p.i%6);
+ });
+ [...rg.children].forEach((g,i)=>g.firstChild.classList.toggle('on',active.has(i)));
+ if(t<9)raf=requestAnimationFrame(tick);
+}
+function select(m){
+ mode=m;document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
+ $('#modeTitle').textContent=modes[m][0];$('#explanation').textContent=modes[m][1];reset();
+}
+document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>select(b.dataset.mode));$('#replay').onclick=reset;select('diffusion');
+</script>
+</body>
+</html>

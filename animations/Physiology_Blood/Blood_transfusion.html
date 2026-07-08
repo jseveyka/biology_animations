@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blood Transfusion Compatibility</title>
+  <style>
+    :root {
+      --ink: #21303a;
+      --muted: #5e6e76;
+      --panel: #fffaf8;
+      --line: #d9c7c3;
+      --plasma: #ffd9e0;
+      --plasma-deep: #ffc8d3;
+      --rbc: #d93f44;
+      --rbc-dark: #a9242c;
+      --a-blue: #206bd6;
+      --b-green: #25824b;
+      --rh-orange: #e07c1f;
+      --ok: #237a55;
+      --warn: #c25c13;
+      --bad: #b9342e;
+      color-scheme: light;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--ink);
+      background: #f7fbfb;
+      letter-spacing: 0;
+    }
+
+    .attribution {
+      padding: 12px 18px;
+      font-weight: 700;
+      text-align: center;
+      color: #14212a;
+      background: #e9f5f3;
+      border-bottom: 1px solid #cbded9;
+    }
+
+    main {
+      width: min(1180px, calc(100% - 28px));
+      margin: 18px auto 32px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 30px;
+      line-height: 1.15;
+    }
+
+    .directions {
+      margin: 0 0 16px;
+      padding: 12px 14px;
+      line-height: 1.45;
+      color: #32444e;
+      background: #edf7f6;
+      border: 1px solid #c7dcda;
+      border-radius: 8px;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(150px, 1fr)) minmax(260px, 2fr) auto;
+      gap: 12px;
+      align-items: end;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    label,
+    .choice-title {
+      display: block;
+      margin: 0 0 6px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #32444e;
+    }
+
+    select {
+      width: 100%;
+      min-height: 42px;
+      padding: 8px 10px;
+      font-size: 16px;
+      color: var(--ink);
+      border: 1px solid #b8c8cc;
+      border-radius: 6px;
+      background: #ffffff;
+    }
+
+    .antibody-choices {
+      min-width: 0;
+    }
+
+    .choice-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(78px, 1fr));
+      gap: 8px;
+    }
+
+    .choice {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      grid-template-rows: auto auto;
+      align-items: center;
+      justify-items: center;
+      column-gap: 8px;
+      row-gap: 2px;
+      min-height: 72px;
+      padding: 6px 8px;
+      border: 1px solid #c7d3d5;
+      border-radius: 8px;
+      background: #ffffff;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .choice input {
+      width: 18px;
+      height: 18px;
+      accent-color: #2c6873;
+    }
+
+    .choice input:disabled + svg,
+    .choice input:disabled ~ span {
+      opacity: 0.45;
+    }
+
+    .choice span {
+      grid-column: 1 / -1;
+      width: 100%;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.15;
+    }
+
+    .choice-icon {
+      width: 48px;
+      height: 40px;
+      flex: 0 0 auto;
+      overflow: visible;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(112px, 1fr));
+      gap: 8px;
+    }
+
+    button {
+      min-height: 42px;
+      padding: 8px 12px;
+      border: 1px solid #24515a;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffffff;
+      background: #2f7180;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      color: #24434a;
+      background: #eef7f6;
+      border-color: #a6c4c5;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      color: #728086;
+      border-color: #c8d2d5;
+      background: #edf1f2;
+    }
+
+    .feedback {
+      min-height: 42px;
+      margin: 12px 0;
+      padding: 10px 12px;
+      border-left: 5px solid #a7bbc1;
+      border-radius: 6px;
+      background: #ffffff;
+      color: #35484f;
+      font-weight: 700;
+    }
+
+    .feedback.ok {
+      border-left-color: var(--ok);
+      background: #effaf4;
+      color: #195a3e;
+    }
+
+    .feedback.warn {
+      border-left-color: var(--warn);
+      background: #fff7ed;
+      color: #7a3c0e;
+    }
+
+    .feedback.bad {
+      border-left-color: var(--bad);
+      background: #fff1ef;
+      color: #7a2521;
+    }
+
+    .scene-wrap {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      overflow: hidden;
+    }
+
+    #scene {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #fbfefe;
+    }
+
+    .explanation {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
+      gap: 16px;
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .explanation[hidden] {
+      display: none;
+    }
+
+    .explanation h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    .explanation ul {
+      margin: 0;
+      padding-left: 20px;
+      line-height: 1.45;
+    }
+
+    .explanation svg {
+      width: 100%;
+      height: auto;
+      align-self: center;
+      background: #ffffff;
+      border: 1px solid #d9e3e4;
+      border-radius: 8px;
+    }
+
+    .box-label,
+    .legend-title,
+    .result-label {
+      font-size: 22px;
+      font-weight: 700;
+      fill: var(--ink);
+    }
+
+    .small-label {
+      font-size: 15px;
+      font-weight: 700;
+      fill: #40545d;
+    }
+
+    .tiny-label {
+      font-size: 12px;
+      font-weight: 700;
+      fill: #40545d;
+    }
+
+    .plasma-box {
+      fill: var(--plasma);
+      stroke: #d9909d;
+      stroke-width: 2;
+    }
+
+    .tube-outer {
+      fill: none;
+      stroke: #9ec2c7;
+      stroke-width: 30;
+      stroke-linecap: round;
+      opacity: 0.75;
+    }
+
+    .tube-inner {
+      fill: none;
+      stroke: #d94d54;
+      stroke-width: 14;
+      stroke-linecap: round;
+      stroke-dasharray: 18 12;
+      animation: flow 1s linear infinite;
+    }
+
+    @keyframes flow {
+      to {
+        stroke-dashoffset: -30;
+      }
+    }
+
+    .rbc-body {
+      fill: url(#rbcGradient);
+      stroke: var(--rbc-dark);
+      stroke-width: 2;
+    }
+
+    .rbc-center {
+      fill: #f18382;
+      opacity: 0.55;
+    }
+
+    .antigen-A,
+    .anti-A {
+      fill: var(--a-blue);
+      stroke: #124991;
+    }
+
+    .antigen-B,
+    .anti-B {
+      fill: var(--b-green);
+      stroke: #176236;
+    }
+
+    .antigen-Rh,
+    .anti-Rh {
+      fill: var(--rh-orange);
+      stroke: #a95212;
+    }
+
+    .antigen-shape {
+      stroke-width: 1.2;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .antibody-line {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 5;
+    }
+
+    .antibody-tip {
+      fill: #ffffff;
+      stroke-width: 3;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+    }
+
+    .igm-connector {
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .cross-link {
+      stroke: #6d3733;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-dasharray: 5 5;
+    }
+
+    .safe-glow {
+      fill: #e8f7f2;
+      stroke: #66ad8f;
+      stroke-width: 2;
+    }
+
+    .bad-glow {
+      fill: #fff0ec;
+      stroke: #d06757;
+      stroke-width: 2;
+    }
+
+    .warn-glow {
+      fill: #fff7e8;
+      stroke: #d99031;
+      stroke-width: 2;
+    }
+
+    @media (max-width: 900px) {
+      .toolbar {
+        grid-template-columns: repeat(2, minmax(140px, 1fr));
+      }
+
+      .antibody-choices,
+      .buttons {
+        grid-column: 1 / -1;
+      }
+
+      .buttons {
+        grid-template-columns: repeat(4, minmax(118px, 1fr));
+      }
+
+      .explanation {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 620px) {
+      main {
+        width: min(100% - 16px, 1180px);
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .toolbar,
+      .choice-row,
+      .buttons {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="attribution">Animation Prompted by Jerred Seveyka for his biology class.</div>
+
+  <main>
+    <h1>Blood Transfusion Compatibility</h1>
+    <p class="directions">Step 1. Choose the donor and recipient blood types. Step 2. Select "Set up blood." Step 3. Check the appropriate boxes for the antibodies present in the recipient's plasma. Step 4. Check your selection by pressing the "Choose recipient plasma antibodies." Step 5. Press the "Start Transfusions" button.</p>
+
+    <section class="toolbar" aria-label="Blood transfusion controls">
+      <div>
+        <label for="donorType">Donor blood type</label>
+        <select id="donorType">
+          <option value="A-">A&minus;</option>
+          <option value="A+">A+</option>
+          <option value="B-">B&minus;</option>
+          <option value="B+">B+</option>
+          <option value="AB-">AB&minus;</option>
+          <option value="AB+">AB+</option>
+          <option value="O-" selected>O&minus;</option>
+          <option value="O+">O+</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="recipientType">Recipient blood type</label>
+        <select id="recipientType">
+          <option value="A-" selected>A&minus;</option>
+          <option value="A+">A+</option>
+          <option value="B-">B&minus;</option>
+          <option value="B+">B+</option>
+          <option value="AB-">AB&minus;</option>
+          <option value="AB+">AB+</option>
+          <option value="O-">O&minus;</option>
+          <option value="O+">O+</option>
+        </select>
+      </div>
+
+      <div class="antibody-choices" aria-label="Recipient plasma antibody choices">
+        <div class="choice-title">Recipient plasma antibodies</div>
+        <div class="choice-row">
+          <label class="choice">
+            <input id="antiA" type="checkbox" value="A" disabled>
+            <svg id="iconAntiA" class="choice-icon" viewBox="0 0 60 60" aria-hidden="true"></svg>
+            <span>anti-A</span>
+          </label>
+          <label class="choice">
+            <input id="antiB" type="checkbox" value="B" disabled>
+            <svg id="iconAntiB" class="choice-icon" viewBox="0 0 60 60" aria-hidden="true"></svg>
+            <span>anti-B</span>
+          </label>
+          <label class="choice">
+            <input id="antiRh" type="checkbox" value="Rh" disabled>
+            <svg id="iconAntiRh" class="choice-icon" viewBox="0 0 60 60" aria-hidden="true"></svg>
+            <span>anti-Rh IgG</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="buttons">
+        <button id="setupBtn" type="button">Set up blood</button>
+        <button id="chooseBtn" type="button" disabled>Choose recipient plasma antibodies</button>
+        <button id="startBtn" type="button" disabled>Start Transfusions</button>
+        <button id="resetBtn" type="button" class="secondary">Reset</button>
+      </div>
+    </section>
+
+    <div id="feedback" class="feedback" role="status" aria-live="polite">
+      Select donor and recipient blood types, then set up the blood samples.
+    </div>
+
+    <div class="scene-wrap">
+      <svg id="scene" viewBox="0 0 1000 540" role="img" aria-label="Blood transfusion compatibility animation"></svg>
+    </div>
+
+    <section id="explanation" class="explanation" hidden>
+      <div id="explanationText"></div>
+      <svg id="explanationVisual" viewBox="0 0 320 210" aria-label="Compatibility explanation visual"></svg>
+    </section>
+  </main>
+
+  <script>
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const donorSelect = document.getElementById('donorType');
+    const recipientSelect = document.getElementById('recipientType');
+    const setupBtn = document.getElementById('setupBtn');
+    const chooseBtn = document.getElementById('chooseBtn');
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const feedback = document.getElementById('feedback');
+    const scene = document.getElementById('scene');
+    const explanation = document.getElementById('explanation');
+    const explanationText = document.getElementById('explanationText');
+    const explanationVisual = document.getElementById('explanationVisual');
+    const antibodyInputs = {
+      A: document.getElementById('antiA'),
+      B: document.getElementById('antiB'),
+      Rh: document.getElementById('antiRh')
+    };
+
+    const antibodyLabels = {
+      A: 'anti-A IgM',
+      B: 'anti-B IgM',
+      Rh: 'anti-Rh IgG'
+    };
+
+    const antigenLabels = {
+      A: 'A antigen',
+      B: 'B antigen',
+      Rh: 'Rh antigen'
+    };
+
+    const state = {
+      setup: false,
+      antibodiesCorrect: false,
+      transfused: false,
+      animating: false,
+      tubeVisible: false,
+      donorType: donorSelect.value,
+      recipientType: recipientSelect.value,
+      recipientAntibodies: [],
+      result: null,
+      frameId: null,
+      rhDelayStage: '',
+      rhTimers: []
+    };
+
+    let layers = {};
+
+    function svgEl(name, attrs = {}) {
+      const el = document.createElementNS(SVG_NS, name);
+      Object.entries(attrs).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          el.setAttribute(key, value);
+        }
+      });
+      return el;
+    }
+
+    function clear(el) {
+      while (el.firstChild) {
+        el.removeChild(el.firstChild);
+      }
+    }
+
+    function setFeedback(message, tone = '') {
+      feedback.textContent = message;
+      feedback.className = `feedback ${tone}`.trim();
+    }
+
+    function formatType(type) {
+      return type.replace('-', '−');
+    }
+
+    function formatList(items, emptyText) {
+      if (!items.length) return emptyText;
+      if (items.length === 1) return items[0];
+      return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+    }
+
+    function antibodyNames(types) {
+      return types.map(type => antibodyLabels[type]);
+    }
+
+    function antigenNames(types) {
+      return types.map(type => antigenLabels[type]);
+    }
+
+    function getBloodProfile(type) {
+      const abo = type.replace(/[+-]/g, '');
+      const hasRh = type.endsWith('+');
+      return {
+        type,
+        abo,
+        hasA: abo.includes('A'),
+        hasB: abo.includes('B'),
+        hasRh,
+        antigens: [
+          ...(abo.includes('A') ? ['A'] : []),
+          ...(abo.includes('B') ? ['B'] : []),
+          ...(hasRh ? ['Rh'] : [])
+        ]
+      };
+    }
+
+    function getCorrectRecipientAntibodies(recipientType) {
+      const abo = getBloodProfile(recipientType).abo;
+      if (abo === 'A') return ['B'];
+      if (abo === 'B') return ['A'];
+      if (abo === 'O') return ['A', 'B'];
+      return [];
+    }
+
+    function validateRecipientAntibodyChoices(recipientType, choices) {
+      const correct = getCorrectRecipientAntibodies(recipientType);
+      const missing = correct.filter(type => !choices.includes(type));
+      const extra = choices.filter(type => !correct.includes(type));
+      return {
+        valid: missing.length === 0 && extra.length === 0,
+        correct,
+        missing,
+        extra
+      };
+    }
+
+    function isABOIncompatible(donorProfile, recipientAntibodies) {
+      return (
+        (recipientAntibodies.includes('A') && donorProfile.hasA) ||
+        (recipientAntibodies.includes('B') && donorProfile.hasB)
+      );
+    }
+
+    function getMatchingAntibodies(donorProfile, recipientAntibodies) {
+      return recipientAntibodies.filter(type => {
+        if (type === 'A') return donorProfile.hasA;
+        if (type === 'B') return donorProfile.hasB;
+        if (type === 'Rh') return donorProfile.hasRh;
+        return false;
+      });
+    }
+
+    function hasRhExposureWarning(donorProfile, recipientProfile) {
+      return donorProfile.hasRh && !recipientProfile.hasRh;
+    }
+
+    function drawDefs(parent) {
+      const defs = svgEl('defs');
+      const gradient = svgEl('radialGradient', {
+        id: 'rbcGradient',
+        cx: '50%',
+        cy: '50%',
+        r: '65%'
+      });
+      gradient.appendChild(svgEl('stop', { offset: '0%', 'stop-color': '#f17978' }));
+      gradient.appendChild(svgEl('stop', { offset: '62%', 'stop-color': '#d93f44' }));
+      gradient.appendChild(svgEl('stop', { offset: '100%', 'stop-color': '#a9242c' }));
+      defs.appendChild(gradient);
+      parent.appendChild(defs);
+    }
+
+    function drawAntigen(parent, x, y, type, angle = 0, scale = 1) {
+      const group = svgEl('g', {
+        class: `antigen antigen-${type}`,
+        transform: `translate(${x} ${y}) rotate(${angle}) scale(${scale})`
+      });
+
+      let shape;
+      if (type === 'A') {
+        shape = svgEl('path', {
+          d: 'M -7 0 L 7 0 L 0 -15 Z',
+          class: 'antigen-shape antigen-A'
+        });
+      } else if (type === 'B') {
+        shape = svgEl('path', {
+          d: 'M -8 0 Q 0 -15 8 0 Z',
+          class: 'antigen-shape antigen-B'
+        });
+      } else {
+        shape = svgEl('rect', {
+          x: -4,
+          y: -16,
+          width: 8,
+          height: 16,
+          rx: 1,
+          class: 'antigen-shape antigen-Rh'
+        });
+      }
+
+      group.appendChild(shape);
+      parent.appendChild(group);
+      return group;
+    }
+
+    function antibodyColorClass(type) {
+      if (type === 'A') return 'anti-A';
+      if (type === 'B') return 'anti-B';
+      return 'anti-Rh';
+    }
+
+    function antibodyTipPath(type) {
+      if (type === 'A') {
+        return 'M -10 9 L -10 -7 L -4 -7 L 0 -1 L 4 -7 L 10 -7 L 10 9 Z';
+      }
+      if (type === 'B') {
+        return 'M -10 9 L -10 -7 Q 0 2 10 -7 L 10 9 Z';
+      }
+      return 'M -10 9 L -10 -7 L -4 -7 L -4 1 L 4 1 L 4 -7 L 10 -7 L 10 9 Z';
+    }
+
+    function drawAntibody(parent, x, y, type, rotation = 0, scale = 1) {
+      const colorClass = antibodyColorClass(type);
+      const group = svgEl('g', {
+        class: `antibody ${colorClass}`,
+        transform: `translate(${x} ${y}) rotate(${rotation}) scale(${scale})`
+      });
+
+      const stem = svgEl('path', {
+        d: 'M 0 30 L 0 2 M 0 2 L -18 -20 M 0 2 L 18 -20',
+        class: `antibody-line ${colorClass}`
+      });
+      group.appendChild(stem);
+      group.appendChild(svgEl('circle', { cx: 0, cy: 2, r: 4, class: colorClass }));
+
+      const leftTip = svgEl('path', {
+        d: antibodyTipPath(type),
+        class: `antibody-tip ${colorClass}`,
+        transform: 'translate(-22 -25) rotate(-42)'
+      });
+      const rightTip = svgEl('path', {
+        d: antibodyTipPath(type),
+        class: `antibody-tip ${colorClass}`,
+        transform: 'translate(22 -25) rotate(42)'
+      });
+      group.appendChild(leftTip);
+      group.appendChild(rightTip);
+
+      parent.appendChild(group);
+      return group;
+    }
+
+    function drawIgMPentamer(parent, x, y, type, rotation = 0, scale = 1) {
+      const colorClass = antibodyColorClass(type);
+      const group = svgEl('g', {
+        class: `antibody igm-pentamer ${colorClass}`,
+        transform: `translate(${x} ${y}) rotate(${rotation}) scale(${scale})`
+      });
+
+      for (let i = 0; i < 5; i += 1) {
+        const arm = svgEl('g', { transform: `rotate(${i * 72})` });
+        arm.appendChild(svgEl('line', {
+          x1: 0,
+          y1: 0,
+          x2: 0,
+          y2: -8,
+          class: `igm-connector ${colorClass}`
+        }));
+        drawAntibody(arm, 0, -30, type, 0, 0.58);
+        group.appendChild(arm);
+      }
+
+      group.appendChild(svgEl('circle', {
+        cx: 0,
+        cy: 0,
+        r: 8,
+        class: colorClass
+      }));
+      parent.appendChild(group);
+      return group;
+    }
+
+    function drawPlasmaAntibody(parent, x, y, type, rotation = 0, scale = 1) {
+      if (type === 'Rh') {
+        return drawAntibody(parent, x, y, type, rotation, scale * 0.7);
+      }
+      return drawIgMPentamer(parent, x, y, type, rotation, scale * 1.25);
+    }
+
+    function antigenPoint(radiusX, radiusY, angle) {
+      const radians = angle * Math.PI / 180;
+      return {
+        x: Math.sin(radians) * radiusX,
+        y: -Math.cos(radians) * radiusY
+      };
+    }
+
+    function drawRBC(parent, x, y, profile, scale = 1, options = {}) {
+      const group = svgEl('g', {
+        class: 'rbc',
+        transform: `translate(${x} ${y}) scale(${scale})`
+      });
+      const body = svgEl('ellipse', {
+        cx: 0,
+        cy: 0,
+        rx: 24,
+        ry: 18.75,
+        class: 'rbc-body'
+      });
+      const center = svgEl('ellipse', {
+        cx: 0,
+        cy: 0,
+        rx: 12,
+        ry: 6.75,
+        class: 'rbc-center'
+      });
+      group.appendChild(body);
+      group.appendChild(center);
+
+      const angleMap = options.angleMap || {
+        A: [-138, -28, 78],
+        B: [-92, 22, 146],
+        Rh: [-170, -2, 118]
+      };
+
+      const antigens = options.antigens || profile.antigens;
+      antigens.forEach(type => {
+        (angleMap[type] || [0]).forEach(angle => {
+          const point = antigenPoint(24, 18.75, angle);
+          drawAntigen(group, point.x, point.y, type, angle, 0.66);
+        });
+      });
+
+      parent.appendChild(group);
+      return group;
+    }
+
+    function drawPanelText(parent, text, x, y, className = 'small-label') {
+      const node = svgEl('text', { x, y, class: className });
+      node.textContent = text;
+      parent.appendChild(node);
+      return node;
+    }
+
+    function drawBaseScene() {
+      clear(scene);
+      drawDefs(scene);
+
+      layers.background = svgEl('g');
+      layers.blood = svgEl('g');
+      layers.tube = svgEl('g');
+      layers.antibodies = svgEl('g');
+      layers.reaction = svgEl('g');
+      layers.moving = svgEl('g');
+      layers.legend = svgEl('g');
+
+      scene.appendChild(layers.background);
+      scene.appendChild(layers.blood);
+      scene.appendChild(layers.tube);
+      scene.appendChild(layers.antibodies);
+      scene.appendChild(layers.reaction);
+      scene.appendChild(layers.moving);
+      scene.appendChild(layers.legend);
+
+      layers.background.appendChild(svgEl('rect', {
+        x: 80,
+        y: 50,
+        width: 270,
+        height: 263,
+        rx: 8,
+        class: 'plasma-box'
+      }));
+      layers.background.appendChild(svgEl('rect', {
+        x: 500,
+        y: 50,
+        width: 270,
+        height: 263,
+        rx: 8,
+        class: 'plasma-box'
+      }));
+      drawPanelText(layers.background, 'Donor', 95, 36, 'box-label');
+      drawPanelText(layers.background, 'Recipient', 515, 36, 'box-label');
+
+      drawLegend();
+    }
+
+    function renderInitialBlood() {
+      const donorProfile = getBloodProfile(state.donorType);
+      const recipientProfile = getBloodProfile(state.recipientType);
+      const donorPositions = [
+        [142, 112, 1.08],
+        [260, 98, 1.0],
+        [305, 178, 1.05],
+        [190, 250, 1.0]
+      ];
+      const recipientPositions = [
+        [558, 112, 1.08],
+        [680, 104, 1.0],
+        [585, 250, 1.04],
+        [720, 232, 1.0]
+      ];
+
+      donorPositions.forEach(([x, y, scale]) => drawRBC(layers.blood, x, y, donorProfile, scale));
+      recipientPositions.forEach(([x, y, scale]) => drawRBC(layers.blood, x, y, recipientProfile, scale));
+
+      drawPanelText(layers.blood, `${formatType(state.donorType)} donor RBC antigens: ${formatList(antigenNames(donorProfile.antigens), 'none')}`, 92, 296, 'tiny-label');
+      drawPanelText(layers.blood, `${formatType(state.recipientType)} recipient RBC antigens: ${formatList(antigenNames(recipientProfile.antigens), 'none')}`, 512, 296, 'tiny-label');
+
+      if (!state.antibodiesCorrect && !state.transfused) {
+        const note = drawPanelText(layers.blood, 'Recipient plasma waits for the antibody choice.', 512, 82, 'tiny-label');
+        note.setAttribute('fill', '#6b5960');
+      }
+    }
+
+    function renderRecipientAntibodies() {
+      if (state.recipientAntibodies.length === 0) {
+        drawPanelText(layers.antibodies, 'No anti-A IgM, anti-B IgM, or anti-Rh IgG is present in this default model.', 612, 118, 'tiny-label');
+        return;
+      }
+
+      const positions = {
+        A: [565, 240, -12, 0.44],
+        B: [718, 152, 16, 0.42],
+        Rh: [724, 255, -22, 0.76]
+      };
+      state.recipientAntibodies.forEach(type => {
+        const [x, y, rotation, scale] = positions[type];
+        drawPlasmaAntibody(layers.antibodies, x, y, type, rotation, scale);
+      });
+    }
+
+    function drawTube() {
+      const path = 'M 350 180 C 395 145, 455 145, 500 180';
+      layers.tube.appendChild(svgEl('path', { d: path, class: 'tube-outer' }));
+      layers.tube.appendChild(svgEl('path', { d: path, class: 'tube-inner' }));
+      const label = drawPanelText(layers.tube, 'transfusion tube', 382, 132, 'tiny-label');
+      label.setAttribute('fill', '#48636a');
+    }
+
+    function renderSafeMixing() {
+      const donorProfile = getBloodProfile(state.donorType);
+      const movedCells = [
+        [550, 160, 0.94],
+        [625, 198, 0.9],
+        [700, 158, 0.92],
+        [675, 252, 0.86]
+      ];
+      layers.reaction.appendChild(svgEl('rect', {
+        x: 790,
+        y: 68,
+        width: 190,
+        height: state.result.rhWarning ? 82 : 52,
+        rx: 8,
+        class: state.result.rhWarning ? 'warn-glow' : 'safe-glow'
+      }));
+      drawPanelText(layers.reaction, state.result.rhWarning ? 'No immediate Rh' : 'No agglutination', 802, 96, 'result-label');
+      if (state.result.rhWarning) {
+        drawPanelText(layers.reaction, 'reaction', 802, 118, 'small-label');
+        drawPanelText(layers.reaction, 'anti-Rh IgG can appear later', 802, 136, 'tiny-label');
+      }
+      movedCells.forEach(([x, y, scale]) => drawRBC(layers.reaction, x, y, donorProfile, scale));
+    }
+
+    function renderAgglutination() {
+      const donorProfile = getBloodProfile(state.donorType);
+      const matchTypes = state.result.matches;
+      const bridgeTypes = matchTypes.length ? matchTypes : ['A'];
+
+      layers.reaction.appendChild(svgEl('rect', {
+        x: 790,
+        y: 68,
+        width: 190,
+        height: 58,
+        rx: 8,
+        class: 'bad-glow'
+      }));
+      drawPanelText(layers.reaction, 'Agglutination', 805, 98, 'result-label');
+      drawPanelText(layers.reaction, 'Antibodies bind donor', 804, 119, 'tiny-label');
+      drawPanelText(layers.reaction, 'RBC antigens', 804, 134, 'tiny-label');
+
+      const clump = svgEl('g');
+      layers.reaction.appendChild(clump);
+      const clumpCells = [
+        [560, 176, 1.0],
+        [620, 176, 1.0],
+        [590, 225, 1.0],
+        [656, 226, 0.96]
+      ];
+      clumpCells.forEach(([x, y, scale]) => drawRBC(clump, x, y, donorProfile, scale));
+      clump.appendChild(svgEl('line', { x1: 560, y1: 176, x2: 620, y2: 176, class: 'cross-link' }));
+      clump.appendChild(svgEl('line', { x1: 620, y1: 176, x2: 656, y2: 226, class: 'cross-link' }));
+      clump.appendChild(svgEl('line', { x1: 560, y1: 176, x2: 590, y2: 225, class: 'cross-link' }));
+
+      drawBridgeFit(layers.reaction, bridgeTypes[0], 530, 132);
+      if (bridgeTypes[1]) {
+        drawBridgeFit(layers.reaction, bridgeTypes[1], 640, 132);
+      }
+    }
+
+    function drawBridgeFit(parent, type, x, y) {
+      const donorProfile = getBloodProfile(state.donorType);
+      const group = svgEl('g');
+      parent.appendChild(group);
+      const leftCenter = x;
+      const rightCenter = x + 58;
+      const cellY = y + 64;
+      const angleMap = { A: [0], B: [0], Rh: [0] };
+      drawRBC(group, leftCenter, cellY, donorProfile, 0.72, { antigens: [type], angleMap });
+      drawRBC(group, rightCenter, cellY, donorProfile, 0.72, { antigens: [type], angleMap });
+      if (type === 'Rh') {
+        drawPlasmaAntibody(group, x + 29, y + 28, type, 180, 0.82);
+      } else {
+        drawPlasmaAntibody(group, x + 29, y + 50, type, 180, 0.36);
+      }
+    }
+
+    function renderResult() {
+      if (!state.result) return;
+      if (state.result.matches.length) {
+        renderAgglutination();
+      } else {
+        renderSafeMixing();
+      }
+      if (state.result.rhWarning) {
+        renderRhTimeline();
+      }
+    }
+
+    function renderRhTimeline() {
+      if (state.rhDelayStage === 'passing') {
+        layers.reaction.appendChild(svgEl('rect', {
+          x: 790,
+          y: 158,
+          width: 190,
+          height: 120,
+          rx: 8,
+          class: 'warn-glow'
+        }));
+        layers.reaction.appendChild(svgEl('circle', {
+          cx: 885,
+          cy: 196,
+          r: 24,
+          fill: '#ffffff',
+          stroke: '#d99031',
+          'stroke-width': 4,
+          'stroke-dasharray': '12 8'
+        }));
+        drawPanelText(layers.reaction, 'Several weeks', 805, 232, 'small-label');
+        drawPanelText(layers.reaction, 'later...', 805, 250, 'small-label');
+        drawPanelText(layers.reaction, 'Sensitizing to Rh antigen', 805, 270, 'tiny-label');
+        return;
+      }
+
+      if (state.rhDelayStage === 'sensitized') {
+        layers.reaction.appendChild(svgEl('rect', {
+          x: 790,
+          y: 158,
+          width: 190,
+          height: 92,
+          rx: 8,
+          class: 'warn-glow'
+        }));
+        drawPanelText(layers.reaction, 'Several weeks later...', 805, 184, 'small-label');
+        drawPanelText(layers.reaction, 'New anti-Rh IgG', 805, 208, 'result-label');
+        drawPanelText(layers.reaction, 'appears', 805, 230, 'small-label');
+        drawPlasmaAntibody(layers.reaction, 550, 232, 'Rh', -18, 0.82);
+        drawPlasmaAntibody(layers.reaction, 730, 252, 'Rh', 18, 0.76);
+      }
+    }
+
+    function drawLegendAntigen(parent, x, y, type, label) {
+      const group = svgEl('g');
+      parent.appendChild(group);
+      group.appendChild(svgEl('path', {
+        d: `M ${x - 24} ${y} Q ${x} ${y + 10} ${x + 24} ${y}`,
+        fill: 'none',
+        stroke: '#b53238',
+        'stroke-width': 6,
+        'stroke-linecap': 'round'
+      }));
+      drawAntigen(group, x, y - 2, type, 0, 1.18);
+      drawPanelText(group, label, x - 28, y + 34, 'tiny-label');
+    }
+
+    function drawLegend() {
+      const legend = layers.legend;
+      legend.appendChild(svgEl('rect', {
+        x: 45,
+        y: 345,
+        width: 910,
+        height: 165,
+        rx: 8,
+        fill: '#f6fbfb',
+        stroke: '#d2e2e3'
+      }));
+      drawPanelText(legend, 'Antigens', 72, 374, 'small-label');
+      drawPanelText(legend, 'Antibodies', 510, 374, 'small-label');
+
+      drawLegendAntigen(legend, 100, 418, 'A', 'A antigen');
+      drawLegendAntigen(legend, 230, 418, 'B', 'B antigen');
+      drawLegendAntigen(legend, 368, 418, 'Rh', 'Rh antigen');
+
+      drawPlasmaAntibody(legend, 560, 424, 'A', 0, 0.45);
+      drawPlasmaAntibody(legend, 705, 424, 'B', 0, 0.45);
+      drawPlasmaAntibody(legend, 850, 428, 'Rh', 0, 0.78);
+      drawPanelText(legend, 'anti-A IgM', 520, 492, 'tiny-label');
+      drawPanelText(legend, 'anti-B IgM', 665, 492, 'tiny-label');
+      drawPanelText(legend, 'anti-Rh IgG', 812, 492, 'tiny-label');
+    }
+
+    function renderScene() {
+      layers = {};
+      drawBaseScene();
+      if (state.setup) {
+        renderInitialBlood();
+      }
+      if (state.tubeVisible) {
+        drawTube();
+      }
+      if (state.antibodiesCorrect) {
+        renderRecipientAntibodies();
+      }
+      if (state.transfused) {
+        renderResult();
+      }
+    }
+
+    function renderChoiceIcons() {
+      [
+        ['iconAntiA', 'A'],
+        ['iconAntiB', 'B'],
+        ['iconAntiRh', 'Rh']
+      ].forEach(([id, type]) => {
+        const icon = document.getElementById(id);
+        clear(icon);
+        if (type === 'Rh') {
+          icon.setAttribute('viewBox', '0 0 60 60');
+          drawPlasmaAntibody(icon, 30, 32, type, 0, 0.7);
+        } else {
+          icon.setAttribute('viewBox', '0 0 100 80');
+          drawPlasmaAntibody(icon, 50, 40, type, 0, 0.32);
+        }
+      });
+    }
+
+    function getSelectedAntibodies() {
+      return Object.entries(antibodyInputs)
+        .filter(([, input]) => input.checked)
+        .map(([type]) => type);
+    }
+
+    function setAntibodyInputsEnabled(enabled) {
+      Object.values(antibodyInputs).forEach(input => {
+        input.disabled = !enabled;
+      });
+    }
+
+    function clearAntibodyInputs() {
+      Object.values(antibodyInputs).forEach(input => {
+        input.checked = false;
+      });
+    }
+
+    function updateControls() {
+      setAntibodyInputsEnabled(state.setup && !state.animating);
+      chooseBtn.disabled = !state.setup || state.animating;
+      startBtn.disabled = !state.antibodiesCorrect || state.animating || state.transfused;
+      setupBtn.disabled = state.animating;
+    }
+
+    function setUpBlood() {
+      cancelAnimation();
+      state.setup = true;
+      state.antibodiesCorrect = false;
+      state.transfused = false;
+      state.animating = false;
+      state.tubeVisible = false;
+      state.result = null;
+      state.rhDelayStage = '';
+      state.donorType = donorSelect.value;
+      state.recipientType = recipientSelect.value;
+      state.recipientAntibodies = [];
+      clearAntibodyInputs();
+      explanation.hidden = true;
+      explanationText.innerHTML = '';
+      clear(explanationVisual);
+      setFeedback('Blood samples are set up. Now choose the antibodies present in the recipient plasma.', 'warn');
+      renderScene();
+      updateControls();
+    }
+
+    function chooseRecipientAntibodies() {
+      clearRhTimers();
+      const choices = getSelectedAntibodies();
+      const validation = validateRecipientAntibodyChoices(state.recipientType, choices);
+
+      if (!validation.valid) {
+        state.antibodiesCorrect = false;
+        state.recipientAntibodies = [];
+        state.transfused = false;
+        state.result = null;
+        state.rhDelayStage = '';
+        const notes = [];
+        if (validation.missing.length) {
+          notes.push(`missing ${formatList(antibodyNames(validation.missing), '')}`);
+        }
+        if (validation.extra.length) {
+          const extras = validation.extra.map(type => {
+            if (type === 'Rh') {
+              return 'anti-Rh IgG, which is not pre-existing in this default first-exposure model';
+            }
+            return antibodyLabels[type];
+          });
+          notes.push(`remove ${formatList(extras, '')}`);
+        }
+        setFeedback(`Try again: recipient type ${formatType(state.recipientType)} plasma is ${notes.join('; ')}.`, 'bad');
+        renderScene();
+        updateControls();
+        return;
+      }
+
+      state.antibodiesCorrect = true;
+      state.recipientAntibodies = validation.correct;
+      state.transfused = false;
+      state.result = null;
+      state.rhDelayStage = '';
+      const antibodyText = formatList(antibodyNames(validation.correct), 'no anti-A IgM, anti-B IgM, or anti-Rh IgG');
+      setFeedback(`Correct. Recipient plasma contains ${antibodyText}. Start the transfusions when ready.`, 'ok');
+      renderScene();
+      updateControls();
+    }
+
+    function pointOnTube(t) {
+      const x = 350 + (500 - 350) * t;
+      const y = 180 - Math.sin(Math.PI * t) * 35;
+      return { x, y };
+    }
+
+    function animateTransfusion() {
+      if (!state.antibodiesCorrect || state.animating) return;
+      clearRhTimers();
+      state.animating = true;
+      state.tubeVisible = true;
+      state.transfused = false;
+      state.result = null;
+      state.rhDelayStage = '';
+      setFeedback('Donor RBCs are moving through the transfusion tube into the recipient plasma.', 'warn');
+      renderScene();
+      updateControls();
+
+      const donorProfile = getBloodProfile(state.donorType);
+      const start = performance.now();
+      const duration = 3600;
+      const offsets = [0, 0.16, 0.32, 0.48];
+
+      function frame(now) {
+        const elapsed = now - start;
+        clear(layers.moving);
+
+        offsets.forEach((offset, index) => {
+          const progress = Math.min(1, Math.max(0, elapsed / duration - offset));
+          if (progress > 0 && progress < 1) {
+            const point = pointOnTube(progress);
+            drawRBC(layers.moving, point.x, point.y + (index % 2 ? 8 : -8), donorProfile, 0.62);
+          }
+        });
+
+        if (elapsed < duration * 1.48) {
+          state.frameId = requestAnimationFrame(frame);
+          return;
+        }
+
+        finishTransfusion();
+      }
+
+      state.frameId = requestAnimationFrame(frame);
+    }
+
+    function finishTransfusion() {
+      state.animating = false;
+      state.transfused = true;
+      const donorProfile = getBloodProfile(state.donorType);
+      const recipientProfile = getBloodProfile(state.recipientType);
+      const matches = getMatchingAntibodies(donorProfile, state.recipientAntibodies);
+      const rhWarning = hasRhExposureWarning(donorProfile, recipientProfile);
+
+      state.result = {
+        matches,
+        aboIncompatible: isABOIncompatible(donorProfile, state.recipientAntibodies),
+        rhWarning
+      };
+      state.rhDelayStage = rhWarning ? 'initial' : '';
+
+      if (matches.length) {
+        setFeedback(rhWarning
+          ? 'ABO incompatibility causes immediate agglutination; Rh sensitization can still develop after exposure.'
+          : 'Incompatible transfusion: recipient antibodies bind donor RBC antigens and cause agglutination.', 'bad');
+      } else if (rhWarning) {
+        setFeedback('No immediate anti-Rh reaction: anti-Rh IgG is not pre-existing. Watch what happens over time.', 'warn');
+      } else {
+        setFeedback('Compatible transfusion: recipient antibodies do not bind donor RBC antigens.', 'ok');
+      }
+
+      renderScene();
+      renderExplanation();
+      updateControls();
+      if (rhWarning) {
+        startRhSensitizationTimeline();
+      }
+    }
+
+    function startRhSensitizationTimeline() {
+      clearRhTimers();
+      state.rhTimers.push(setTimeout(() => {
+        if (!state.result || !state.result.rhWarning) return;
+        state.rhDelayStage = 'passing';
+        setFeedback('Several weeks later, the Rh-negative recipient is making anti-Rh IgG.', 'warn');
+        renderScene();
+        renderExplanation();
+      }, 1200));
+      state.rhTimers.push(setTimeout(() => {
+        if (!state.result || !state.result.rhWarning) return;
+        state.rhDelayStage = 'sensitized';
+        setFeedback('The recipient is now sensitized: future Rh-positive transfusions could trigger an anti-Rh IgG reaction.', 'warn');
+        renderScene();
+        renderExplanation();
+        updateControls();
+      }, 3400));
+    }
+
+    function renderExplanation() {
+      const donorProfile = getBloodProfile(state.donorType);
+      const recipientProfile = getBloodProfile(state.recipientType);
+      const donorAntigens = antigenNames(donorProfile.antigens);
+      const antibodyText = antibodyNames(state.recipientAntibodies);
+      const matches = state.result.matches;
+      const matchText = matches.length
+        ? `${formatList(antibodyNames(matches), '')} matched ${formatList(antigenNames(matches), '')}`
+        : 'No recipient antibody matched a donor RBC antigen';
+      const headline = matches.length
+        ? state.result.rhWarning ? 'ABO Agglutination Plus Rh Exposure' : 'Incompatible Transfusion'
+        : state.result.rhWarning
+          ? state.rhDelayStage === 'sensitized' ? 'Rh Sensitization After Exposure' : 'No Immediate Rh Reaction'
+          : 'Compatible Transfusion';
+
+      const bullets = [
+        `Donor ${formatType(state.donorType)} RBCs have ${formatList(donorAntigens, 'no A, B, or Rh antigens')}.`,
+        `Recipient ${formatType(state.recipientType)} plasma contains ${formatList(antibodyText, 'no anti-A IgM, anti-B IgM, or anti-Rh IgG in this default model')}.`,
+        `${matchText}.`
+      ];
+
+      if (matches.length) {
+        bullets.push('Antibodies cross-link donor RBCs, so agglutination occurs.');
+      } else {
+        bullets.push('Donor RBCs remain separate, so no agglutination occurs.');
+      }
+
+      if (state.result.rhWarning) {
+        bullets.push('Anti-Rh IgG is not naturally present at the start of this first exposure, so Rh does not cause an immediate anti-Rh reaction.');
+        if (state.rhDelayStage === 'sensitized') {
+          bullets.push('Several weeks later, anti-Rh IgG appears in the recipient plasma. The recipient is now sensitized, so a future Rh-positive transfusion could cause a reaction.');
+        } else if (state.rhDelayStage === 'passing') {
+          bullets.push('Several weeks later, the recipient immune system is beginning to make anti-Rh IgG.');
+        } else {
+          bullets.push('Over time, exposure to Rh-positive donor cells can lead the Rh-negative recipient to make anti-Rh IgG.');
+        }
+      }
+
+      explanationText.innerHTML = `
+        <h2>${headline}</h2>
+        <ul>${bullets.map(item => `<li>${item}</li>`).join('')}</ul>
+      `;
+      renderExplanationVisual(donorProfile, matches);
+      explanation.hidden = false;
+    }
+
+    function renderExplanationVisual(donorProfile, matches) {
+      clear(explanationVisual);
+      drawDefs(explanationVisual);
+      explanationVisual.appendChild(svgEl('rect', {
+        x: 12,
+        y: 12,
+        width: 296,
+        height: 186,
+        rx: 8,
+        fill: '#fffdfc',
+        stroke: '#d9e3e4'
+      }));
+
+      drawPanelText(explanationVisual, 'Donor antigens', 28, 38, 'small-label');
+      if (donorProfile.antigens.length) {
+        donorProfile.antigens.forEach((type, index) => {
+          drawLegendAntigen(explanationVisual, 56 + index * 78, 74, type, antigenLabels[type].replace(' antigen', ''));
+        });
+      } else {
+        drawPanelText(explanationVisual, 'none', 54, 78, 'small-label');
+      }
+
+      drawPanelText(explanationVisual, 'Recipient antibodies', 28, 132, 'small-label');
+      const visualAntibodies = [
+        ...state.recipientAntibodies,
+        ...(state.result && state.result.rhWarning && state.rhDelayStage === 'sensitized' ? ['Rh'] : [])
+      ];
+      if (visualAntibodies.length) {
+        visualAntibodies.forEach((type, index) => {
+          drawPlasmaAntibody(explanationVisual, 64 + index * 92, 164, type, 0, type === 'Rh' ? 0.62 : 0.3);
+        });
+      } else {
+        drawPanelText(explanationVisual, 'none in default model', 54, 168, 'small-label');
+      }
+
+      if (matches.length) {
+        drawPanelText(explanationVisual, 'matching fit causes clumping', 136, 194, 'tiny-label');
+      }
+    }
+
+    function clearRhTimers() {
+      state.rhTimers.forEach(timer => clearTimeout(timer));
+      state.rhTimers = [];
+    }
+
+    function cancelAnimation() {
+      if (state.frameId) {
+        cancelAnimationFrame(state.frameId);
+        state.frameId = null;
+      }
+      clearRhTimers();
+      state.animating = false;
+    }
+
+    function resetAnimation(preserveSelections = false) {
+      cancelAnimation();
+      state.setup = false;
+      state.antibodiesCorrect = false;
+      state.transfused = false;
+      state.tubeVisible = false;
+      state.result = null;
+      state.rhDelayStage = '';
+      state.recipientAntibodies = [];
+      if (!preserveSelections) {
+        donorSelect.value = 'O-';
+        recipientSelect.value = 'A-';
+      }
+      state.donorType = donorSelect.value;
+      state.recipientType = recipientSelect.value;
+      clearAntibodyInputs();
+      explanation.hidden = true;
+      explanationText.innerHTML = '';
+      clear(explanationVisual);
+      setFeedback('Select donor and recipient blood types, then set up the blood samples.');
+      renderScene();
+      updateControls();
+    }
+
+    function handleTypeChange() {
+      resetAnimation(true);
+      setFeedback('Blood type changed. Set up the blood samples again to start a fresh run.', 'warn');
+    }
+
+    setupBtn.addEventListener('click', setUpBlood);
+    chooseBtn.addEventListener('click', chooseRecipientAntibodies);
+    startBtn.addEventListener('click', animateTransfusion);
+    resetBtn.addEventListener('click', () => resetAnimation(false));
+    donorSelect.addEventListener('change', handleTypeChange);
+    recipientSelect.addEventListener('change', handleTypeChange);
+    Object.values(antibodyInputs).forEach(input => {
+      input.addEventListener('change', () => {
+        if (state.antibodiesCorrect) {
+          clearRhTimers();
+          state.antibodiesCorrect = false;
+          state.recipientAntibodies = [];
+          state.transfused = false;
+          state.tubeVisible = false;
+          state.result = null;
+          state.rhDelayStage = '';
+          explanation.hidden = true;
+          setFeedback('Antibody choice changed. Confirm the recipient plasma antibodies again.', 'warn');
+          renderScene();
+          updateControls();
+        }
+      });
+    });
+
+    renderChoiceIcons();
+    resetAnimation(true);
+  </script>
+</body>
+</html>

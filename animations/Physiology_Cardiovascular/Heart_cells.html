@@ -1,0 +1,1585 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pacemaker and Contractile Cardiac Cell Electrical Activity</title>
+  <style>
+    :root {
+      --na: #1f77d0;
+      --k: #d62828;
+      --ca: #7b2cbf;
+      --mixed: #222222;
+      --membrane: #333333;
+      --cell-fill: #f8fbff;
+      --sr-fill: #efe6ff;
+      --active-glow: #ffcc00;
+      --panel: #ffffff;
+      --ink: #20242a;
+      --muted: #5f6b78;
+      --line: #d8e0ea;
+      --outside: #f4f7fb;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+      color: var(--ink);
+      background: #edf3f8;
+    }
+
+    .app {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(1.35rem, 2.2vw, 2rem);
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .attribution {
+      margin: -6px 0 12px;
+      color: #3a4652;
+      font-size: 0.95rem;
+      font-weight: 650;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: minmax(230px, 1fr) auto;
+      gap: 12px;
+      align-items: stretch;
+      margin-bottom: 12px;
+    }
+
+    .control-group,
+    .explanation {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(28, 44, 64, 0.08);
+    }
+
+    .control-group {
+      padding: 12px;
+    }
+
+    .control-title {
+      margin: 0 0 8px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #3a4652;
+    }
+
+    .stage-row,
+    .button-row,
+    .toggle-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .button-row {
+      margin-top: 8px;
+    }
+
+    .toggle-row {
+      margin-top: 10px;
+    }
+
+    button,
+    select,
+    input[type="range"] {
+      font: inherit;
+    }
+
+    button,
+    select {
+      min-height: 38px;
+      border: 1px solid #bdc8d6;
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    button {
+      padding: 7px 10px;
+      cursor: pointer;
+      font-weight: 650;
+    }
+
+    button:hover,
+    select:hover {
+      border-color: #8092a8;
+    }
+
+    button:focus-visible,
+    select:focus-visible,
+    input:focus-visible {
+      outline: 3px solid rgba(31, 119, 208, 0.32);
+      outline-offset: 2px;
+    }
+
+    .stage-button {
+      width: 38px;
+      padding: 0;
+    }
+
+    .stage-button.active {
+      color: #fff;
+      background: #214f77;
+      border-color: #214f77;
+    }
+
+    .primary {
+      color: #fff;
+      background: #2266a2;
+      border-color: #2266a2;
+    }
+
+    .ghost {
+      color: #26313c;
+      background: #f7fafc;
+    }
+
+    label.toggle {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      min-height: 32px;
+      font-size: 0.92rem;
+      color: #334150;
+    }
+
+    .speed-control {
+      display: inline-grid;
+      grid-template-columns: auto minmax(120px, 170px) 44px;
+      gap: 8px;
+      align-items: center;
+      margin-left: 4px;
+      color: #334150;
+      font-size: 0.92rem;
+    }
+
+    .explanation {
+      min-width: 310px;
+      max-width: 440px;
+      padding: 12px 14px;
+    }
+
+    .explanation h2 {
+      margin: 0 0 6px;
+      font-size: 1.02rem;
+      line-height: 1.25;
+    }
+
+    .explanation p {
+      margin: 0;
+      color: #334150;
+      line-height: 1.45;
+      font-size: 0.95rem;
+    }
+
+    .note {
+      display: block;
+      margin-top: 8px;
+      color: #5a6673;
+      font-size: 0.86rem;
+    }
+
+    .svg-shell {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 10px 28px rgba(28, 44, 64, 0.10);
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #fbfdff;
+    }
+
+    .membrane {
+      fill: none;
+      stroke: var(--membrane);
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .cell-fill {
+      fill: var(--cell-fill);
+      stroke: #c8d6e4;
+      stroke-width: 2;
+    }
+
+    .outside-fill {
+      fill: var(--outside);
+    }
+
+    .sr-body {
+      fill: var(--sr-fill);
+      stroke: #8f6ac8;
+      stroke-width: 2.5;
+    }
+
+    .ttubule-fill {
+      fill: #f9fbff;
+      stroke: #4d5560;
+      stroke-width: 2;
+    }
+
+    .disc {
+      fill: none;
+      stroke: #4a3b35;
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .gap-tube {
+      transition: opacity 150ms ease;
+    }
+
+    .gap-tube-edge,
+    .gap-tube-end {
+      fill: none;
+      stroke: var(--mixed);
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .gap-tube.active {
+      filter: url(#activeGlow);
+    }
+
+    .gap-tube.active .gap-tube-edge,
+    .gap-tube.active .gap-tube-end {
+      stroke-width: 4;
+    }
+
+    .structure-label,
+    .channel-label,
+    .small-structure-label,
+    .major-label,
+    .graph-label,
+    .axis-label {
+      font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+      fill: #1f2933;
+      letter-spacing: 0;
+    }
+
+    .major-label {
+      font-size: 23px;
+      font-weight: 800;
+    }
+
+    .structure-label {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .small-structure-label,
+    .channel-label {
+      font-size: 12.5px;
+      font-weight: 650;
+    }
+
+    .graph-label {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .axis-label {
+      font-size: 13px;
+      fill: #334150;
+    }
+
+    .hide-labels .structure-label,
+    .hide-labels .small-structure-label,
+    .hide-labels .channel-label,
+    .hide-labels .stage-annotation {
+      display: none;
+    }
+
+    .hide-ion-names .ion-label {
+      display: none;
+    }
+
+    .ion-static {
+      opacity: 0.27;
+    }
+
+    .ion-static circle {
+      stroke: #fff;
+      stroke-width: 1.5;
+    }
+
+    .ion-label {
+      font-size: 10px;
+      font-weight: 800;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      fill: #fff;
+      pointer-events: none;
+    }
+
+    .particle circle {
+      stroke: #fff;
+      stroke-width: 2;
+    }
+
+    .particle .ion-label {
+      font-size: 11px;
+    }
+
+    .channel {
+      cursor: help;
+      transition: opacity 160ms ease;
+    }
+
+    .channel .halo {
+      opacity: 0;
+      fill: var(--active-glow);
+    }
+
+    .channel .channel-core {
+      stroke-width: 3;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+    }
+
+    .channel .closed-gate {
+      stroke: #222;
+      stroke-width: 3;
+      stroke-linecap: round;
+      opacity: 0;
+    }
+
+    .channel .open-gap {
+      fill: #fffbe4;
+      stroke: var(--active-glow);
+      stroke-width: 2;
+      opacity: 0;
+    }
+
+    .channel.closed {
+      opacity: 0.45;
+    }
+
+    .channel.closed .closed-gate {
+      opacity: 1;
+    }
+
+    .channel.open,
+    .channel.highlighted {
+      opacity: 1;
+      filter: url(#activeGlow);
+    }
+
+    .channel.open .halo,
+    .channel.highlighted .halo {
+      opacity: 0.42;
+    }
+
+    .channel.open .closed-gate,
+    .channel.highlighted .closed-gate {
+      opacity: 0;
+    }
+
+    .channel.open .open-gap,
+    .channel.highlighted .open-gap {
+      opacity: 1;
+    }
+
+    .channel:hover .channel-core {
+      stroke-width: 4;
+    }
+
+    .graph-frame {
+      fill: #fff;
+      stroke: #cfd9e5;
+      stroke-width: 1.5;
+    }
+
+    .grid-line {
+      stroke: #e4ebf2;
+      stroke-width: 1;
+    }
+
+    .axis-line {
+      stroke: #3a4652;
+      stroke-width: 2;
+    }
+
+    .threshold-line {
+      stroke: #6b7280;
+      stroke-width: 1.8;
+      stroke-dasharray: 6 6;
+    }
+
+    .resting-line {
+      stroke: #a5b2c0;
+      stroke-width: 1.5;
+      stroke-dasharray: 3 5;
+    }
+
+    .graph-segment {
+      fill: none;
+      stroke-width: 4.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .wave {
+      filter: url(#activeGlow);
+      pointer-events: none;
+    }
+
+    .stage-annotation-box {
+      fill: #fff8d9;
+      stroke: #d69b00;
+      stroke-width: 1.5;
+    }
+
+    @media (max-width: 980px) {
+      .controls {
+        grid-template-columns: 1fr;
+      }
+
+      .explanation {
+        max-width: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1>Pacemaker and Contractile Cardiac Cell Electrical Activity</h1>
+    <p class="attribution">Animation Prompted by Jerred Seveyka for his biology class.</p>
+
+    <section class="controls" aria-label="Animation controls">
+      <div class="control-group">
+        <p class="control-title">Stages</p>
+        <div class="stage-row" id="stageButtons" aria-label="Stage buttons"></div>
+        <div class="button-row">
+          <select id="stageSelect" aria-label="Select a stage"></select>
+          <button class="primary" id="playStage" type="button">Play selected stage</button>
+          <button class="ghost" id="pauseStage" type="button">Pause</button>
+          <button class="ghost" id="replayStage" type="button">Replay stage</button>
+          <button class="ghost" id="prevStage" type="button" aria-label="Previous stage">Previous</button>
+          <button class="ghost" id="nextStage" type="button" aria-label="Next stage">Next</button>
+          <button class="ghost" id="playAll" type="button">Play all</button>
+          <button class="ghost" id="resetAll" type="button">Reset all</button>
+        </div>
+        <div class="toggle-row">
+          <label class="toggle"><input id="showLabels" type="checkbox" checked /> Show labels</label>
+          <label class="toggle"><input id="showIonNames" type="checkbox" checked /> Show ion names</label>
+          <label class="speed-control">
+            Speed
+            <input id="speedSlider" type="range" min="0.5" max="2" step="0.1" value="1" />
+            <span id="speedValue">1.0x</span>
+          </label>
+        </div>
+      </div>
+
+      <aside class="explanation" aria-live="polite">
+        <h2 id="stageTitle">Pacemaker and contractile cardiac cell activity</h2>
+        <p id="stageDescription">
+          Choose a stage or press Play all to follow how pacemaker-cell electrical activity spreads into a contractile cardiac muscle cell.
+          <span class="note">Simplified educational model: channel placement, timing, and ion numbers are diagrammatic rather than quantitative.</span>
+        </p>
+      </aside>
+    </section>
+
+    <div class="svg-shell">
+      <svg id="mainSvg" viewBox="0 0 1200 760" role="img" aria-labelledby="svgTitle svgDesc">
+        <title id="svgTitle">Pacemaker and Contractile Cardiac Cell Electrical Activity</title>
+        <desc id="svgDesc">Interactive educational SVG animation of pacemaker and contractile cardiac cell ion movement and membrane potential graphs.</desc>
+        <defs>
+          <filter id="activeGlow" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="4" result="coloredBlur"></feGaussianBlur>
+            <feFlood flood-color="#ffcc00" flood-opacity="0.95" result="glowColor"></feFlood>
+            <feComposite in="glowColor" in2="coloredBlur" operator="in" result="softGlow"></feComposite>
+            <feMerge>
+              <feMergeNode in="softGlow"></feMergeNode>
+              <feMergeNode in="SourceGraphic"></feMergeNode>
+            </feMerge>
+          </filter>
+          <marker id="arrowCa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#7b2cbf"></path>
+          </marker>
+        </defs>
+        <g id="structureLayer"></g>
+        <g id="staticIonLayer"></g>
+        <g id="channelLayer"></g>
+        <g id="graphAxisLayer"></g>
+        <g id="graphSegmentLayer"></g>
+        <g id="waveLayer"></g>
+        <g id="particleLayer"></g>
+      </svg>
+    </div>
+  </main>
+
+  <script>
+    "use strict";
+
+    const SVG_NS = "http://www.w3.org/2000/svg";
+
+    // Teacher-editable color constants. These match ion, channel, and graph colors.
+    const NA_BLUE = "#1f77d0";
+    const K_RED = "#d62828";
+    const CA_PURPLE = "#7b2cbf";
+    const MIXED_BLACK = "#222222";
+    const ACTIVE_YELLOW = "#ffcc00";
+
+    const svg = document.getElementById("mainSvg");
+    const structureLayer = document.getElementById("structureLayer");
+    const staticIonLayer = document.getElementById("staticIonLayer");
+    const channelLayer = document.getElementById("channelLayer");
+    const graphAxisLayer = document.getElementById("graphAxisLayer");
+    const graphSegmentLayer = document.getElementById("graphSegmentLayer");
+    const waveLayer = document.getElementById("waveLayer");
+    const particleLayer = document.getElementById("particleLayer");
+
+    let currentStageIndex = 0;
+    let isPlaying = false;
+    let isPaused = false;
+    let speedMultiplier = 1;
+    let activeAnimations = [];
+    let rafId = null;
+    let pauseStartedAt = 0;
+    let playAllMode = false;
+    let stageRunToken = 0;
+
+    const graphs = {
+      pacemaker: {
+        id: "pacemaker",
+        title: "Pacemaker cell membrane potential",
+        x: 80,
+        y: 430,
+        width: 460,
+        height: 210,
+        min: -70,
+        max: 20,
+        tMax: 1.50,
+        resting: -60,
+        threshold: -40,
+        yTicks: [-70, -60, -40, -20, 0, 20]
+      },
+      contractile: {
+        id: "contractile",
+        title: "Contractile cell membrane potential",
+        x: 620,
+        y: 430,
+        width: 500,
+        height: 210,
+        min: -100,
+        max: 40,
+        tMax: 1.35,
+        resting: -90,
+        threshold: -70,
+        yTicks: [-100, -90, -70, -40, 0, 40]
+      }
+    };
+
+    // Editable graph point arrays. t is normalized stage time, v is membrane potential in mV.
+    const pacemakerSegments = {
+      spontaneousDepolarization: {
+        color: NA_BLUE,
+        points: [
+          { t: 0.00, v: -60 },
+          { t: 0.20, v: -56 },
+          { t: 0.40, v: -51 },
+          { t: 0.65, v: -45 },
+          { t: 0.80, v: -40 }
+        ]
+      },
+      calciumUpstroke: {
+        color: CA_PURPLE,
+        points: [
+          { t: 0.80, v: -40 },
+          { t: 0.88, v: -20 },
+          { t: 0.96, v: 4 },
+          { t: 1.04, v: 10 },
+          { t: 1.10, v: 8 }
+        ]
+      },
+      potassiumRepolarization: {
+        color: K_RED,
+        points: [
+          { t: 1.10, v: 8 },
+          { t: 1.18, v: 2 },
+          { t: 1.28, v: -20 },
+          { t: 1.38, v: -45 },
+          { t: 1.50, v: -60 }
+        ]
+      }
+    };
+
+    const contractileSegments = {
+      gapJunctionDepolarization: {
+        color: MIXED_BLACK,
+        points: [
+          { t: 0.00, v: -90 },
+          { t: 0.15, v: -84 },
+          { t: 0.25, v: -75 },
+          { t: 0.30, v: -70 }
+        ]
+      },
+      sodiumUpstroke: {
+        color: NA_BLUE,
+        points: [
+          { t: 0.30, v: -70 },
+          { t: 0.34, v: -25 },
+          { t: 0.38, v: 30 }
+        ]
+      },
+      calciumPlateau: {
+        color: CA_PURPLE,
+        points: [
+          { t: 0.38, v: 30 },
+          { t: 0.55, v: 10 },
+          { t: 0.80, v: 5 },
+          { t: 1.00, v: 0 }
+        ]
+      },
+      potassiumRepolarization: {
+        color: K_RED,
+        points: [
+          { t: 1.00, v: 0 },
+          { t: 1.10, v: -30 },
+          { t: 1.20, v: -65 },
+          { t: 1.35, v: -90 }
+        ]
+      }
+    };
+
+    const segmentTimeline = [
+      { stageIndex: 0, graph: "pacemaker", segment: "spontaneousDepolarization" },
+      { stageIndex: 1, graph: "pacemaker", segment: "calciumUpstroke" },
+      { stageIndex: 2, graph: "pacemaker", segment: "potassiumRepolarization" },
+      { stageIndex: 3, graph: "contractile", segment: "gapJunctionDepolarization" },
+      { stageIndex: 4, graph: "contractile", segment: "sodiumUpstroke" },
+      { stageIndex: 5, graph: "contractile", segment: "calciumPlateau" },
+      { stageIndex: 6, graph: "contractile", segment: "potassiumRepolarization" }
+    ];
+
+    // Channel definitions. x/y can be edited to move any channel in the diagram.
+    const channels = [
+      { id: "pm_na_leak", cell: "pacemaker", label: "Na+ leak", type: "Na+ leak", ion: "Na+", color: NA_BLUE, x: 140, y: 150, shape: "leak", defaultState: "baseline" },
+      { id: "pm_k_leak_1", cell: "pacemaker", label: "K+ leak", type: "K+ leak", ion: "K+", color: K_RED, x: 210, y: 150, shape: "leak", defaultState: "baseline" },
+      { id: "pm_k_leak_2", cell: "pacemaker", label: "K+ leak", type: "K+ leak", ion: "K+", color: K_RED, x: 260, y: 150, shape: "leak", defaultState: "baseline" },
+      { id: "pm_k_leak_3", cell: "pacemaker", label: "K+ leak", type: "K+ leak", ion: "K+", color: K_RED, x: 310, y: 150, shape: "leak", defaultState: "baseline" },
+      { id: "pm_if", cell: "pacemaker", label: "If", type: "Funny / If channel", ion: "Na+", color: NA_BLUE, x: 380, y: 150, shape: "funny", defaultState: "baseline" },
+      { id: "pm_vg_ca", cell: "pacemaker", label: "VG Ca2+", type: "Voltage-gated Ca2+ channel", ion: "Ca2+", color: CA_PURPLE, x: 450, y: 150, shape: "vgCa", defaultState: "closed" },
+      { id: "pm_vg_k", cell: "pacemaker", label: "VG K+", type: "Voltage-gated K+ channel", ion: "K+", color: K_RED, x: 510, y: 150, shape: "vgK", defaultState: "closed" },
+
+      { id: "ct_vg_na", cell: "contractile", label: "VG Na+", type: "Voltage-gated Na+ channel", ion: "Na+", color: NA_BLUE, x: 630, y: 150, shape: "vgNa", defaultState: "closed" },
+      { id: "ct_na_leak", cell: "contractile", label: "Na+ leak", type: "Na+ leak", ion: "Na+", color: NA_BLUE, x: 690, y: 150, shape: "leak", defaultState: "baseline" },
+      { id: "ct_k_leak_1", cell: "contractile", label: "K+ leak", type: "K+ leak", ion: "K+", color: K_RED, x: 740, y: 150, shape: "leak", defaultState: "baseline" },
+      { id: "ct_k_leak_2", cell: "contractile", label: "K+ leak", type: "K+ leak", ion: "K+", color: K_RED, x: 790, y: 150, shape: "leak", defaultState: "baseline" },
+      { id: "ct_k_leak_3", cell: "contractile", label: "K+ leak", type: "K+ leak", ion: "K+", color: K_RED, x: 840, y: 150, shape: "leak", defaultState: "baseline" },
+      { id: "ct_vg_ca", cell: "contractile", label: "VG Ca2+", type: "Voltage-gated Ca2+ channel", ion: "Ca2+", color: CA_PURPLE, x: 920, y: 150, shape: "vgCa", defaultState: "closed" },
+      { id: "ct_vg_k", cell: "contractile", label: "VG K+", type: "Voltage-gated K+ channel", ion: "K+", color: K_RED, x: 985, y: 150, shape: "vgK", defaultState: "closed" },
+
+      { id: "tt_vg_na", cell: "contractile", label: "T-tubule VG Na+", type: "T-tubule voltage-gated Na+ channel", ion: "Na+", color: NA_BLUE, x: 1030, y: 205, shape: "vgNa", rotate: 90, defaultState: "closed" },
+      { id: "tt_vg_ca", cell: "contractile", label: "T-tubule VG Ca2+", type: "T-tubule voltage-gated Ca2+ channel", ion: "Ca2+", color: CA_PURPLE, x: 1030, y: 260, shape: "vgCa", rotate: 90, defaultState: "closed" },
+      { id: "tt_vg_k", cell: "contractile", label: "T-tubule VG K+", type: "T-tubule voltage-gated K+ channel", ion: "K+", color: K_RED, x: 1030, y: 315, shape: "vgK", rotate: 90, defaultState: "closed" },
+
+      { id: "ryr_left_1", cell: "contractile", label: "RyR2", type: "RyR2 receptor", ion: "Ca2+", color: CA_PURPLE, x: 940, y: 267, shape: "ryr", defaultState: "closed" },
+      { id: "ryr_left_2", cell: "contractile", label: "RyR2", type: "RyR2 receptor", ion: "Ca2+", color: CA_PURPLE, x: 940, y: 310, shape: "ryr", defaultState: "closed" },
+      { id: "pump_left_1", cell: "contractile", label: "Ca2+ pump", type: "Ca2+ pump", ion: "Ca2+", color: CA_PURPLE, x: 960, y: 240, shape: "pump", defaultState: "baseline" },
+      { id: "pump_left_2", cell: "contractile", label: "Ca2+ pump", type: "Ca2+ pump", ion: "Ca2+", color: CA_PURPLE, x: 964, y: 342, shape: "pump", defaultState: "baseline" }
+    ];
+
+    const stages = [
+      {
+        id: 1,
+        title: "Spontaneous depolarization of the pacemaker cell",
+        duration: 5000,
+        description: "Pacemaker cells do not sit at a perfectly stable resting potential. In this simplified model, the If (funny) channel allows both Na+ to enter and K+ to leave, but more Na+ enters than K+ leaves, producing a net inward positive current and slow depolarization.",
+        graphActions: [{ graph: "pacemaker", segment: "spontaneousDepolarization" }],
+        channelActions: [
+          { id: "pm_na_leak", state: "highlighted" },
+          { id: "pm_if", state: "highlighted" },
+          { id: "pm_k_leak_1", state: "highlighted" },
+          { id: "pm_k_leak_2", state: "highlighted" },
+          { id: "pm_k_leak_3", state: "highlighted" }
+        ],
+        ionAnimations: [
+          { ionType: "Na+", color: NA_BLUE, label: "Na+", pathPoints: [{ x: 140, y: 90 }, { x: 140, y: 205 }], duration: 1500, delay: 0, repeat: 3 },
+          { ionType: "Na+", color: NA_BLUE, label: "Na+", pathPoints: [{ x: 132, y: 94 }, { x: 150, y: 208 }], duration: 1600, delay: 500, repeat: 2 },
+          { ionType: "Na+", color: NA_BLUE, label: "Na+", pathPoints: [{ x: 380, y: 88 }, { x: 380, y: 210 }], duration: 1400, delay: 300, repeat: 3 },
+          { ionType: "Na+", color: NA_BLUE, label: "Na+", pathPoints: [{ x: 392, y: 92 }, { x: 370, y: 214 }], duration: 1650, delay: 900, repeat: 2 },
+          { ionType: "K+", color: K_RED, label: "K+", pathPoints: [{ x: 380, y: 218 }, { x: 380, y: 168 }, { x: 380, y: 150 }, { x: 380, y: 96 }], duration: 1950, delay: 1750, repeat: 1 },
+          { ionType: "K+", color: K_RED, label: "K+", pathPoints: [{ x: 210, y: 220 }, { x: 210, y: 168 }, { x: 210, y: 150 }, { x: 210, y: 95 }], duration: 1850, delay: 800, repeat: 2 },
+          { ionType: "K+", color: K_RED, label: "K+", pathPoints: [{ x: 310, y: 220 }, { x: 310, y: 168 }, { x: 310, y: 150 }, { x: 310, y: 95 }], duration: 1950, delay: 1400, repeat: 1 }
+        ],
+        annotations: [
+          { text: "If channel: Na+ in > K+ out", x: 380, y: 112, width: 188 }
+        ]
+      },
+      {
+        id: 2,
+        title: "Rapid depolarization of pacemaker cell and spread through gap junctions",
+        duration: 4000,
+        description: "At threshold, voltage-gated Ca2+ channels open in the pacemaker cell. Ca2+ enters, producing the main upstroke of the pacemaker action potential. Some positive charge spreads through gap junctions toward the contractile cell.",
+        graphActions: [{ graph: "pacemaker", segment: "calciumUpstroke" }],
+        channelActions: [
+          { id: "pm_vg_ca", state: "open" },
+          { id: "gap_junctions", state: "highlighted" }
+        ],
+        ionAnimations: [
+          { ionType: "Ca2+", color: CA_PURPLE, label: "Ca2+", pathPoints: [{ x: 450, y: 90 }, { x: 450, y: 215 }], duration: 1200, delay: 0, repeat: 3 },
+          { ionType: "Ca2+", color: CA_PURPLE, label: "Ca2+", pathPoints: [{ x: 463, y: 92 }, { x: 438, y: 214 }], duration: 1250, delay: 450, repeat: 2 },
+          { ionType: "+", color: MIXED_BLACK, label: "+", pathPoints: [{ x: 520, y: 212 }, { x: 586, y: 212 }, { x: 612, y: 220 }], duration: 1100, delay: 350, repeat: 2, lingerAtEnd: true },
+          { ionType: "+", color: MIXED_BLACK, label: "+", pathPoints: [{ x: 520, y: 248 }, { x: 586, y: 248 }, { x: 620, y: 246 }], duration: 1100, delay: 700, repeat: 2, lingerAtEnd: true },
+          { ionType: "+", color: MIXED_BLACK, label: "+", pathPoints: [{ x: 520, y: 284 }, { x: 586, y: 284 }, { x: 614, y: 278 }], duration: 1100, delay: 1050, repeat: 2, lingerAtEnd: true }
+        ]
+      },
+      {
+        id: 3,
+        title: "Repolarization of pacemaker cell",
+        duration: 3500,
+        description: "The pacemaker Ca2+ channels close and voltage-gated K+ channels open. K+ leaves the cell, repolarizing the pacemaker membrane back toward about -60 mV.",
+        graphActions: [{ graph: "pacemaker", segment: "potassiumRepolarization" }],
+        channelActions: [{ id: "pm_vg_k", state: "open" }],
+        ionAnimations: [
+          { ionType: "K+", color: K_RED, label: "K+", pathPoints: [{ x: 510, y: 220 }, { x: 510, y: 95 }], duration: 1050, delay: 0, repeat: 3 },
+          { ionType: "K+", color: K_RED, label: "K+", pathPoints: [{ x: 495, y: 225 }, { x: 520, y: 92 }], duration: 1150, delay: 450, repeat: 2 },
+          { ionType: "K+", color: K_RED, label: "K+", pathPoints: [{ x: 524, y: 223 }, { x: 500, y: 94 }], duration: 1200, delay: 900, repeat: 2 }
+        ]
+      },
+      {
+        id: 4,
+        title: "Initial depolarization of contractile cell",
+        duration: 3000,
+        description: "Positive charge entering through gap junctions begins to depolarize the contractile cell from its resting potential near -90 mV.",
+        graphActions: [{ graph: "contractile", segment: "gapJunctionDepolarization" }],
+        channelActions: [{ id: "gap_junctions", state: "highlighted" }],
+        ionAnimations: [
+          { ionType: "+", color: MIXED_BLACK, label: "+", pathPoints: [{ x: 520, y: 212 }, { x: 586, y: 212 }, { x: 624, y: 216 }], duration: 1150, delay: 0, repeat: 2, lingerAtEnd: true },
+          { ionType: "+", color: MIXED_BLACK, label: "+", pathPoints: [{ x: 520, y: 248 }, { x: 586, y: 248 }, { x: 638, y: 244 }], duration: 1200, delay: 360, repeat: 2, lingerAtEnd: true },
+          { ionType: "+", color: MIXED_BLACK, label: "+", pathPoints: [{ x: 520, y: 284 }, { x: 586, y: 284 }, { x: 626, y: 278 }], duration: 1250, delay: 720, repeat: 2, lingerAtEnd: true },
+          { ionType: "+", color: MIXED_BLACK, label: "+", pathPoints: [{ x: 520, y: 320 }, { x: 586, y: 320 }, { x: 616, y: 312 }], duration: 1300, delay: 1080, repeat: 1, lingerAtEnd: true }
+        ]
+      },
+      {
+        id: 5,
+        title: "Rapid depolarization of contractile cell",
+        duration: 3000,
+        description: "Once threshold is reached, voltage-gated Na+ channels open. Na+ rushes in, producing the rapid upstroke of the contractile-cell action potential.",
+        graphActions: [{ graph: "contractile", segment: "sodiumUpstroke" }],
+        channelActions: [
+          { id: "ct_vg_na", state: "open" },
+          { id: "tt_vg_na", state: "highlighted" }
+        ],
+        waves: [
+          { type: "membrane", startX: 630, endX: 1005, y: 150, duration: 2100 }
+        ],
+        ionAnimations: [
+          { ionType: "Na+", color: NA_BLUE, label: "Na+", pathPoints: [{ x: 630, y: 90 }, { x: 630, y: 220 }], duration: 760, delay: 0, repeat: 3 },
+          { ionType: "Na+", color: NA_BLUE, label: "Na+", pathPoints: [{ x: 615, y: 92 }, { x: 640, y: 220 }], duration: 820, delay: 180, repeat: 3 },
+          { ionType: "Na+", color: NA_BLUE, label: "Na+", pathPoints: [{ x: 645, y: 88 }, { x: 620, y: 225 }], duration: 850, delay: 360, repeat: 3 },
+          { ionType: "Na+", color: NA_BLUE, label: "Na+", pathPoints: [{ x: 1042, y: 205 }, { x: 1030, y: 205 }, { x: 1006, y: 205 }], duration: 850, delay: 1450, repeat: 1 }
+        ]
+      },
+      {
+        id: 6,
+        title: "Plateau phase and calcium-induced calcium release",
+        duration: 5500,
+        description: "Depolarization spreads along the cell membrane and down the T-tubule. Ca2+ enters through voltage-gated Ca2+ channels, and Ca2+ release from the SR through RyR2 helps trigger contraction. This corresponds to the plateau phase.",
+        graphActions: [{ graph: "contractile", segment: "calciumPlateau" }],
+        channelActions: [
+          { id: "ct_vg_ca", state: "open" },
+          { id: "tt_vg_ca", state: "open" },
+          { id: "ryr_left_1", state: "open" },
+          { id: "ryr_left_2", state: "open" }
+        ],
+        waves: [
+          { type: "membrane", startX: 840, endX: 1040, y: 150, duration: 1700 },
+          { type: "ttubule", x: 1040, startY: 150, endY: 355, duration: 2400, delay: 700 }
+        ],
+        ionAnimations: [
+          { ionType: "Ca2+", color: CA_PURPLE, label: "Ca2+", pathPoints: [{ x: 920, y: 90 }, { x: 920, y: 222 }], duration: 1150, delay: 0, repeat: 3 },
+          { ionType: "Ca2+", color: CA_PURPLE, label: "Ca2+", pathPoints: [{ x: 1042, y: 260 }, { x: 1030, y: 260 }, { x: 1006, y: 260 }], duration: 1150, delay: 900, repeat: 3 },
+          { ionType: "Ca2+", color: CA_PURPLE, label: "Ca2+", pathPoints: [{ x: 940, y: 280 }, { x: 910, y: 300 }, { x: 872, y: 326 }], duration: 1200, delay: 1700, repeat: 3 },
+          { ionType: "Ca2+", color: CA_PURPLE, label: "Ca2+", pathPoints: [{ x: 940, y: 318 }, { x: 908, y: 340 }, { x: 880, y: 362 }], duration: 1150, delay: 2200, repeat: 2 }
+        ]
+      },
+      {
+        id: 7,
+        title: "Repolarization of contractile cell",
+        duration: 4000,
+        description: "Voltage-gated K+ channels open and K+ exits the contractile cell. The membrane repolarizes back toward about -90 mV.",
+        graphActions: [{ graph: "contractile", segment: "potassiumRepolarization" }],
+        channelActions: [
+          { id: "ct_vg_k", state: "open" },
+          { id: "tt_vg_k", state: "open" },
+          { id: "pump_left_1", state: "highlighted" },
+          { id: "pump_left_2", state: "highlighted" }
+        ],
+        ionAnimations: [
+          { ionType: "K+", color: K_RED, label: "K+", pathPoints: [{ x: 985, y: 220 }, { x: 985, y: 90 }], duration: 1050, delay: 0, repeat: 3 },
+          { ionType: "K+", color: K_RED, label: "K+", pathPoints: [{ x: 972, y: 225 }, { x: 1000, y: 92 }], duration: 1100, delay: 400, repeat: 2 },
+          { ionType: "K+", color: K_RED, label: "K+", pathPoints: [{ x: 1006, y: 315 }, { x: 1030, y: 315 }, { x: 1042, y: 315 }], duration: 1150, delay: 800, repeat: 2 },
+          { ionType: "Ca2+", color: CA_PURPLE, label: "Ca2+", pathPoints: [{ x: 890, y: 350 }, { x: 930, y: 345 }, { x: 970, y: 340 }], duration: 1200, delay: 1300, repeat: 2 }
+        ]
+      }
+    ];
+
+    function createSvg(tag, attrs = {}, parent) {
+      const el = document.createElementNS(SVG_NS, tag);
+      Object.entries(attrs).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          el.setAttribute(key, String(value));
+        }
+      });
+      if (parent) parent.appendChild(el);
+      return el;
+    }
+
+    function clearLayer(layer) {
+      while (layer.firstChild) layer.removeChild(layer.firstChild);
+    }
+
+    function labelText(text, x, y, className = "structure-label", anchor = "middle", parent = structureLayer) {
+      const node = createSvg("text", { x, y, class: className, "text-anchor": anchor }, parent);
+      node.textContent = text;
+      return node;
+    }
+
+    function pathString(points) {
+      return points.map((p, index) => `${index === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+    }
+
+    function wavyVerticalPath(x, y1, y2, amplitude = 8, step = 18) {
+      let d = `M ${x} ${y1}`;
+      let y = y1;
+      let side = 1;
+      while (y < y2) {
+        const nextY = Math.min(y + step, y2);
+        const midY = (y + nextY) / 2;
+        d += ` Q ${x + amplitude * side} ${midY} ${x} ${nextY}`;
+        y = nextY;
+        side *= -1;
+      }
+      return d;
+    }
+
+    function drawGapJunctionTube(y) {
+      const tube = createSvg("g", { class: "gap-tube" }, structureLayer);
+      createSvg("line", { x1: 520, y1: y - 7, x2: 586, y2: y - 7, class: "gap-tube-edge" }, tube);
+      createSvg("line", { x1: 520, y1: y + 7, x2: 586, y2: y + 7, class: "gap-tube-edge" }, tube);
+      createSvg("ellipse", { cx: 520, cy: y, rx: 7, ry: 8, class: "gap-tube-end" }, tube);
+      createSvg("ellipse", { cx: 586, cy: y, rx: 7, ry: 8, class: "gap-tube-end" }, tube);
+    }
+
+    function drawStructures() {
+      clearLayer(structureLayer);
+
+      createSvg("rect", { x: 0, y: 40, width: 1200, height: 115, class: "outside-fill" }, structureLayer);
+      createSvg("path", {
+        d: "M 70 150 L 540 150 L 540 366 C 430 398 175 398 70 366 Z",
+        class: "cell-fill"
+      }, structureLayer);
+      createSvg("path", {
+        d: "M 560 150 L 1130 150 L 1130 366 C 980 400 710 398 560 366 Z",
+        class: "cell-fill"
+      }, structureLayer);
+      createSvg("line", { x1: 70, y1: 150, x2: 540, y2: 150, class: "membrane" }, structureLayer);
+      createSvg("line", { x1: 560, y1: 150, x2: 1130, y2: 150, class: "membrane" }, structureLayer);
+
+      createSvg("path", { d: wavyVerticalPath(550, 95, 370, 8, 18), class: "disc" }, structureLayer);
+
+      [212, 248, 284, 320].forEach((y) => drawGapJunctionTube(y));
+
+      createSvg("path", {
+        d: "M 1025 150 L 1025 350 Q 1040 366 1055 350 L 1055 150 Z",
+        class: "ttubule-fill"
+      }, structureLayer);
+      createSvg("path", { d: "M 1025 150 L 1025 350", class: "membrane", "stroke-width": 3 }, structureLayer);
+      createSvg("path", { d: "M 1055 150 L 1055 350", class: "membrane", "stroke-width": 3 }, structureLayer);
+
+      createSvg("rect", { x: 940, y: 225, width: 65, height: 125, rx: 14, class: "sr-body" }, structureLayer);
+
+      labelText("Pacemaker cell", 300, 82, "major-label");
+      labelText("Contractile cell", 850, 82, "major-label");
+      labelText("Intercalated disc", 548, 78, "structure-label");
+      labelText("Gap junctions", 554, 196, "small-structure-label");
+      labelText("T-tubule", 1086, 185, "structure-label", "start");
+      labelText("Terminal cisterna", 970, 214, "small-structure-label", "middle");
+      labelText("Sarcoplasmic reticulum", 972, 386, "structure-label");
+      labelText("RyR2", 925, 256, "small-structure-label");
+      labelText("Ca2+ pumps", 960, 374, "small-structure-label");
+    }
+
+    function drawStaticIons() {
+      clearLayer(staticIonLayer);
+      const ions = [
+        ["Na+", NA_BLUE, 102, 96], ["Na+", NA_BLUE, 170, 104], ["Na+", NA_BLUE, 350, 94], ["Na+", NA_BLUE, 432, 102],
+        ["Ca2+", CA_PURPLE, 462, 92], ["Ca2+", CA_PURPLE, 500, 105], ["Na+", NA_BLUE, 620, 94], ["Na+", NA_BLUE, 740, 100],
+        ["Na+", NA_BLUE, 845, 95], ["Ca2+", CA_PURPLE, 920, 95], ["Ca2+", CA_PURPLE, 1050, 96], ["Na+", NA_BLUE, 1005, 102],
+        ["K+", K_RED, 125, 250], ["K+", K_RED, 215, 230], ["K+", K_RED, 294, 252], ["K+", K_RED, 410, 250],
+        ["K+", K_RED, 640, 250], ["K+", K_RED, 760, 228], ["K+", K_RED, 890, 250], ["K+", K_RED, 1000, 224],
+        ["+", MIXED_BLACK, 536, 226], ["+", MIXED_BLACK, 566, 302],
+        ["Ca2+", CA_PURPLE, 960, 260], ["Ca2+", CA_PURPLE, 978, 300]
+      ];
+      ions.forEach(([label, color, x, y]) => drawIon(staticIonLayer, label, color, x, y, 8, "ion-static"));
+    }
+
+    function drawIon(parent, label, color, x, y, radius = 8, className = "") {
+      const group = createSvg("g", { class: className, transform: `translate(${x} ${y})` }, parent);
+      createSvg("circle", { cx: 0, cy: 0, r: radius, fill: color }, group);
+      const text = createSvg("text", { x: 0, y: 0, class: "ion-label" }, group);
+      text.textContent = label;
+      return group;
+    }
+
+    function drawChannels() {
+      clearLayer(channelLayer);
+      channels.forEach(drawChannel);
+      resetChannels();
+    }
+
+    function drawChannel(channel) {
+      const group = createSvg("g", {
+        id: channel.id,
+        class: `channel ${channel.defaultState}`,
+        transform: `translate(${channel.x} ${channel.y}) rotate(${channel.rotate || 0})`,
+        tabindex: "0",
+        role: "img",
+        "aria-label": channel.type
+      }, channelLayer);
+      const title = createSvg("title", {}, group);
+      title.textContent = channel.type;
+      createSvg("circle", { class: "halo", cx: 0, cy: 0, r: channel.shape === "ryr" ? 19 : 24 }, group);
+
+      if (channel.shape === "leak") drawLeakShape(group, channel);
+      if (channel.shape === "funny") drawFunnyShape(group, channel);
+      if (channel.shape === "vgNa") drawVoltageNaShape(group, channel);
+      if (channel.shape === "vgCa") drawVoltageCaShape(group, channel);
+      if (channel.shape === "vgK") drawVoltageKShape(group, channel);
+      if (channel.shape === "ryr") drawRyRShape(group, channel);
+      if (channel.shape === "pump") drawPumpShape(group, channel);
+
+      if (!channel.shape.includes("ryr") && channel.shape !== "pump") {
+        const label = createSvg("text", {
+          x: 0,
+          y: channel.rotate ? 32 : 37,
+          class: "channel-label",
+          "text-anchor": "middle"
+        }, group);
+        label.textContent = channel.label;
+      }
+    }
+
+    function drawLeakShape(group, channel) {
+      createSvg("rect", {
+        x: -12, y: -18, width: 24, height: 36, rx: 3,
+        fill: "#ffffff", stroke: channel.color, class: "channel-core"
+      }, group);
+      createSvg("line", { x1: 0, y1: -15, x2: 0, y2: 15, stroke: channel.color, "stroke-width": 4, "stroke-linecap": "round" }, group);
+      createSvg("rect", { x: -5, y: -6, width: 10, height: 12, rx: 3, class: "open-gap" }, group);
+    }
+
+    function drawFunnyShape(group, channel) {
+      createSvg("ellipse", {
+        cx: 0, cy: 0, rx: 19, ry: 15,
+        fill: "#e8f6ff", stroke: channel.color, class: "channel-core"
+      }, group);
+      createSvg("path", {
+        d: "M -8 -10 C 4 -8 10 -2 9 10 C 1 5 -7 3 -12 -4",
+        fill: "#bde7ff", stroke: channel.color, class: "channel-core"
+      }, group);
+      const label = createSvg("text", { x: 0, y: 4, class: "ion-label", fill: channel.color }, group);
+      label.textContent = "If";
+      createSvg("circle", { cx: 0, cy: 0, r: 8, class: "open-gap" }, group);
+    }
+
+    function drawVoltageNaShape(group, channel) {
+      createSvg("polygon", {
+        points: "-18,-18 0,-3 18,-18 18,-6 4,0 18,6 18,18 0,3 -18,18 -18,6 -4,0 -18,-6",
+        fill: "#d9ecff", stroke: channel.color, class: "channel-core"
+      }, group);
+      createSvg("line", { x1: -10, y1: 0, x2: 10, y2: 0, class: "closed-gate" }, group);
+      createSvg("ellipse", { cx: 0, cy: 0, rx: 7, ry: 4, class: "open-gap" }, group);
+    }
+
+    function drawVoltageCaShape(group, channel) {
+      createSvg("polygon", {
+        points: "0,-20 18,0 0,20 -18,0",
+        fill: "#efe2ff", stroke: channel.color, class: "channel-core"
+      }, group);
+      createSvg("line", { x1: -9, y1: -9, x2: 9, y2: 9, class: "closed-gate" }, group);
+      createSvg("circle", { cx: 0, cy: 0, r: 6, class: "open-gap" }, group);
+    }
+
+    function drawVoltageKShape(group, channel) {
+      createSvg("polygon", {
+        points: "-17,-18 16,-13 20,8 8,20 -15,15 -21,-5",
+        fill: "#ffe1e1", stroke: channel.color, class: "channel-core"
+      }, group);
+      createSvg("line", { x1: -10, y1: 7, x2: 11, y2: -7, class: "closed-gate" }, group);
+      createSvg("ellipse", { cx: 0, cy: 0, rx: 6, ry: 7, class: "open-gap" }, group);
+    }
+
+    function drawRyRShape(group, channel) {
+      createSvg("circle", { cx: 0, cy: 0, r: 10, fill: "#efe2ff", stroke: channel.color, class: "channel-core" }, group);
+      for (let i = 0; i < 6; i += 1) {
+        const angle = (Math.PI * 2 * i) / 6;
+        createSvg("circle", {
+          cx: Math.cos(angle) * 13,
+          cy: Math.sin(angle) * 13,
+          r: 4,
+          fill: "#f6edff",
+          stroke: channel.color,
+          class: "channel-core"
+        }, group);
+      }
+      createSvg("circle", { cx: 0, cy: 0, r: 5, class: "open-gap" }, group);
+      createSvg("line", { x1: -7, y1: 0, x2: 7, y2: 0, class: "closed-gate" }, group);
+    }
+
+    function drawPumpShape(group, channel) {
+      createSvg("path", {
+        d: "M -13 8 Q -15 -9 0 -13 Q 16 -8 13 8 Q 3 16 -13 8 Z",
+        fill: "#f3e8ff", stroke: channel.color, class: "channel-core"
+      }, group);
+      createSvg("path", {
+        d: "M -8 4 C -2 -6 7 -6 9 -12",
+        fill: "none", stroke: channel.color, "stroke-width": 3,
+        "stroke-linecap": "round", "marker-end": "url(#arrowCa)"
+      }, group);
+    }
+
+    function setChannelState(id, state) {
+      if (id === "gap_junctions") {
+        setGapJunctionState(state === "highlighted" || state === "open");
+        return;
+      }
+      const group = document.getElementById(id);
+      if (!group) return;
+      group.classList.remove("baseline", "open", "closed", "highlighted", "inactive");
+      group.classList.add(state);
+    }
+
+    function openChannel(id) {
+      setChannelState(id, "open");
+    }
+
+    function closeChannel(id) {
+      setChannelState(id, "closed");
+    }
+
+    function highlightChannel(id) {
+      setChannelState(id, "highlighted");
+    }
+
+    function resetChannels() {
+      channels.forEach((channel) => setChannelState(channel.id, channel.defaultState));
+      setGapJunctionState(false);
+    }
+
+    function setGapJunctionState(active) {
+      structureLayer.querySelectorAll(".gap-tube").forEach((tube) => {
+        tube.classList.toggle("active", active);
+      });
+    }
+
+    function mVToY(value, graph) {
+      return graph.y + ((graph.max - value) / (graph.max - graph.min)) * graph.height;
+    }
+
+    function timeToX(t, graph) {
+      return graph.x + (t / graph.tMax) * graph.width;
+    }
+
+    function makePath(points, graph) {
+      const mapped = points.map((point) => ({
+        x: timeToX(point.t, graph),
+        y: mVToY(point.v, graph)
+      }));
+      if (mapped.length < 2) return "";
+      let d = `M ${mapped[0].x.toFixed(2)} ${mapped[0].y.toFixed(2)}`;
+      for (let i = 0; i < mapped.length - 1; i += 1) {
+        const p0 = mapped[i - 1] || mapped[i];
+        const p1 = mapped[i];
+        const p2 = mapped[i + 1];
+        const p3 = mapped[i + 2] || p2;
+        const cp1 = {
+          x: p1.x + (p2.x - p0.x) / 6,
+          y: p1.y + (p2.y - p0.y) / 6
+        };
+        const cp2 = {
+          x: p2.x - (p3.x - p1.x) / 6,
+          y: p2.y - (p3.y - p1.y) / 6
+        };
+        d += ` C ${cp1.x.toFixed(2)} ${cp1.y.toFixed(2)} ${cp2.x.toFixed(2)} ${cp2.y.toFixed(2)} ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+      }
+      return d;
+    }
+
+    function getSegmentDefinition(graphId, segmentName) {
+      return graphId === "pacemaker" ? pacemakerSegments[segmentName] : contractileSegments[segmentName];
+    }
+
+    function drawGraphAxes() {
+      clearLayer(graphAxisLayer);
+      Object.values(graphs).forEach((graph) => {
+        createSvg("rect", { x: graph.x, y: graph.y, width: graph.width, height: graph.height, class: "graph-frame" }, graphAxisLayer);
+
+        for (let i = 1; i < 5; i += 1) {
+          const x = graph.x + (graph.width * i) / 5;
+          createSvg("line", { x1: x, y1: graph.y, x2: x, y2: graph.y + graph.height, class: "grid-line" }, graphAxisLayer);
+        }
+
+        graph.yTicks.forEach((tick) => {
+          const y = mVToY(tick, graph);
+          createSvg("line", { x1: graph.x, y1: y, x2: graph.x + graph.width, y2: y, class: "grid-line" }, graphAxisLayer);
+          const tickText = createSvg("text", { x: graph.x - 9, y: y + 4, class: "axis-label", "text-anchor": "end" }, graphAxisLayer);
+          tickText.textContent = String(tick);
+        });
+
+        createSvg("line", { x1: graph.x, y1: graph.y + graph.height, x2: graph.x + graph.width, y2: graph.y + graph.height, class: "axis-line" }, graphAxisLayer);
+        createSvg("line", { x1: graph.x, y1: graph.y, x2: graph.x, y2: graph.y + graph.height, class: "axis-line" }, graphAxisLayer);
+
+        const thresholdY = mVToY(graph.threshold, graph);
+        createSvg("line", { x1: graph.x, y1: thresholdY, x2: graph.x + graph.width, y2: thresholdY, class: "threshold-line" }, graphAxisLayer);
+        const thresholdText = createSvg("text", { x: graph.x + graph.width - 7, y: thresholdY - 7, class: "axis-label", "text-anchor": "end" }, graphAxisLayer);
+        thresholdText.textContent = `Threshold ${graph.threshold} mV`;
+
+        const restingY = mVToY(graph.resting, graph);
+        createSvg("line", { x1: graph.x, y1: restingY, x2: graph.x + graph.width, y2: restingY, class: "resting-line" }, graphAxisLayer);
+        const restingText = createSvg("text", { x: graph.x + 9, y: restingY - 7, class: "axis-label" }, graphAxisLayer);
+        restingText.textContent = `Resting ${graph.resting} mV`;
+
+        labelText("Time", graph.x + graph.width / 2, graph.y + graph.height + 20, "graph-label", "middle", graphAxisLayer);
+        labelText(graph.title, graph.x + graph.width / 2, graph.y + graph.height + 44, "graph-label", "middle", graphAxisLayer);
+        const yLabel = labelText("Membrane potential, mV", graph.x - 55, graph.y + graph.height / 2, "graph-label", "middle", graphAxisLayer);
+        yLabel.setAttribute("transform", `rotate(-90 ${graph.x - 55} ${graph.y + graph.height / 2})`);
+      });
+    }
+
+    function drawGraphSegment(graphId, segmentName, opacity = 1) {
+      const graph = graphs[graphId];
+      const segment = getSegmentDefinition(graphId, segmentName);
+      const path = createSvg("path", {
+        d: makePath(segment.points, graph),
+        stroke: segment.color,
+        opacity,
+        class: "graph-segment"
+      }, graphSegmentLayer);
+      return path;
+    }
+
+    function renderGraphContext(stageIndex) {
+      clearLayer(graphSegmentLayer);
+      segmentTimeline
+        .filter((entry) => entry.stageIndex < stageIndex)
+        .forEach((entry) => drawGraphSegment(entry.graph, entry.segment, 0.36));
+    }
+
+    function animatePath(pathElement, duration) {
+      const length = pathElement.getTotalLength();
+      pathElement.style.strokeDasharray = String(length);
+      pathElement.style.strokeDashoffset = String(length);
+      addAnimation({
+        duration,
+        onUpdate: (progress) => {
+          pathElement.style.strokeDashoffset = String(length * (1 - progress));
+        }
+      });
+    }
+
+    function addAnimation({ duration, delay = 0, repeat = 1, onUpdate, onComplete }) {
+      activeAnimations.push({
+        duration: Math.max(1, duration / speedMultiplier),
+        delay: delay / speedMultiplier,
+        repeat,
+        onUpdate,
+        onComplete,
+        startedAt: null,
+        done: false
+      });
+      startAnimationLoop();
+    }
+
+    function startAnimationLoop() {
+      if (rafId === null) {
+        rafId = requestAnimationFrame(tickAnimations);
+      }
+    }
+
+    function tickAnimations(timestamp) {
+      if (isPaused) {
+        rafId = requestAnimationFrame(tickAnimations);
+        return;
+      }
+
+      const completions = [];
+      activeAnimations.forEach((animation) => {
+        if (animation.startedAt === null) {
+          animation.startedAt = timestamp;
+        }
+        const elapsed = timestamp - animation.startedAt - animation.delay;
+        if (elapsed < 0) return;
+
+        const totalDuration = animation.duration * animation.repeat;
+        if (elapsed >= totalDuration) {
+          animation.onUpdate(1, animation.repeat - 1);
+          animation.done = true;
+          if (animation.onComplete) completions.push(animation.onComplete);
+          return;
+        }
+
+        const cycleElapsed = elapsed % animation.duration;
+        const progress = cycleElapsed / animation.duration;
+        const cycleIndex = Math.floor(elapsed / animation.duration);
+        animation.onUpdate(progress, cycleIndex);
+      });
+
+      activeAnimations = activeAnimations.filter((animation) => !animation.done);
+      completions.forEach((complete) => complete());
+
+      if (activeAnimations.length > 0 || isPlaying || isPaused) {
+        rafId = requestAnimationFrame(tickAnimations);
+      } else {
+        rafId = null;
+      }
+    }
+
+    function stopAnimations() {
+      activeAnimations = [];
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      isPlaying = false;
+      isPaused = false;
+      pauseStartedAt = 0;
+      document.getElementById("pauseStage").textContent = "Pause";
+    }
+
+    function pointAtProgress(points, progress) {
+      if (points.length === 1) return points[0];
+      const lengths = [];
+      let total = 0;
+      for (let i = 1; i < points.length; i += 1) {
+        const dx = points[i].x - points[i - 1].x;
+        const dy = points[i].y - points[i - 1].y;
+        const length = Math.hypot(dx, dy);
+        lengths.push(length);
+        total += length;
+      }
+      let distance = progress * total;
+      for (let i = 1; i < points.length; i += 1) {
+        if (distance <= lengths[i - 1]) {
+          const local = lengths[i - 1] === 0 ? 0 : distance / lengths[i - 1];
+          return {
+            x: points[i - 1].x + (points[i].x - points[i - 1].x) * local,
+            y: points[i - 1].y + (points[i].y - points[i - 1].y) * local
+          };
+        }
+        distance -= lengths[i - 1];
+      }
+      return points[points.length - 1];
+    }
+
+    function animateParticleAlongPath({
+      ionType,
+      color,
+      label,
+      pathPoints,
+      duration,
+      delay = 0,
+      repeat = 1,
+      lingerAtEnd = false
+    }) {
+      const particle = drawIon(particleLayer, label || ionType, color, pathPoints[0].x, pathPoints[0].y, 10, "particle");
+      let lastSettledCycle = 0;
+      const finalPoint = pathPoints[pathPoints.length - 1];
+      addAnimation({
+        duration,
+        delay,
+        repeat,
+        onUpdate: (progress, cycleIndex = 0) => {
+          if (lingerAtEnd && cycleIndex > lastSettledCycle && progress < 0.2) {
+            const settled = drawIon(particleLayer, label || ionType, color, finalPoint.x, finalPoint.y, 9, "particle");
+            settled.setAttribute("opacity", "0.85");
+            lastSettledCycle = cycleIndex;
+          }
+          const point = pointAtProgress(pathPoints, progress);
+          const fade = progress < 0.12 ? progress / 0.12 : progress > 0.88 ? (1 - progress) / 0.12 : 1;
+          particle.setAttribute("transform", `translate(${point.x} ${point.y})`);
+          particle.setAttribute("opacity", String(Math.max(0.15, fade)));
+        },
+        onComplete: () => {
+          if (lingerAtEnd) {
+            particle.setAttribute("transform", `translate(${finalPoint.x} ${finalPoint.y})`);
+            particle.setAttribute("opacity", "0.95");
+            return;
+          }
+          if (particle.parentNode) particle.parentNode.removeChild(particle);
+        }
+      });
+    }
+
+    function animateWaveAlongMembrane(startX, endX, y, duration, delay = 0) {
+      const group = createSvg("g", { class: "wave", opacity: 0 }, waveLayer);
+      createSvg("line", { x1: -18, y1: 0, x2: 18, y2: 0, stroke: "#fffdf0", "stroke-width": 10, "stroke-linecap": "round" }, group);
+      createSvg("line", { x1: -10, y1: 0, x2: 10, y2: 0, stroke: ACTIVE_YELLOW, "stroke-width": 4, "stroke-linecap": "round" }, group);
+      addAnimation({
+        duration,
+        delay,
+        onUpdate: (progress) => {
+          const x = startX + (endX - startX) * progress;
+          group.setAttribute("transform", `translate(${x} ${y})`);
+          group.setAttribute("opacity", String(progress < 0.05 ? progress / 0.05 : progress > 0.95 ? (1 - progress) / 0.05 : 1));
+        },
+        onComplete: () => group.remove()
+      });
+    }
+
+    function animateWaveDownTTubule(x, startY, endY, duration, delay = 0) {
+      const group = createSvg("g", { class: "wave", opacity: 0 }, waveLayer);
+      createSvg("circle", { cx: 0, cy: 0, r: 15, fill: "#fffdf0", stroke: ACTIVE_YELLOW, "stroke-width": 4 }, group);
+      addAnimation({
+        duration,
+        delay,
+        onUpdate: (progress) => {
+          const y = startY + (endY - startY) * progress;
+          group.setAttribute("transform", `translate(${x} ${y})`);
+          group.setAttribute("opacity", String(progress < 0.05 ? progress / 0.05 : progress > 0.95 ? (1 - progress) / 0.05 : 1));
+        },
+        onComplete: () => group.remove()
+      });
+    }
+
+    function drawStageAnnotation(annotation) {
+      const width = annotation.width || 170;
+      const group = createSvg("g", { class: "stage-annotation" }, waveLayer);
+      createSvg("rect", {
+        x: annotation.x - width / 2,
+        y: annotation.y - 17,
+        width,
+        height: 25,
+        rx: 6,
+        class: "stage-annotation-box"
+      }, group);
+      const text = createSvg("text", {
+        x: annotation.x,
+        y: annotation.y,
+        class: "small-structure-label",
+        "text-anchor": "middle"
+      }, group);
+      text.textContent = annotation.text;
+    }
+
+    function resetAnimationObjects() {
+      stopAnimations();
+      clearLayer(particleLayer);
+      clearLayer(waveLayer);
+      resetChannels();
+    }
+
+    function applyChannelActions(stage) {
+      stage.channelActions.forEach((action) => {
+        if (action.state === "open") openChannel(action.id);
+        if (action.state === "closed") closeChannel(action.id);
+        if (action.state === "highlighted") highlightChannel(action.id);
+        if (action.state === "inactive") setChannelState(action.id, "inactive");
+      });
+    }
+
+    function playCurrentStage() {
+      const token = stageRunToken + 1;
+      stageRunToken = token;
+      playAllMode = false;
+      startStageAnimation(token);
+    }
+
+    function replayCurrentStage() {
+      startStageAnimation(stageRunToken + 1);
+    }
+
+    function startStageAnimation(token) {
+      stageRunToken = token;
+      const stage = stages[currentStageIndex];
+      resetAnimationObjects();
+      isPlaying = true;
+      isPaused = false;
+      renderGraphContext(currentStageIndex);
+      updateStageUI();
+      applyChannelActions(stage);
+
+      stage.graphActions.forEach((action) => {
+        const path = drawGraphSegment(action.graph, action.segment, 1);
+        animatePath(path, stage.duration * 0.86);
+      });
+
+      stage.ionAnimations.forEach((animation) => animateParticleAlongPath(animation));
+
+      if (stage.waves) {
+        stage.waves.forEach((wave) => {
+          if (wave.type === "membrane") {
+            animateWaveAlongMembrane(wave.startX, wave.endX, wave.y, wave.duration, wave.delay || 0);
+          }
+          if (wave.type === "ttubule") {
+            animateWaveDownTTubule(wave.x, wave.startY, wave.endY, wave.duration, wave.delay || 0);
+          }
+        });
+      }
+
+      if (stage.annotations) {
+        stage.annotations.forEach((annotation) => drawStageAnnotation(annotation));
+      }
+
+      addAnimation({
+        duration: stage.duration,
+        onUpdate: () => {},
+        onComplete: () => {
+          if (token !== stageRunToken) return;
+          isPlaying = false;
+          isPaused = false;
+          document.getElementById("pauseStage").textContent = "Pause";
+          if (playAllMode && currentStageIndex < stages.length - 1) {
+            currentStageIndex += 1;
+            startStageAnimation(stageRunToken + 1);
+          } else if (playAllMode) {
+            playAllMode = false;
+          }
+        }
+      });
+    }
+
+    function selectStage(index, shouldPlay = false) {
+      currentStageIndex = Math.max(0, Math.min(stages.length - 1, index));
+      playAllMode = false;
+      resetAnimationObjects();
+      renderGraphContext(currentStageIndex);
+      updateStageUI();
+      if (shouldPlay) {
+        startStageAnimation(stageRunToken + 1);
+      }
+    }
+
+    function pauseOrResume() {
+      if (!isPlaying && !isPaused) return;
+      const pauseButton = document.getElementById("pauseStage");
+      if (!isPaused) {
+        isPaused = true;
+        pauseStartedAt = performance.now();
+        pauseButton.textContent = "Resume";
+        return;
+      }
+      const pausedFor = performance.now() - pauseStartedAt;
+      activeAnimations.forEach((animation) => {
+        if (animation.startedAt !== null) {
+          animation.startedAt += pausedFor;
+        }
+      });
+      isPaused = false;
+      pauseStartedAt = 0;
+      pauseButton.textContent = "Pause";
+    }
+
+    function playAllStages() {
+      playAllMode = true;
+      currentStageIndex = 0;
+      startStageAnimation(stageRunToken + 1);
+    }
+
+    function resetAll() {
+      playAllMode = false;
+      currentStageIndex = 0;
+      resetAnimationObjects();
+      clearLayer(graphSegmentLayer);
+      document.getElementById("stageTitle").textContent = "Pacemaker and contractile cardiac cell activity";
+      document.getElementById("stageDescription").innerHTML =
+        'Choose a stage or press Play all to follow how pacemaker-cell electrical activity spreads into a contractile cardiac muscle cell. <span class="note">Simplified educational model: channel placement, timing, and ion numbers are diagrammatic rather than quantitative.</span>';
+      updateStageUI(false);
+    }
+
+    function updateStageUI(useStageText = true) {
+      const stage = stages[currentStageIndex];
+      document.getElementById("stageSelect").value = String(currentStageIndex);
+      document.querySelectorAll(".stage-button").forEach((button, index) => {
+        button.classList.toggle("active", index === currentStageIndex);
+        button.setAttribute("aria-current", index === currentStageIndex ? "true" : "false");
+      });
+      if (useStageText) {
+        document.getElementById("stageTitle").textContent = `${stage.id}. ${stage.title}`;
+        document.getElementById("stageDescription").innerHTML =
+          `${stage.description}<span class="note">Simplified educational model: channel placement, timing, and ion numbers are diagrammatic rather than quantitative.</span>`;
+      }
+    }
+
+    function buildControls() {
+      const stageButtons = document.getElementById("stageButtons");
+      const stageSelect = document.getElementById("stageSelect");
+      stages.forEach((stage, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "stage-button";
+        button.textContent = String(stage.id);
+        button.title = stage.title;
+        button.setAttribute("aria-label", `Play stage ${stage.id}: ${stage.title}`);
+        button.addEventListener("click", () => selectStage(index, true));
+        stageButtons.appendChild(button);
+
+        const option = document.createElement("option");
+        option.value = String(index);
+        option.textContent = `${stage.id}. ${stage.title}`;
+        stageSelect.appendChild(option);
+      });
+
+      stageSelect.addEventListener("change", (event) => selectStage(Number(event.target.value), false));
+      document.getElementById("playStage").addEventListener("click", () => playCurrentStage());
+      document.getElementById("pauseStage").addEventListener("click", pauseOrResume);
+      document.getElementById("replayStage").addEventListener("click", () => replayCurrentStage());
+      document.getElementById("prevStage").addEventListener("click", () => selectStage(currentStageIndex - 1, true));
+      document.getElementById("nextStage").addEventListener("click", () => selectStage(currentStageIndex + 1, true));
+      document.getElementById("playAll").addEventListener("click", playAllStages);
+      document.getElementById("resetAll").addEventListener("click", resetAll);
+
+      document.getElementById("showLabels").addEventListener("change", (event) => {
+        document.documentElement.classList.toggle("hide-labels", !event.target.checked);
+      });
+      document.getElementById("showIonNames").addEventListener("change", (event) => {
+        document.documentElement.classList.toggle("hide-ion-names", !event.target.checked);
+      });
+      document.getElementById("speedSlider").addEventListener("input", (event) => {
+        speedMultiplier = Number(event.target.value);
+        document.getElementById("speedValue").textContent = `${speedMultiplier.toFixed(1)}x`;
+      });
+    }
+
+    function init() {
+      drawStructures();
+      drawStaticIons();
+      drawChannels();
+      drawGraphAxes();
+      buildControls();
+      resetAll();
+    }
+
+    init();
+  </script>
+</body>
+</html>

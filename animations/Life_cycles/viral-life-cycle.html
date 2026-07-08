@@ -1,0 +1,1786 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Viral Life Cycle Explorer</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --ink: #172033;
+      --muted: #556070;
+      --panel: #ffffff;
+      --line: #d6dde8;
+      --accent: #2563eb;
+      --accent-2: #0f766e;
+      --cell: #edf9f1;
+      --cell-line: #3f8f72;
+      --nucleus: #f8f2ff;
+      --nucleus-line: #7b61b8;
+      --genome: #1d4ed8;
+      --mrna: #c026d3;
+      --ribosome: #7c3aed;
+      --capsid: #f59e0b;
+      --enzyme: #0f766e;
+      --spike: #e11d48;
+      --rdrp: #047857;
+      --rt: #8b5cf6;
+      --dna-pol: #ea580c;
+      --rna-pol: #0891b2;
+      --shadow: 0 18px 40px rgba(23, 32, 51, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--bg);
+      font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+      line-height: 1.4;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 1.55rem;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+      align-items: end;
+    }
+
+    label {
+      display: grid;
+      gap: 4px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .speed-label {
+      min-width: 170px;
+    }
+
+    select,
+    button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      min-height: 40px;
+    }
+
+    select {
+      min-width: 150px;
+      padding: 0 36px 0 12px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .speed-readout {
+      color: var(--ink);
+      font-size: 0.82rem;
+      font-weight: 800;
+      text-transform: none;
+    }
+
+    button {
+      cursor: pointer;
+      padding: 0 14px;
+      font-weight: 700;
+    }
+
+    button:hover,
+    button:focus-visible,
+    select:focus-visible,
+    input[type="range"]:focus-visible {
+      border-color: var(--accent);
+      outline: 3px solid rgba(37, 99, 235, 0.18);
+      outline-offset: 1px;
+    }
+
+    .attribution {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      color: var(--ink);
+      font-size: 1rem;
+      font-weight: 800;
+      padding: 12px 16px;
+    }
+
+    .primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      min-width: 86px;
+    }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(118px, 1fr));
+      gap: 8px;
+    }
+
+    .step-chip {
+      position: relative;
+      overflow: hidden;
+      min-height: 48px;
+      padding: 0 10px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--muted);
+      text-align: left;
+    }
+
+    .step-chip span {
+      position: relative;
+      z-index: 1;
+      display: block;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .step-chip .step-progress {
+      position: absolute;
+      inset: auto 0 0 0;
+      height: 5px;
+      width: 0%;
+      background: var(--accent);
+      transition: width 0.12s linear;
+    }
+
+    .step-chip.active {
+      border-color: var(--accent);
+      color: var(--ink);
+      background: #eef4ff;
+    }
+
+    .workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 14px;
+      min-height: 0;
+    }
+
+    .diagram-shell,
+    .info-panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .diagram-shell {
+      min-height: 560px;
+      padding: 10px;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 540px;
+    }
+
+    .info-column {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .info-panel {
+      padding: 15px;
+    }
+
+    .info-panel h2 {
+      font-size: 1.05rem;
+      margin-bottom: 8px;
+    }
+
+    .info-panel p {
+      font-size: 0.98rem;
+      color: var(--muted);
+    }
+
+    .step-name {
+      color: var(--ink);
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .note {
+      border-left: 4px solid #94a3b8;
+      padding-left: 10px;
+      margin-top: 10px;
+      font-size: 0.9rem;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 1080px) {
+      .topbar,
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        justify-content: flex-start;
+      }
+
+      .timeline {
+        grid-template-columns: repeat(3, minmax(150px, 1fr));
+      }
+
+      .diagram-shell {
+        min-height: 520px;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .app {
+        padding: 10px;
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        align-items: stretch;
+      }
+
+      .controls label,
+      .controls button {
+        width: 100%;
+      }
+
+      select {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .timeline {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      svg {
+        min-height: 480px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <p class="attribution">Animation Prompted by Jerred Seveyka for his biology class.</p>
+
+    <header class="topbar">
+      <div>
+        <h1>Viral Life Cycle Explorer</h1>
+        <p class="subtitle">A simplified eukaryotic host-cell model for comparing viral genome strategies.</p>
+      </div>
+
+      <div class="controls" aria-label="Animation controls">
+        <label>
+          Genome type
+          <select id="genomeSelect">
+            <option value="plus">+RNA virus</option>
+            <option value="minus">-RNA virus</option>
+            <option value="dsdna">dsDNA virus</option>
+            <option value="retro">Retrovirus</option>
+          </select>
+        </label>
+        <label>
+          Envelope
+          <select id="envelopeSelect">
+            <option value="enveloped">Enveloped</option>
+            <option value="non">Non-enveloped</option>
+          </select>
+        </label>
+        <label class="speed-label">
+          Animation speed.
+          <input id="speedRange" type="range" min="0.5" max="1.8" step="0.1" value="1" aria-describedby="speedValue">
+          <span id="speedValue" class="speed-readout">1.0x</span>
+        </label>
+        <button id="prevBtn" type="button">Previous</button>
+        <button id="playBtn" class="primary" type="button">Play</button>
+        <button id="nextBtn" type="button">Next</button>
+        <button id="resetBtn" type="button">Reset</button>
+      </div>
+    </header>
+
+    <nav id="timeline" class="timeline" aria-label="Life cycle timeline"></nav>
+
+    <main class="workspace">
+      <section class="diagram-shell" aria-label="Animated viral life cycle diagram">
+        <svg id="lifeSvg" viewBox="0 0 1100 640" role="img" aria-labelledby="svgTitle svgDesc">
+          <title id="svgTitle">Viral life cycle animation</title>
+          <desc id="svgDesc">A labeled host cell diagram changes by genome type, envelope status, and life cycle step.</desc>
+        </svg>
+      </section>
+
+      <aside class="info-column">
+        <section class="info-panel" aria-live="polite">
+          <h2>What is happening?</h2>
+          <p id="stepName" class="step-name"></p>
+          <p id="stepText"></p>
+          <p id="simplifiedNote" class="note">Simplified model: real viruses vary in cell tropism, entry details, replication sites, accessory proteins, and exit routes.</p>
+        </section>
+
+        <section class="info-panel" aria-live="polite">
+          <h2>Compare Genome Strategies</h2>
+          <p id="strategyText"></p>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const NS = "http://www.w3.org/2000/svg";
+      const svg = document.getElementById("lifeSvg");
+      const genomeSelect = document.getElementById("genomeSelect");
+      const envelopeSelect = document.getElementById("envelopeSelect");
+      const playBtn = document.getElementById("playBtn");
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const resetBtn = document.getElementById("resetBtn");
+      const speedRange = document.getElementById("speedRange");
+      const speedValue = document.getElementById("speedValue");
+      const timeline = document.getElementById("timeline");
+      const stepName = document.getElementById("stepName");
+      const stepText = document.getElementById("stepText");
+      const strategyText = document.getElementById("strategyText");
+
+      const colors = {
+        genome: "#1d4ed8",
+        plusRNA: "#1d4ed8",
+        minusRNA: "#0f766e",
+        retroRNA: "#8b5cf6",
+        viralDNA: "#0ea5e9",
+        hostDNA: "#94a3b8",
+        mrna: "#c026d3",
+        ribosome: "#7c3aed",
+        capsid: "#f59e0b",
+        enzyme: "#0f766e",
+        spike: "#e11d48",
+        rdrp: "#047857",
+        rt: "#8b5cf6",
+        cDna: "#16a34a",
+        dnaPol: "#ea580c",
+        rnaPol: "#0891b2",
+        accent: "#2563eb",
+        cell: "#edf9f1",
+        cellLine: "#3f8f72",
+        nucleus: "#f8f2ff",
+        nucleusLine: "#7b61b8",
+        vesicle: "#60a5fa",
+        muted: "#64748b",
+        ink: "#172033"
+      };
+
+      const steps = [
+        {
+          key: "attachment",
+          name: "Attachment",
+          text: {
+            enveloped: "Envelope spikes recognize and bind host receptors at the host membrane.",
+            non: "Exposed capsid proteins recognize and bind host receptors at the host membrane."
+          }
+        },
+        {
+          key: "entry",
+          name: "Entry",
+          text: {
+            enveloped: "Fusion entry: the viral envelope merges with the host membrane so the capsid can enter the cytoplasm.",
+            non: "Endocytosis: the host membrane folds around the non-enveloped virion to bring it inside a vesicle."
+          }
+        },
+        {
+          key: "uncoating",
+          name: "Uncoating",
+          text: {
+            all: "The capsid breaks apart and releases the viral genome. Genome type determines what must happen next."
+          }
+        },
+        {
+          key: "biosynthesis",
+          name: "Biosynthesis",
+          text: {
+            plus: "+RNA can be translated immediately in the cytoplasm, then RdRP makes a -RNA template and new +RNA genomes.",
+            minus: "-RNA must bring RdRP. RdRP first makes +RNA strands that can act as mRNA or templates for new -RNA genomes.",
+            dsdna: "dsDNA enters the nucleus. DNA polymerase copies viral DNA, and host RNA polymerase makes viral mRNA.",
+            retro: "Reverse transcriptase copies viral RNA into dsDNA, which integrates as a provirus before host RNA polymerase transcribes it."
+          }
+        },
+        {
+          key: "assembly",
+          name: "Assembly",
+          text: {
+            all: "Capsid proteins assemble around new viral genomes. Required enzymes are packaged with genome types that need them at entry."
+          }
+        },
+        {
+          key: "exit",
+          name: "Exit",
+          text: {
+            enveloped: "Budding releases enveloped virions from membrane regions that already contain viral spikes.",
+            non: "Lysis opens the host membrane and releases non-enveloped virions."
+          }
+        }
+      ];
+
+      const strategyCopy = {
+        plus: "+RNA: the genome can act like mRNA immediately. Translation makes RdRP, RdRP makes a -RNA template, then that template is copied into new +RNA genomes.",
+        minus: "-RNA: the genome cannot be read directly by ribosomes. The virus must bring RdRP, which makes +RNA first for translation and replication.",
+        dsdna: "dsDNA: replication and transcription happen in the nucleus in this model. Viral DNA is copied, and host RNA polymerase transcribes viral mRNA.",
+        retro: "Retrovirus: reverse transcriptase makes dsDNA, the dsDNA integrates into the host genome as a provirus, and host RNA polymerase transcribes mRNA and new RNA genomes."
+      };
+
+      const genomeLabel = {
+        plus: "+RNA virus",
+        minus: "-RNA virus",
+        dsdna: "dsDNA virus",
+        retro: "Retrovirus"
+      };
+
+      const state = {
+        genome: "plus",
+        enveloped: true,
+        step: 0,
+        progress: 0,
+        speed: 1,
+        playing: false,
+        dirty: true
+      };
+
+      let lastFrame = performance.now();
+      let lastRender = 0;
+      const baseStepDuration = 4200;
+      const biosynthesisStepDuration = 7600;
+      const renderInterval = 50;
+
+      function svgEl(name, attrs = {}, children = []) {
+        const el = document.createElementNS(NS, name);
+        Object.entries(attrs).forEach(([key, value]) => {
+          if (value === null || value === undefined) return;
+          if (key === "textContent") {
+            el.textContent = value;
+          } else {
+            el.setAttribute(key, value);
+          }
+        });
+        children.forEach((child) => el.appendChild(child));
+        return el;
+      }
+
+      function add(parent, name, attrs = {}, children = []) {
+        const el = svgEl(name, attrs, children);
+        parent.appendChild(el);
+        return el;
+      }
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function lerp(a, b, t) {
+        return a + (b - a) * clamp(t, 0, 1);
+      }
+
+      function phase(t, start, end) {
+        return clamp((t - start) / (end - start), 0, 1);
+      }
+
+      function ease(t) {
+        const n = clamp(t, 0, 1);
+        return n * n * (3 - 2 * n);
+      }
+
+      function pointsToString(points) {
+        return points.map((p) => p.join(",")).join(" ");
+      }
+
+      function markDirty() {
+        state.dirty = true;
+      }
+
+      function resetAnimation() {
+        state.step = 0;
+        state.progress = 0;
+        state.playing = false;
+        markDirty();
+      }
+
+      function isRnaGenome() {
+        return state.genome === "plus" || state.genome === "minus";
+      }
+
+      function createDefs(root) {
+        const defs = add(root, "defs");
+        add(defs, "marker", {
+          id: "arrow",
+          markerWidth: 10,
+          markerHeight: 10,
+          refX: 8,
+          refY: 3,
+          orient: "auto",
+          markerUnits: "strokeWidth"
+        }, [
+          svgEl("path", { d: "M0,0 L0,6 L9,3 z", fill: "#334155" })
+        ]);
+        add(defs, "filter", {
+          id: "softShadow",
+          x: "-20%",
+          y: "-20%",
+          width: "140%",
+          height: "140%"
+        }, [
+          svgEl("feDropShadow", {
+            dx: 0,
+            dy: 3,
+            stdDeviation: 4,
+            "flood-color": "#1f2937",
+            "flood-opacity": 0.16
+          })
+        ]);
+      }
+
+      function clearSvg() {
+        while (svg.lastChild) svg.removeChild(svg.lastChild);
+      }
+
+      function wrapText(text, limit = 30) {
+        const words = text.split(" ");
+        const lines = [];
+        let line = "";
+        words.forEach((word) => {
+          const test = line ? `${line} ${word}` : word;
+          if (test.length > limit && line) {
+            lines.push(line);
+            line = word;
+          } else {
+            line = test;
+          }
+        });
+        if (line) lines.push(line);
+        return lines;
+      }
+
+      function addLabel(parent, text, x, y, options = {}) {
+        const lines = Array.isArray(text) ? text : wrapText(text, options.limit || 32);
+        const size = options.size || 15;
+        const width = Math.max(...lines.map((line) => line.length)) * size * 0.57 + 18;
+        const height = lines.length * (size + 3) + 12;
+        let boxX = x;
+        if (options.anchor === "middle") boxX = x - width / 2;
+        if (options.anchor === "end") boxX = x - width;
+        const boxY = y - height / 2;
+        const group = add(parent, "g", { opacity: options.opacity ?? 1 });
+        if (options.to) {
+          add(group, "line", {
+            x1: x,
+            y1: y,
+            x2: options.to[0],
+            y2: options.to[1],
+            stroke: options.line || "#64748b",
+            "stroke-width": 1.5
+          });
+        }
+        add(group, "rect", {
+          x: boxX,
+          y: boxY,
+          width,
+          height,
+          rx: 7,
+          fill: options.fill || "#ffffff",
+          stroke: options.stroke || "#cbd5e1",
+          "stroke-width": 1,
+          opacity: 0.96
+        });
+        lines.forEach((line, index) => {
+          add(group, "text", {
+            x: boxX + 9,
+            y: boxY + 18 + index * (size + 3),
+            fill: options.color || colors.ink,
+            "font-size": size,
+            "font-weight": options.weight || 700,
+            textContent: line
+          });
+        });
+        return group;
+      }
+
+      function addArrow(parent, x1, y1, x2, y2, color = "#334155", width = 2.5, opacity = 1) {
+        return add(parent, "path", {
+          d: `M${x1},${y1} C${(x1 + x2) / 2},${y1} ${(x1 + x2) / 2},${y2} ${x2},${y2}`,
+          fill: "none",
+          stroke: color,
+          "stroke-width": width,
+          "stroke-linecap": "round",
+          "marker-end": "url(#arrow)",
+          opacity
+        });
+      }
+
+      function addStraightArrow(parent, x1, y1, x2, y2, color = "#334155", width = 2.5, opacity = 1) {
+        return add(parent, "line", {
+          x1,
+          y1,
+          x2,
+          y2,
+          stroke: color,
+          "stroke-width": width,
+          "stroke-linecap": "round",
+          "marker-end": "url(#arrow)",
+          opacity
+        });
+      }
+
+      function drawRibosome(parent, x, y, scale = 1, opacity = 1) {
+        const g = add(parent, "g", { opacity });
+        add(g, "ellipse", {
+          cx: x - 6 * scale,
+          cy: y,
+          rx: 10 * scale,
+          ry: 7 * scale,
+          fill: colors.ribosome,
+          stroke: "#4c1d95",
+          "stroke-width": 1.2
+        });
+        add(g, "ellipse", {
+          cx: x + 7 * scale,
+          cy: y - 1 * scale,
+          rx: 12 * scale,
+          ry: 8 * scale,
+          fill: "#a78bfa",
+          stroke: "#4c1d95",
+          "stroke-width": 1.2
+        });
+        return g;
+      }
+
+      function drawReceptors(parent, highlight = false) {
+        const g = add(parent, "g");
+        [304, 332, 360].forEach((y, index) => {
+          const stroke = highlight && index === 1 ? colors.accent : "#475569";
+          add(g, "path", {
+            d: `M112,${y} L80,${y} M80,${y} L66,${y - 10} M80,${y} L66,${y + 10}`,
+            fill: "none",
+            stroke,
+            "stroke-width": highlight && index === 1 ? 4 : 3,
+            "stroke-linecap": "round"
+          });
+        });
+        addLabel(g, "host receptors", 128, 282, { to: [83, 304], limit: 18, size: 14 });
+        return g;
+      }
+
+      function rnaColor(variant = "genome") {
+        if (variant === "mrna") return colors.mrna;
+        if (variant === "plus") return colors.plusRNA;
+        if (variant === "minus") return colors.minusRNA;
+        if (variant === "retro") return colors.retroRNA;
+        if (variant === "cdna") return colors.cDna;
+        return colors.genome;
+      }
+
+      function dnaColor(variant = "viral") {
+        if (variant === "host") return colors.hostDNA;
+        if (variant === "retro") return colors.cDna;
+        return colors.viralDNA;
+      }
+
+      function drawGenomeRNA(parent, x, y, length = 110, label = "+RNA genome", variant = "genome", opacity = 1) {
+        const stroke = rnaColor(variant);
+        const path = [];
+        for (let i = 0; i <= 18; i += 1) {
+          const px = x + (i / 18) * length;
+          const py = y + Math.sin(i * 1.35) * 7;
+          path.push(`${i === 0 ? "M" : "L"}${px.toFixed(1)},${py.toFixed(1)}`);
+        }
+        const g = add(parent, "g", { opacity });
+        add(g, "path", {
+          d: path.join(" "),
+          fill: "none",
+          stroke,
+          "stroke-width": 4,
+          "stroke-linecap": "round"
+        });
+        if (label) {
+          add(g, "text", {
+            x,
+            y: y - 13,
+            fill: stroke,
+            "font-size": 14,
+            "font-weight": 800,
+            textContent: label
+          });
+        }
+        return g;
+      }
+
+      function drawGrowingRNA(parent, x, y, length = 110, label = "growing RNA", variant = "genome", progress = 1, opacity = 1) {
+        const stroke = rnaColor(variant);
+        const capped = clamp(progress, 0, 1);
+        const segments = Math.max(1, Math.round(18 * capped));
+        const g = add(parent, "g", { opacity });
+        const path = [];
+        for (let i = 0; i <= segments; i += 1) {
+          const px = x + (i / 18) * length;
+          const py = y + Math.sin(i * 1.35) * 7;
+          path.push(`${i === 0 ? "M" : "L"}${px.toFixed(1)},${py.toFixed(1)}`);
+          if (i > 0 && i % 3 === 0) {
+            add(g, "circle", {
+              cx: px,
+              cy: py,
+              r: 3.2,
+              fill: stroke,
+              opacity: 0.85
+            });
+          }
+        }
+        add(g, "path", {
+          d: path.join(" "),
+          fill: "none",
+          stroke,
+          "stroke-width": 4,
+          "stroke-linecap": "round"
+        });
+        if (label && capped > 0.16) {
+          add(g, "text", {
+            x,
+            y: y + 24,
+            fill: stroke,
+            "font-size": 14,
+            "font-weight": 800,
+            textContent: label
+          });
+        }
+        return g;
+      }
+
+      function drawRnaSynthesis(parent, x, y, length, templateLabel, productLabel, productVariant, progress, enzymeLabel, enzymeColor, options = {}) {
+        const g = add(parent, "g", { opacity: options.opacity ?? 1 });
+        drawGenomeRNA(g, x, y, length, templateLabel, options.templateVariant || "genome");
+        const grow = clamp(progress, 0, 1);
+        drawGrowingRNA(g, x, y + 34, length, productLabel, productVariant, grow);
+        const enzymeX = x + length * grow;
+        drawEnzyme(g, enzymeX, y + 16, enzymeLabel, enzymeColor, grow > 0.02 ? 1 : 0.2, 18);
+        add(g, "line", {
+          x1: enzymeX,
+          y1: y + 2,
+          x2: enzymeX,
+          y2: y + 32,
+          stroke: enzymeColor,
+          "stroke-width": 2,
+          opacity: grow > 0.05 ? 0.7 : 0
+        });
+        return g;
+      }
+
+      function drawGenomeDNA(parent, x, y, length = 120, label = "viral dsDNA", opacity = 1, variant = "viral") {
+        const stroke = dnaColor(variant);
+        const rungStroke = variant === "host" ? "#cbd5e1" : variant === "retro" ? "#86efac" : "#7dd3fc";
+        const g = add(parent, "g", { opacity });
+        const top = [];
+        const bottom = [];
+        for (let i = 0; i <= 24; i += 1) {
+          const px = x + (i / 24) * length;
+          top.push(`${i === 0 ? "M" : "L"}${px.toFixed(1)},${(y + Math.sin(i * 0.9) * 8).toFixed(1)}`);
+          bottom.push(`${i === 0 ? "M" : "L"}${px.toFixed(1)},${(y + 18 - Math.sin(i * 0.9) * 8).toFixed(1)}`);
+          if (i % 4 === 0) {
+            add(g, "line", {
+              x1: px,
+              y1: y + Math.sin(i * 0.9) * 8,
+              x2: px,
+              y2: y + 18 - Math.sin(i * 0.9) * 8,
+              stroke: rungStroke,
+              "stroke-width": 1.5
+            });
+          }
+        }
+        add(g, "path", {
+          d: top.join(" "),
+          fill: "none",
+          stroke,
+          "stroke-width": 3,
+          "stroke-linecap": "round"
+        });
+        add(g, "path", {
+          d: bottom.join(" "),
+          fill: "none",
+          stroke,
+          "stroke-width": 3,
+          "stroke-linecap": "round"
+        });
+        if (label) {
+          add(g, "text", {
+            x,
+            y: y - 10,
+            fill: stroke,
+            "font-size": 14,
+            "font-weight": 800,
+            textContent: label
+          });
+        }
+        return g;
+      }
+
+      function drawEnzyme(parent, x, y, text, color = colors.enzyme, opacity = 1, radius = 18) {
+        const g = add(parent, "g", { opacity });
+        add(g, "circle", {
+          cx: x,
+          cy: y,
+          r: radius,
+          fill: color,
+          stroke: "#ffffff",
+          "stroke-width": 2
+        });
+        add(g, "text", {
+          x,
+          y: y + 5,
+          fill: "#ffffff",
+          "font-size": text.length > 4 ? 11 : 13,
+          "font-weight": 900,
+          "text-anchor": "middle",
+          textContent: text
+        });
+        return g;
+      }
+
+      function capsidPoints(x, y, r, sides = 8, rotation = -Math.PI / 8) {
+        const pts = [];
+        for (let i = 0; i < sides; i += 1) {
+          const a = rotation + (i / sides) * Math.PI * 2;
+          pts.push([x + Math.cos(a) * r, y + Math.sin(a) * r]);
+        }
+        return pts;
+      }
+
+      function drawCapsidShell(parent, x, y, r, opacity = 1) {
+        const g = add(parent, "g", { opacity });
+        const pts = capsidPoints(x, y, r, 8);
+        add(g, "polygon", {
+          points: pointsToString(pts),
+          fill: "#fff7da",
+          stroke: colors.capsid,
+          "stroke-width": 4,
+          filter: "url(#softShadow)"
+        });
+        pts.forEach((pt, i) => {
+          add(g, "line", {
+            x1: x,
+            y1: y,
+            x2: pt[0],
+            y2: pt[1],
+            stroke: "#f7c948",
+            "stroke-width": i % 2 ? 1.4 : 1
+          });
+        });
+        return g;
+      }
+
+      function drawCapsidProtein(parent, x, y, scale = 1, opacity = 1) {
+        const g = add(parent, "g", { opacity });
+        const pts = [
+          [x, y - 10 * scale],
+          [x + 11 * scale, y - 2 * scale],
+          [x + 7 * scale, y + 10 * scale],
+          [x - 7 * scale, y + 10 * scale],
+          [x - 11 * scale, y - 2 * scale]
+        ];
+        add(g, "polygon", {
+          points: pointsToString(pts),
+          fill: colors.capsid,
+          stroke: "#92400e",
+          "stroke-width": 1
+        });
+        return g;
+      }
+
+      function drawSpike(parent, x, y, angle = 0, scale = 1, opacity = 1) {
+        const g = add(parent, "g", { opacity });
+        const tip = [x + Math.cos(angle) * 16 * scale, y + Math.sin(angle) * 16 * scale];
+        const left = [x + Math.cos(angle + 2.4) * 7 * scale, y + Math.sin(angle + 2.4) * 7 * scale];
+        const right = [x + Math.cos(angle - 2.4) * 7 * scale, y + Math.sin(angle - 2.4) * 7 * scale];
+        add(g, "polygon", {
+          points: pointsToString([tip, left, right]),
+          fill: colors.spike,
+          stroke: "#9f1239",
+          "stroke-width": 1
+        });
+        return g;
+      }
+
+      function drawVirus(parent, x, y, r, options = {}) {
+        const genome = options.genome || state.genome;
+        const enveloped = options.enveloped ?? state.enveloped;
+        const opacity = options.opacity ?? 1;
+        const g = add(parent, "g", { opacity });
+        if (enveloped) {
+          add(g, "circle", {
+            cx: x,
+            cy: y,
+            r: r + 13,
+            fill: "#fff0f3",
+            stroke: "#fb7185",
+            "stroke-width": 4,
+            filter: "url(#softShadow)"
+          });
+          for (let i = 0; i < 14; i += 1) {
+            const a = (i / 14) * Math.PI * 2;
+            drawSpike(g, x + Math.cos(a) * (r + 13), y + Math.sin(a) * (r + 13), a, 0.82);
+          }
+        }
+        drawCapsidShell(g, x, y, r);
+        if (!enveloped) {
+          capsidPoints(x, y, r + 5, 8).forEach((pt) => {
+            drawCapsidProtein(g, pt[0], pt[1], 0.55);
+          });
+        }
+        if (genome === "dsdna") {
+          drawGenomeDNA(g, x - 32, y - 5, 65, "dsDNA", 0.95, "viral");
+        } else if (genome === "minus") {
+          drawGenomeRNA(g, x - 35, y - 5, 70, "-RNA", "minus", 0.95);
+          if (options.showPackaged !== false) drawEnzyme(g, x + 20, y + 18, "RdRP", colors.rdrp, 0.95, 14);
+        } else if (genome === "retro") {
+          drawGenomeRNA(g, x - 35, y - 5, 70, "RNA", "retro", 0.95);
+          if (options.showPackaged !== false) drawEnzyme(g, x + 21, y + 18, "RT", colors.rt, 0.95, 14);
+        } else {
+          drawGenomeRNA(g, x - 35, y - 5, 70, "+RNA", "plus", 0.95);
+        }
+        if (options.label) {
+          addLabel(g, options.label, x, y - r - 48, { anchor: "middle", limit: 22, size: 13 });
+        }
+        return g;
+      }
+
+      function drawBrokenCapsid(parent, x, y, r) {
+        const g = add(parent, "g");
+        const fragments = [
+          [x - r - 22, y - 20, -18],
+          [x + r + 14, y - 22, 20],
+          [x - 18, y + r + 20, 8],
+          [x + 16, y - r - 23, -5],
+          [x + r + 6, y + r - 2, 36]
+        ];
+        fragments.forEach(([fx, fy, rot]) => {
+          const piece = drawCapsidProtein(g, fx, fy, 0.9, 0.95);
+          piece.setAttribute("transform", `rotate(${rot} ${fx} ${fy})`);
+        });
+        add(g, "circle", {
+          cx: x,
+          cy: y,
+          r: r + 5,
+          fill: "none",
+          stroke: colors.capsid,
+          "stroke-width": 2,
+          "stroke-dasharray": "7 9",
+          opacity: 0.35
+        });
+        return g;
+      }
+
+      function drawHostCell(parent, compactNucleus = isRnaGenome()) {
+        const g = add(parent, "g");
+        const nucleus = compactNucleus
+          ? { cx: 665, cy: 220, rx: 115, ry: 76, envRx: 128, envRy: 88, dnaX: 615, dnaY: 216, dnaLength: 100 }
+          : { cx: 645, cy: 320, rx: 150, ry: 108, envRx: 165, envRy: 121, dnaX: 585, dnaY: 317, dnaLength: 120 };
+        add(g, "ellipse", {
+          cx: 570,
+          cy: 340,
+          rx: 480,
+          ry: 250,
+          fill: colors.cell,
+          stroke: colors.cellLine,
+          "stroke-width": 5
+        });
+        add(g, "ellipse", {
+          cx: nucleus.cx,
+          cy: nucleus.cy,
+          rx: nucleus.rx,
+          ry: nucleus.ry,
+          fill: colors.nucleus,
+          stroke: colors.nucleusLine,
+          "stroke-width": 4
+        });
+        add(g, "ellipse", {
+          cx: nucleus.cx,
+          cy: nucleus.cy,
+          rx: nucleus.envRx,
+          ry: nucleus.envRy,
+          fill: "none",
+          stroke: colors.nucleusLine,
+          "stroke-width": 2,
+          "stroke-dasharray": "8 7",
+          opacity: 0.55
+        });
+        drawGenomeDNA(g, nucleus.dnaX, nucleus.dnaY, nucleus.dnaLength, "", 0.36, "host");
+        const ribosomes = [
+          [360, 230], [445, 205], [845, 244], [430, 500],
+          [755, 500], [915, 380], [520, 442], [278, 388]
+        ];
+        ribosomes.forEach(([x, y]) => drawRibosome(g, x, y, 0.85, 0.72));
+        addLabel(g, "host ribosomes", 500, 152, { to: [445, 205], size: 14, limit: 20 });
+        return g;
+      }
+
+      function drawSecretoryPath(parent, progress = 1) {
+        const g = add(parent, "g", { opacity: phase(progress, 0.08, 0.34) });
+        add(g, "path", {
+          d: "M765,245 C845,230 890,270 858,310 C830,346 896,362 938,332",
+          fill: "none",
+          stroke: "#38bdf8",
+          "stroke-width": 9,
+          "stroke-linecap": "round",
+          opacity: 0.42
+        });
+        add(g, "path", {
+          d: "M760,250 C838,238 880,275 850,306 C825,332 884,346 932,322",
+          fill: "none",
+          stroke: "#0284c7",
+          "stroke-width": 2.5,
+          "stroke-linecap": "round",
+          "marker-end": "url(#arrow)"
+        });
+        addLabel(g, "simplified secretory pathway", 805, 214, { limit: 28, size: 13, to: [825, 250] });
+        const spikeProgress = phase(progress, 0.25, 0.82);
+        for (let i = 0; i < 4; i += 1) {
+          const sx = lerp(792 + i * 24, 970 + i * 11, spikeProgress);
+          const sy = lerp(260 + Math.sin(i) * 22, 318 + i * 9, spikeProgress);
+          drawSpike(g, sx, sy, 0.15, 0.9, 0.85);
+        }
+        drawMembraneSpikes(parent, 1);
+        return g;
+      }
+
+      function drawMembraneSpikes(parent, opacity = 1) {
+        const g = add(parent, "g", { opacity });
+        const coords = [
+          [1008, 292, -0.22],
+          [1019, 318, -0.08],
+          [1024, 344, 0.04],
+          [1018, 370, 0.18],
+          [1006, 394, 0.3]
+        ];
+        coords.forEach(([x, y, angle]) => drawSpike(g, x, y, angle, 0.95));
+        return g;
+      }
+
+      function drawEntrySiteSpikes(parent, opacity = 1) {
+        const g = add(parent, "g", { opacity });
+        const coords = [
+          [102, 304, Math.PI],
+          [94, 326, Math.PI],
+          [96, 350, Math.PI],
+          [108, 372, Math.PI]
+        ];
+        coords.forEach(([x, y, angle]) => drawSpike(g, x, y, angle, 0.95));
+        return g;
+      }
+
+      function drawBuddingPocket(parent, progress = 0, layer = "front") {
+        const b = ease(progress);
+        const g = add(parent, "g");
+        const bulgeD = `M1006,288 C${1020 + 58 * b},306 ${1020 + 58 * b},382 1006,400`;
+        if (layer === "back") {
+          add(g, "path", {
+            d: "M1008,282 C1040,315 1042,370 1008,406",
+            fill: "none",
+            stroke: "#fbfdff",
+            "stroke-width": 24,
+            "stroke-linecap": "round"
+          });
+          add(g, "path", {
+            d: `${bulgeD} C${1004 + 20 * b},374 ${1004 + 20 * b},315 1006,288 Z`,
+            fill: colors.cell,
+            stroke: "none",
+            opacity: 0.92
+          });
+          return g;
+        }
+        add(g, "path", {
+          d: bulgeD,
+          fill: "none",
+          stroke: colors.cellLine,
+          "stroke-width": 6,
+          "stroke-linecap": "round"
+        });
+        const coords = [
+          [1010 + 30 * b, 300, -0.28],
+          [1020 + 45 * b, 324, -0.1],
+          [1024 + 52 * b, 348, 0.06],
+          [1019 + 45 * b, 374, 0.22],
+          [1009 + 30 * b, 396, 0.34]
+        ];
+        coords.forEach(([x, y, angle]) => drawSpike(g, x, y, angle, 0.95));
+        return g;
+      }
+
+      function drawProteinProducts(parent, x, y, options = {}) {
+        const g = add(parent, "g", { opacity: options.opacity ?? 1 });
+        drawCapsidProtein(g, x, y, 0.95);
+        add(g, "text", {
+          x: x + 22,
+          y: y + 5,
+          fill: colors.capsid,
+          "font-size": 14,
+          "font-weight": 800,
+          textContent: "capsid proteins"
+        });
+        if (options.rdrp) {
+          drawEnzyme(g, x, y + 48, "RdRP", colors.rdrp, 1, 17);
+          add(g, "text", {
+            x: x + 24,
+            y: y + 53,
+            fill: colors.rdrp,
+            "font-size": 14,
+            "font-weight": 800,
+            textContent: "new RdRP"
+          });
+        }
+        if (options.rt) {
+          drawEnzyme(g, x, y + 48, "RT", colors.rt, 1, 17);
+          add(g, "text", {
+            x: x + 24,
+            y: y + 53,
+            fill: colors.rt,
+            "font-size": 14,
+            "font-weight": 800,
+            textContent: "reverse transcriptase"
+          });
+        }
+        if (options.dnaPol) {
+          drawEnzyme(g, x, y + 48, "DNA", colors.dnaPol, 1, 17);
+          add(g, "text", {
+            x: x + 24,
+            y: y + 53,
+            fill: colors.dnaPol,
+            "font-size": 14,
+            "font-weight": 800,
+            textContent: "DNA polymerase"
+          });
+        }
+        if (options.spikes) {
+          drawSpike(g, x + 2, y + 92, -Math.PI / 2, 0.9);
+          add(g, "text", {
+            x: x + 24,
+            y: y + 96,
+            fill: colors.spike,
+            "font-size": 14,
+            "font-weight": 800,
+            textContent: "spike proteins"
+          });
+        }
+        return g;
+      }
+
+      function drawTranslation(parent, x, y, label, options = {}) {
+        const g = add(parent, "g", { opacity: options.opacity ?? 1 });
+        drawGenomeRNA(g, x, y, 130, label, options.rnaVariant || "mrna");
+        drawRibosome(g, x + 74, y + 3, 1.2);
+        addStraightArrow(g, x + 150, y, x + 205, y - 28, "#475569", 2);
+        drawProteinProducts(g, x + 226, y - 42, {
+          rdrp: options.rdrp,
+          rt: options.rt,
+          dnaPol: options.dnaPol,
+          spikes: options.spikes
+        });
+        return g;
+      }
+
+      function renderAttachment(root, t) {
+        drawHostCell(root);
+        drawReceptors(root, true);
+        const vx = lerp(34, 63, ease(t));
+        drawVirus(root, vx, 332, 34, {
+          genome: state.genome,
+          enveloped: state.enveloped,
+          label: genomeLabel[state.genome]
+        });
+        addStraightArrow(root, 46, 332, 92, 332, "#334155", 2, 0.55);
+        const label = state.enveloped
+          ? "Spike protein binds host receptor."
+          : "Capsid protein binds host receptor.";
+        addLabel(root, label, 220, 145, { to: [86, 332], limit: 30, size: 16 });
+        if (state.enveloped) {
+          addLabel(root, "envelope spikes", 92, 440, { to: [58, 372], limit: 23, size: 13 });
+        } else {
+          addLabel(root, "exposed capsid proteins", 96, 440, { to: [69, 368], limit: 24, size: 13 });
+        }
+        if (state.genome === "minus") {
+          addLabel(root, "incoming virion carries RdRP", 214, 498, { to: [86, 354], limit: 28, size: 13 });
+        }
+        if (state.genome === "retro") {
+          addLabel(root, "incoming virion carries reverse transcriptase", 235, 498, { to: [86, 354], limit: 34, size: 13 });
+        }
+      }
+
+      function renderEntry(root, t) {
+        drawHostCell(root);
+        drawReceptors(root, false);
+        if (state.enveloped) {
+          const fade = 1 - phase(t, 0.2, 0.55);
+          const capProgress = ease(phase(t, 0.22, 0.95));
+          drawVirus(root, 84, 332, 34, {
+            genome: state.genome,
+            enveloped: true,
+            opacity: fade,
+            showPackaged: true
+          });
+          add(root, "ellipse", {
+            cx: 104,
+            cy: 332,
+            rx: 24 + 36 * phase(t, 0.12, 0.55),
+            ry: 78,
+            fill: "#fecdd3",
+            stroke: colors.spike,
+            "stroke-width": 2,
+            opacity: 0.28 + 0.22 * phase(t, 0.12, 0.55)
+          });
+          const capX = lerp(112, 292, capProgress);
+          drawVirus(root, capX, 332, 29, {
+            genome: state.genome,
+            enveloped: false,
+            opacity: phase(t, 0.18, 0.48),
+            showPackaged: true
+          });
+          drawEntrySiteSpikes(root, phase(t, 0.24, 0.52));
+          addArrow(root, 142, 334, 288, 334, "#334155", 2, phase(t, 0.2, 0.9));
+          addLabel(root, "Fusion entry.", 240, 150, { to: [110, 332], size: 17, limit: 20 });
+          addLabel(root, "Envelope merges with the host membrane; capsid enters the cell interior.", 410, 510, { to: [capX, 332], size: 14, limit: 48 });
+          addLabel(root, "Entering spikes remain embedded at the fusion site.", 328, 432, { to: [101, 350], size: 14, limit: 42, opacity: phase(t, 0.4, 0.78) });
+        } else {
+          const p = ease(t);
+          const vx = lerp(82, 292, p);
+          const vy = lerp(332, 356, p);
+          drawVirus(root, vx, vy, 33, {
+            genome: state.genome,
+            enveloped: false,
+            showPackaged: true
+          });
+          add(root, "circle", {
+            cx: vx,
+            cy: vy,
+            r: 49,
+            fill: "#dbeafe",
+            stroke: colors.vesicle,
+            "stroke-width": 4,
+            "stroke-dasharray": t < 0.35 ? "54 34" : "none",
+            opacity: 0.68
+          });
+          addArrow(root, 120, 335, 286, 356, "#334155", 2.4, 0.75);
+          addLabel(root, "Endocytosis.", 234, 150, { to: [vx, vy - 45], size: 17, limit: 18 });
+          addLabel(root, "A vesicle forms around the non-enveloped virion and moves inward.", 440, 512, { to: [vx + 40, vy], size: 14, limit: 46 });
+        }
+      }
+
+      function renderUncoating(root, t) {
+        drawHostCell(root);
+        const cx = 330;
+        const cy = 348;
+        drawBrokenCapsid(root, cx, cy, 38);
+        addLabel(root, "Uncoating releases the viral genome.", 215, 145, { to: [cx, cy], size: 17, limit: 34 });
+        const p = ease(t);
+        if (state.genome === "dsdna") {
+          const gx = lerp(cx + 25, 590, p);
+          const gy = lerp(cy - 5, 292, p);
+          drawGenomeDNA(root, gx, gy, 105, "viral dsDNA", 1, "viral");
+          addArrow(root, 382, 342, 590, 303, colors.viralDNA, 2.6, 0.8);
+          addLabel(root, "dsDNA enters the DNA-copying compartment.", 730, 500, { to: [665, 305], size: 14, limit: 38 });
+        } else if (state.genome === "plus") {
+          drawGenomeRNA(root, lerp(cx + 20, 448, p), lerp(cy, 358, p), 130, "+RNA genome", "plus");
+          addLabel(root, "+RNA remains in the cell interior.", 600, 506, { to: [498, 358], size: 14, limit: 34 });
+        } else if (state.genome === "minus") {
+          drawGenomeRNA(root, lerp(cx + 20, 438, p), lerp(cy, 352, p), 125, "-RNA genome", "minus");
+          drawEnzyme(root, lerp(cx + 30, 464, p), lerp(cy + 38, 392, p), "RdRP", colors.rdrp, 1, 18);
+          addLabel(root, "-RNA releases genome plus packaged RdRP.", 625, 506, { to: [470, 390], size: 14, limit: 38 });
+        } else {
+          drawGenomeRNA(root, lerp(cx + 20, 438, p), lerp(cy, 352, p), 120, "viral RNA genome", "retro");
+          drawEnzyme(root, lerp(cx + 30, 464, p), lerp(cy + 38, 392, p), "RT", colors.rt, 1, 18);
+          addLabel(root, "Retrovirus releases RNA plus reverse transcriptase.", 655, 506, { to: [470, 390], size: 14, limit: 42 });
+        }
+      }
+
+      function renderPlusBiosynthesis(root, t) {
+        drawHostCell(root, true);
+        if (state.enveloped) drawSecretoryPath(root, t);
+        drawGenomeRNA(root, 235, 390, 165, "incoming +RNA genome", "plus");
+        drawRibosome(root, 314, 393, 1.15, phase(t, 0.04, 0.22));
+        addLabel(root, "Step 1-2: the incoming +RNA genome is translated first.", 225, 145, { to: [315, 390], size: 16, limit: 50 });
+        drawProteinProducts(root, 430, 470, {
+          opacity: phase(t, 0.08, 0.3),
+          rdrp: true,
+          spikes: state.enveloped
+        });
+        drawEnzyme(root, 545, 405, "RdRP", colors.rdrp, phase(t, 0.22, 0.38), 23);
+        addLabel(root, "Step 3: translation produces RdRP.", 522, 335, { to: [545, 405], size: 15, limit: 34, opacity: phase(t, 0.22, 0.42) });
+        drawRnaSynthesis(root, 500, 365, 185, "+RNA template", "growing -RNA template", "minus", phase(t, 0.4, 0.64), "RdRP", colors.rdrp, {
+          templateVariant: "plus",
+          opacity: phase(t, 0.36, 0.72)
+        });
+        addLabel(root, "Step 4: RdRP builds the complementary -RNA strand.", 650, 505, { to: [610, 398], size: 14, limit: 48, opacity: phase(t, 0.42, 0.74) });
+        drawRnaSynthesis(root, 760, 405, 165, "-RNA template", "growing new +RNA", "plus", phase(t, 0.68, 0.9), "RdRP", colors.rdrp, {
+          templateVariant: "minus",
+          opacity: phase(t, 0.62, 0.96)
+        });
+        drawGenomeRNA(root, 760, 526, 120, "+RNA translated", "plus", phase(t, 0.84, 1));
+        drawGenomeRNA(root, 895, 526, 120, "+RNA packaged", "plus", phase(t, 0.86, 1));
+        addLabel(root, "Step 5: new +RNA genomes are made after the -RNA template.", 760, 584, { to: [915, 526], size: 14, limit: 54, opacity: phase(t, 0.82, 1) });
+      }
+
+      function renderMinusBiosynthesis(root, t) {
+        drawHostCell(root, true);
+        if (state.enveloped) drawSecretoryPath(root, t);
+        drawGenomeRNA(root, 235, 380, 170, "-RNA genome", "minus");
+        drawEnzyme(root, 340, 430, "RdRP", colors.rdrp, 1, 21);
+        addLabel(root, "-RNA releases genome plus RdRP into the cell interior.", 225, 145, { to: [340, 430], size: 16, limit: 48 });
+        drawRnaSynthesis(root, 450, 360, 185, "-RNA template", "growing +RNA", "mrna", phase(t, 0.08, 0.38), "RdRP", colors.rdrp, {
+          templateVariant: "minus",
+          opacity: phase(t, 0.04, 0.46)
+        });
+        addLabel(root, "RdRP moves along -RNA to build +RNA first.", 554, 500, { to: [570, 393], size: 14, limit: 42, opacity: phase(t, 0.18, 0.5) });
+        drawTranslation(root, 330, 520, "+RNA mRNA", {
+          opacity: phase(t, 0.34, 0.58),
+          rdrp: true,
+          spikes: state.enveloped
+        });
+        drawRnaSynthesis(root, 730, 390, 175, "+RNA template", "growing new -RNA", "minus", phase(t, 0.56, 0.86), "RdRP", colors.rdrp, {
+          templateVariant: "mrna",
+          opacity: phase(t, 0.5, 0.94)
+        });
+        drawEnzyme(root, 930, 472, "RdRP", colors.rdrp, phase(t, 0.7, 0.96), 18);
+        addLabel(root, "Some +RNA is translated; some templates new -RNA genomes.", 744, 560, { to: [820, 424], size: 14, limit: 50, opacity: phase(t, 0.68, 0.96) });
+      }
+
+      function renderDsDnaBiosynthesis(root, t) {
+        drawHostCell(root);
+        if (state.enveloped) drawSecretoryPath(root, t);
+        drawGenomeDNA(root, 555, 282, 118, "viral dsDNA", 1, "viral");
+        drawEnzyme(root, 704, 273, "DNA pol", colors.dnaPol, phase(t, 0.05, 0.28), 22);
+        addArrow(root, 675, 292, 760, 292, colors.dnaPol, 2.5, phase(t, 0.12, 0.34));
+        drawGenomeDNA(root, 742, 304, 90, "copied dsDNA", phase(t, 0.22, 0.44), "viral");
+        addLabel(root, "DNA polymerase copies viral DNA after nuclear entry.", 735, 168, { to: [704, 274], size: 14, limit: 44, opacity: phase(t, 0.13, 0.4) });
+        drawEnzyme(root, 555, 356, "RNA pol", colors.rnaPol, phase(t, 0.28, 0.5), 22);
+        addArrow(root, 562, 373, 450, 454, colors.rnaPol, 2.5, phase(t, 0.36, 0.62));
+        drawGenomeRNA(root, 352, 464, 132, "viral mRNA", "mrna", phase(t, 0.46, 0.7));
+        addLabel(root, "Host RNA polymerase transcribes viral mRNA.", 330, 216, { to: [555, 356], size: 14, limit: 38, opacity: phase(t, 0.38, 0.65) });
+        drawTranslation(root, 352, 516, "viral mRNA", {
+          opacity: phase(t, 0.58, 0.86),
+          dnaPol: true,
+          spikes: state.enveloped
+        });
+        addLabel(root, "mRNA exits to host ribosomes for translation.", 630, 535, { to: [432, 516], size: 14, limit: 40, opacity: phase(t, 0.62, 0.92) });
+      }
+
+      function renderRetroBiosynthesis(root, t) {
+        drawHostCell(root);
+        if (state.enveloped) drawSecretoryPath(root, t);
+        const rtBuild = phase(t, 0.02, 0.22);
+        drawGenomeRNA(root, 238, 430, 150, "viral RNA", "retro");
+        drawGrowingRNA(root, 238, 462, 150, "complementary DNA", "cdna", rtBuild);
+        drawEnzyme(root, 238 + 150 * rtBuild, 446, "RT", colors.rt, 1, 21);
+        addLabel(root, "Reverse transcriptase builds DNA along viral RNA.", 215, 150, { to: [238 + 150 * rtBuild, 446], size: 15, limit: 42 });
+
+        const dsDnaOpacity = phase(t, 0.18, 0.36);
+        drawGenomeDNA(root, 425, 424, 116, "viral dsDNA formed", dsDnaOpacity, "retro");
+        addLabel(root, "Step 1: viral DNA integrates as provirus.", 722, 170, { to: [650, 318], size: 14, limit: 38, opacity: phase(t, 0.34, 0.56) });
+        const entry = ease(phase(t, 0.3, 0.5));
+        drawGenomeDNA(root, lerp(440, 585, entry), lerp(425, 306, entry), 104, "viral dsDNA", phase(t, 0.28, 0.52), "retro");
+        addArrow(root, 520, 416, 604, 318, colors.cDna, 2.3, phase(t, 0.32, 0.52));
+        add(root, "path", {
+          d: "M586,322 C626,300 657,335 700,314",
+          fill: "none",
+          stroke: colors.cDna,
+          "stroke-width": 5,
+          "stroke-linecap": "round",
+          opacity: phase(t, 0.42, 0.62)
+        });
+        add(root, "path", {
+          d: "M594,312 L617,319 L640,312 L665,321 L694,314",
+          fill: "none",
+          stroke: colors.cDna,
+          "stroke-width": 8,
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round",
+          opacity: phase(t, 0.5, 0.72)
+        });
+        addLabel(root, "provirus", 704, 260, { to: [650, 318], size: 14, limit: 14, opacity: phase(t, 0.44, 0.66) });
+
+        const polProgress = phase(t, 0.56, 0.76);
+        drawEnzyme(root, lerp(570, 675, polProgress), 356, "RNA pol", colors.rnaPol, phase(t, 0.52, 0.76), 22);
+        drawGrowingRNA(root, 548, 386, 150, "viral RNA transcript", "retro", polProgress, phase(t, 0.58, 0.82));
+        addLabel(root, "Step 2: host RNA polymerase makes mRNA from the provirus.", 335, 214, { to: [lerp(570, 675, polProgress), 356], size: 14, limit: 50, opacity: phase(t, 0.54, 0.8) });
+
+        const exportProgress = ease(phase(t, 0.68, 0.88));
+        drawGenomeRNA(root, lerp(610, 360, exportProgress), lerp(402, 492, exportProgress), 132, "Step 3: viral RNA exits", "retro", phase(t, 0.66, 0.9));
+        drawGenomeRNA(root, 790, 400, 124, "new viral RNA genomes", "retro", phase(t, 0.7, 0.94));
+        addArrow(root, 690, 386, 790, 400, colors.rnaPol, 2.3, phase(t, 0.66, 0.9));
+
+        drawTranslation(root, 350, 536, "Step 4: mRNA translation", {
+          opacity: phase(t, 0.76, 0.98),
+          rnaVariant: "retro",
+          rt: true,
+          spikes: state.enveloped
+        });
+        drawVirus(root, 862, 498, 27, {
+          genome: "retro",
+          enveloped: false,
+          showPackaged: true,
+          opacity: phase(t, 0.84, 1)
+        });
+        addLabel(root, "Step 5: RNA genomes, capsids, and reverse transcriptase gather for new virions.", 710, 560, { to: [862, 498], size: 13, limit: 58, opacity: phase(t, 0.84, 1) });
+      }
+
+      function renderBiosynthesis(root, t) {
+        if (state.genome === "plus") renderPlusBiosynthesis(root, t);
+        if (state.genome === "minus") renderMinusBiosynthesis(root, t);
+        if (state.genome === "dsdna") renderDsDnaBiosynthesis(root, t);
+        if (state.genome === "retro") renderRetroBiosynthesis(root, t);
+      }
+
+      function drawAssemblyGenome(parent, x, y, genome, opacity = 1) {
+        if (genome === "dsdna") {
+          drawGenomeDNA(parent, x - 44, y - 7, 92, "new dsDNA", opacity, "viral");
+        } else if (genome === "minus") {
+          drawGenomeRNA(parent, x - 55, y, 104, "new -RNA", "minus", opacity);
+          drawEnzyme(parent, x + 38, y + 28, "RdRP", colors.rdrp, opacity, 15);
+        } else if (genome === "retro") {
+          drawGenomeRNA(parent, x - 55, y, 104, "new RNA", "retro", opacity);
+          drawEnzyme(parent, x + 38, y + 28, "RT", colors.rt, opacity, 15);
+        } else {
+          drawGenomeRNA(parent, x - 55, y, 104, "new +RNA", "plus", opacity);
+        }
+      }
+
+      function renderAssembly(root, t) {
+        drawHostCell(root);
+        if (state.enveloped) {
+          drawMembraneSpikes(root, 1);
+          addLabel(root, "Spikes are already embedded in the host membrane.", 770, 155, { to: [1018, 344], size: 14, limit: 44 });
+        }
+        const centerX = lerp(510, state.enveloped ? 888 : 590, ease(phase(t, 0.38, 0.95)));
+        const centerY = lerp(380, state.enveloped ? 348 : 380, ease(phase(t, 0.38, 0.95)));
+        drawAssemblyGenome(root, centerX, centerY, state.genome, 1);
+        const starts = isRnaGenome()
+          ? [[300, 430], [390, 520], [720, 502], [830, 410], [445, 360], [805, 500], [335, 470], [900, 360]]
+          : [[300, 260], [390, 520], [720, 502], [810, 280], [445, 250], [705, 265], [335, 430], [784, 420]];
+        starts.forEach(([sx, sy], i) => {
+          const a = (i / starts.length) * Math.PI * 2;
+          const tx = centerX + Math.cos(a) * 40;
+          const ty = centerY + Math.sin(a) * 38;
+          const p = ease(phase(t, 0.08 + i * 0.015, 0.55 + i * 0.015));
+          drawCapsidProtein(root, lerp(sx, tx, p), lerp(sy, ty, p), 0.85, 1);
+        });
+        addLabel(root, "Capsid proteins assemble around new viral genomes.", 260, 145, { to: [centerX, centerY], size: 16, limit: 42 });
+        if (state.genome === "minus") {
+          addLabel(root, "RdRP is packaged with each new -RNA genome.", 340, 548, { to: [centerX + 38, centerY + 28], size: 14, limit: 38 });
+        }
+        if (state.genome === "retro") {
+          addLabel(root, "Reverse transcriptase is packaged with viral RNA.", 348, 548, { to: [centerX + 38, centerY + 28], size: 14, limit: 42 });
+        }
+        if (state.enveloped) {
+          drawVirus(root, centerX, centerY, 34, {
+            genome: state.genome,
+            enveloped: false,
+            showPackaged: true,
+            opacity: phase(t, 0.48, 0.92)
+          });
+          addArrow(root, 642, 375, 884, 350, "#334155", 2.5, phase(t, 0.45, 0.95));
+          const dockingLabel = state.genome === "retro"
+            ? "Step 6: nucleocapsids dock beneath membrane spikes."
+            : "Nucleocapsid moves to the spike-studded membrane.";
+          addLabel(root, dockingLabel, 716, 520, { to: [centerX, centerY], size: 14, limit: 46, opacity: phase(t, 0.48, 0.95) });
+        } else {
+          drawVirus(root, 640, 420, 30, { genome: state.genome, enveloped: false, showPackaged: true, opacity: phase(t, 0.58, 0.9) });
+          drawVirus(root, 725, 365, 30, { genome: state.genome, enveloped: false, showPackaged: true, opacity: phase(t, 0.66, 0.96) });
+          addLabel(root, "Complete capsids accumulate inside the cell.", 732, 520, { to: [720, 365], size: 14, limit: 38, opacity: phase(t, 0.64, 0.96) });
+        }
+      }
+
+      function drawMembraneBreak(parent, opacity = 1) {
+        const g = add(parent, "g", { opacity });
+        add(g, "path", {
+          d: "M1010,282 C1042,312 1046,364 1010,396",
+          fill: "none",
+          stroke: "#fbfdff",
+          "stroke-width": 30,
+          "stroke-linecap": "round"
+        });
+        add(g, "path", {
+          d: "M1002,282 L984,294 L1004,306 L987,318 L1006,330",
+          fill: "none",
+          stroke: colors.cellLine,
+          "stroke-width": 5,
+          "stroke-linejoin": "round",
+          "stroke-linecap": "round"
+        });
+        add(g, "path", {
+          d: "M1006,356 L986,368 L1008,380 L990,392 L1012,402",
+          fill: "none",
+          stroke: colors.cellLine,
+          "stroke-width": 5,
+          "stroke-linejoin": "round",
+          "stroke-linecap": "round"
+        });
+        return g;
+      }
+
+      function renderExit(root, t) {
+        drawHostCell(root);
+        if (state.enveloped) {
+          const dock = ease(phase(t, 0.02, 0.38));
+          const bulge = ease(phase(t, 0.3, 0.76));
+          const release = ease(phase(t, 0.74, 1));
+          drawBuddingPocket(root, bulge, "back");
+          const capX = lerp(850, 986 + 28 * bulge, dock);
+          const capY = lerp(374, 346, dock);
+          drawVirus(root, capX, capY, 31, {
+            genome: state.genome,
+            enveloped: false,
+            showPackaged: true,
+            opacity: 1 - phase(t, 0.78, 0.95)
+          });
+          drawBuddingPocket(root, bulge, "front");
+          const vx = lerp(1022, 1062, release);
+          const vy = lerp(346, 330, release);
+          drawVirus(root, vx, vy, 32, {
+            genome: state.genome,
+            enveloped: true,
+            showPackaged: true,
+            opacity: phase(t, 0.78, 0.98)
+          });
+          addArrow(root, 790, 372, 972, 348, "#334155", 2.6, phase(t, 0.05, 0.44));
+          const buddingText = state.genome === "retro"
+            ? "Step 7: virus buds out with envelope spikes."
+            : "Budding releases enveloped virions.";
+          addLabel(root, buddingText, 275, 145, { to: [1030, 344], size: 17, limit: 42 });
+          addLabel(root, "Capsid docks in a spike-containing membrane pocket before release.", 532, 520, { to: [capX, capY], size: 14, limit: 52 });
+          addLabel(root, "The spike-studded host membrane bulges around the capsid, then leaves as the viral envelope.", 678, 575, { to: [vx, vy], size: 13, limit: 64, opacity: phase(t, 0.36, 1) });
+        } else {
+          const p = ease(t);
+          drawMembraneBreak(root, phase(t, 0.08, 0.35));
+          const starts = [
+            [690, 344], [720, 392], [760, 302], [785, 438], [835, 350]
+          ];
+          const ends = [
+            [1036, 274], [1070, 345], [1028, 426], [952, 485], [1095, 395]
+          ];
+          starts.forEach(([sx, sy], i) => {
+            const [ex, ey] = ends[i];
+            const local = ease(phase(t, 0.14 + i * 0.04, 0.78 + i * 0.03));
+            drawVirus(root, lerp(sx, ex, local), lerp(sy, ey, local), 25, {
+              genome: state.genome,
+              enveloped: false,
+              showPackaged: true,
+              opacity: 0.95
+            });
+          });
+          addLabel(root, "Lysis releases non-enveloped virions.", 280, 145, { to: [1000, 340], size: 17, limit: 38 });
+          addLabel(root, "The host membrane opens, and complete capsids spill out.", 560, 530, { to: [1010, 355], size: 14, limit: 48, opacity: phase(t, 0.18, 0.7) });
+        }
+      }
+
+      function renderScene() {
+        clearSvg();
+        createDefs(svg);
+        const t = state.progress;
+        const root = add(svg, "g");
+        add(root, "rect", {
+          x: 0,
+          y: 0,
+          width: 1100,
+          height: 640,
+          fill: "#fbfdff"
+        });
+        add(root, "text", {
+          x: 26,
+          y: 36,
+          fill: colors.ink,
+          "font-size": 19,
+          "font-weight": 900,
+          textContent: `${genomeLabel[state.genome]} | ${state.enveloped ? "Enveloped" : "Non-enveloped"}`
+        });
+        const key = steps[state.step].key;
+        if (key === "attachment") renderAttachment(root, t);
+        if (key === "entry") renderEntry(root, t);
+        if (key === "uncoating") renderUncoating(root, t);
+        if (key === "biosynthesis") renderBiosynthesis(root, t);
+        if (key === "assembly") renderAssembly(root, t);
+        if (key === "exit") renderExit(root, t);
+      }
+
+      function currentStepText() {
+        const step = steps[state.step];
+        if (step.key === "biosynthesis") {
+          return step.text[state.genome] + (state.enveloped ? " Spike proteins are routed through the simplified secretory pathway to the host membrane before budding." : "");
+        }
+        if (step.text.all) return step.text.all;
+        return state.enveloped ? step.text.enveloped : step.text.non;
+      }
+
+      function updatePanels() {
+        const step = steps[state.step];
+        stepName.textContent = step.name;
+        stepText.textContent = currentStepText();
+        strategyText.textContent = strategyCopy[state.genome];
+        playBtn.textContent = state.playing ? "Pause" : "Play";
+      }
+
+      function updateTimeline() {
+        [...timeline.querySelectorAll(".step-chip")].forEach((button, index) => {
+          button.classList.toggle("active", index === state.step);
+          button.setAttribute("aria-current", index === state.step ? "step" : "false");
+          const bar = button.querySelector(".step-progress");
+          if (index < state.step) bar.style.width = "100%";
+          if (index > state.step) bar.style.width = "0%";
+          if (index === state.step) bar.style.width = `${Math.round(state.progress * 100)}%`;
+        });
+      }
+
+      function currentStepDuration() {
+        return steps[state.step]?.key === "biosynthesis" ? biosynthesisStepDuration : baseStepDuration;
+      }
+
+      function renderAll() {
+        renderScene();
+        updatePanels();
+        updateTimeline();
+        state.dirty = false;
+      }
+
+      function gotoStep(stepIndex) {
+        state.step = clamp(stepIndex, 0, steps.length - 1);
+        state.progress = 0;
+        state.playing = false;
+        markDirty();
+      }
+
+      function setupTimeline() {
+        steps.forEach((step, index) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "step-chip";
+          button.innerHTML = `<span>${step.name}</span><span class="step-progress" aria-hidden="true"></span>`;
+          button.addEventListener("click", () => gotoStep(index));
+          timeline.appendChild(button);
+        });
+      }
+
+      function tick(now) {
+        const dt = now - lastFrame;
+        lastFrame = now;
+        if (state.playing) {
+          state.progress += dt / (currentStepDuration() / state.speed);
+          if (state.progress >= 1) {
+            if (state.step < steps.length - 1) {
+              state.step += 1;
+              state.progress = 0;
+            } else {
+              state.progress = 1;
+              state.playing = false;
+            }
+          }
+          markDirty();
+        }
+        if (state.dirty && (!state.playing || now - lastRender >= renderInterval)) {
+          renderAll();
+          lastRender = now;
+        }
+        requestAnimationFrame(tick);
+      }
+
+      genomeSelect.addEventListener("change", () => {
+        state.genome = genomeSelect.value;
+        resetAnimation();
+      });
+
+      envelopeSelect.addEventListener("change", () => {
+        state.enveloped = envelopeSelect.value === "enveloped";
+        resetAnimation();
+      });
+
+      speedRange.addEventListener("input", () => {
+        state.speed = Number(speedRange.value);
+        speedValue.textContent = `${state.speed.toFixed(1)}x`;
+        markDirty();
+      });
+
+      playBtn.addEventListener("click", () => {
+        if (!state.playing && state.step === steps.length - 1 && state.progress >= 1) {
+          state.step = 0;
+          state.progress = 0;
+        }
+        state.playing = !state.playing;
+        markDirty();
+      });
+
+      prevBtn.addEventListener("click", () => gotoStep(state.step - 1));
+      nextBtn.addEventListener("click", () => gotoStep(state.step + 1));
+      resetBtn.addEventListener("click", resetAnimation);
+
+      setupTimeline();
+      renderAll();
+      requestAnimationFrame(tick);
+    })();
+  </script>
+</body>
+</html>

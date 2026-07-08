@@ -1,0 +1,1932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gene Duplication and Gene Families</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --ink: #263142;
+      --muted: #596779;
+      --line: #d5dce8;
+      --chromosome: #e5eaf2;
+      --chromosome-stroke: #748094;
+      --original: #2374f7;
+      --duplicate: #0aa6a6;
+      --mutated: #8a4bd8;
+      --pseudo: #9ba6b5;
+      --orange: #f08a24;
+      --green: #2e9d57;
+      --red: #df4b4b;
+      --yellow: #ffd66b;
+      --rt: #d45ba6;
+      --integrase: #35a06f;
+      --shadow: 0 18px 40px rgba(38, 49, 66, 0.13);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at top left, rgba(35, 116, 247, 0.08), transparent 28rem),
+        linear-gradient(180deg, #fbfcff 0%, var(--bg) 100%);
+      color: var(--ink);
+    }
+
+    .page {
+      width: min(1420px, calc(100vw - 28px));
+      margin: 0 auto;
+      padding: 18px 0 28px;
+    }
+
+    .attribution {
+      margin: 0 0 6px;
+      text-align: center;
+      color: #445266;
+      font-size: clamp(0.9rem, 1.4vw, 1.05rem);
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      margin: 0 0 16px;
+      text-align: center;
+      font-size: clamp(1.9rem, 4vw, 3.15rem);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .animation-pane,
+    .control-pane,
+    .narration {
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .animation-pane {
+      border-radius: 14px;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .stage-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+      padding: 14px 18px;
+      background: #eef3fb;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .stage-top h2 {
+      margin: 0;
+      font-size: clamp(1.12rem, 2.1vw, 1.55rem);
+      letter-spacing: 0;
+    }
+
+    .step-badge {
+      flex: 0 0 auto;
+      border: 1px solid #b9c4d6;
+      background: #fff;
+      border-radius: 999px;
+      padding: 7px 12px;
+      color: #344256;
+      font-size: 0.95rem;
+      font-weight: 800;
+    }
+
+    .svg-wrap {
+      padding: 10px;
+      background: #f9fbff;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1000 / 560;
+      border: 1px solid #dfe6f1;
+      border-radius: 10px;
+      background: #ffffff;
+    }
+
+    .copy-count {
+      margin: 0;
+      padding: 12px 18px 15px;
+      border-top: 1px solid var(--line);
+      background: #fbfcff;
+    }
+
+    .copy-count strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 1rem;
+    }
+
+    .copy-count p {
+      margin: 3px 0;
+      color: #435066;
+      font-size: 0.98rem;
+      line-height: 1.36;
+    }
+
+    .copy-count.is-final {
+      background: #fff8dd;
+      border-top-color: #ecc65d;
+      box-shadow: inset 0 0 0 2px rgba(240, 184, 35, 0.28);
+    }
+
+    .control-pane {
+      border-radius: 14px;
+      padding: 16px;
+      position: sticky;
+      top: 12px;
+    }
+
+    .control-section + .control-section {
+      margin-top: 17px;
+      padding-top: 17px;
+      border-top: 1px solid var(--line);
+    }
+
+    .control-section h3 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+      letter-spacing: 0;
+    }
+
+    .button-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid #b8c4d4;
+      background: #ffffff;
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 10px 11px;
+      font: inherit;
+      font-size: 0.95rem;
+      font-weight: 800;
+      line-height: 1.22;
+      cursor: pointer;
+      transition: transform 150ms ease, border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      border-color: #7f92ad;
+      box-shadow: 0 8px 18px rgba(38, 49, 66, 0.12);
+    }
+
+    button:focus-visible {
+      outline: 3px solid rgba(35, 116, 247, 0.32);
+      outline-offset: 2px;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      color: #8995a5;
+      background: #f0f3f7;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .mode-button.active,
+    .nd-button.active,
+    .wg-button.active,
+    .transport button.primary {
+      color: #ffffff;
+      border-color: #1b5fd0;
+      background: #2374f7;
+    }
+
+    .family-button.active {
+      border-color: #6e37b2;
+      background: #8a4bd8;
+    }
+
+    .transport {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .transport button.primary {
+      grid-column: span 2;
+      font-size: 1.02rem;
+    }
+
+    .nd-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .narration {
+      grid-column: 1 / -1;
+      border-radius: 14px;
+      padding: 16px 18px;
+    }
+
+    .narration h2 {
+      margin: 0 0 7px;
+      font-size: clamp(1.08rem, 2vw, 1.35rem);
+      letter-spacing: 0;
+    }
+
+    .narration p {
+      margin: 0;
+      color: #354259;
+      font-size: clamp(1rem, 1.8vw, 1.18rem);
+      line-height: 1.48;
+    }
+
+    .scene-label {
+      font-size: 17px;
+      font-weight: 800;
+      fill: #283548;
+    }
+
+    .small-label {
+      font-size: 14px;
+      font-weight: 800;
+      fill: #3a4658;
+    }
+
+    .tiny-label {
+      font-size: 12px;
+      font-weight: 800;
+      fill: #465367;
+    }
+
+    .chromosome-shape {
+      fill: var(--chromosome);
+      stroke: var(--chromosome-stroke);
+      stroke-width: 3;
+    }
+
+    .gene-box {
+      stroke: rgba(18, 32, 51, 0.32);
+      stroke-width: 2;
+    }
+
+    .arrow {
+      stroke: #273142;
+      stroke-width: 3.5;
+      fill: none;
+      marker-end: url(#arrowHead);
+    }
+
+    .soft-arrow {
+      stroke: #64748b;
+      stroke-width: 3;
+      fill: none;
+      stroke-dasharray: 8 8;
+      marker-end: url(#arrowHeadSoft);
+    }
+
+    .red-arrow {
+      stroke: var(--red);
+      stroke-width: 3.5;
+      fill: none;
+      marker-end: url(#arrowHeadRed);
+    }
+
+    .highlight-ring {
+      fill: none;
+      stroke: #f2bd30;
+      stroke-width: 5;
+      opacity: 0.92;
+    }
+
+    .pulse {
+      animation: pulse 1.4s ease-in-out infinite;
+      transform-origin: center;
+      transform-box: fill-box;
+    }
+
+    .copy-sweep {
+      animation: sweep 1.6s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; filter: drop-shadow(0 0 0 rgba(35, 116, 247, 0)); }
+      50% { opacity: 0.78; filter: drop-shadow(0 0 9px rgba(35, 116, 247, 0.55)); }
+    }
+
+    @keyframes sweep {
+      0% { stroke-dashoffset: 70; opacity: 0.25; }
+      50% { opacity: 1; }
+      100% { stroke-dashoffset: 0; opacity: 0.25; }
+    }
+
+    @media (max-width: 1050px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .control-pane {
+        position: static;
+      }
+
+      .button-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .family-button {
+        grid-column: span 2;
+      }
+
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        width: min(100vw - 14px, 1420px);
+        padding-top: 10px;
+      }
+
+      .stage-top {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .button-grid,
+      .transport,
+      .nd-toggle {
+        grid-template-columns: 1fr;
+      }
+
+      .family-button,
+      .transport button.primary {
+        grid-column: auto;
+      }
+
+      button {
+        padding: 11px 10px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .pulse,
+      .copy-sweep {
+        animation: none;
+      }
+
+      button {
+        transition: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <p class="attribution">Animation Prompted By Jerred Seveyka For His Biology Class.</p>
+    <h1>Gene Duplication and Gene Families</h1>
+
+    <main class="workspace">
+      <section class="animation-pane" aria-label="Animation stage">
+        <div class="stage-top">
+          <h2 id="modeTitle">DNA Break Repair Duplication</h2>
+          <div class="step-badge" id="stepBadge">Step 1 of 1</div>
+        </div>
+        <div class="svg-wrap">
+          <svg id="scene" viewBox="0 0 1000 560" role="img" aria-labelledby="modeTitle narrationTitle"></svg>
+        </div>
+        <div class="copy-count" id="copyCount" aria-live="polite">
+          <strong id="copyTitle">Copy number</strong>
+          <div id="copyBody"></div>
+        </div>
+      </section>
+
+      <aside class="control-pane" aria-label="Controls">
+        <div class="control-section">
+          <h3>Duplication Mechanism</h3>
+          <div class="button-grid" id="modeButtons">
+            <button class="mode-button active" data-mode="breakRepair">DNA break repair duplication</button>
+            <button class="mode-button" data-mode="retro">Retrotransposon-mediated duplication</button>
+            <button class="mode-button" data-mode="crossing">Misaligned crossing over</button>
+            <button class="mode-button" data-mode="nondisjunction">Non-disjunction</button>
+            <button class="mode-button" data-mode="wholeGenome">Whole-genome duplication</button>
+            <button class="mode-button family-button" data-mode="family">Build Gene Family Tree</button>
+          </div>
+          <div id="nondisjunctionToggle" class="nd-toggle hidden" aria-label="Non-disjunction type">
+            <button class="nd-button active" data-variant="I">Anaphase I error</button>
+            <button class="nd-button" data-variant="II">Anaphase II error</button>
+          </div>
+          <div id="wholeGenomeToggle" class="nd-toggle hidden" aria-label="Whole-genome non-disjunction type">
+            <button class="wg-button active" data-wg-variant="I">Anaphase I non-disjunction</button>
+            <button class="wg-button" data-wg-variant="II">Anaphase II non-disjunction</button>
+          </div>
+        </div>
+
+        <div class="control-section">
+          <div class="transport">
+            <button id="playPause" class="primary">Play</button>
+            <button id="stepBack">Step Back</button>
+            <button id="stepForward">Step Forward</button>
+            <button id="reset">Reset</button>
+          </div>
+        </div>
+
+      </aside>
+
+      <section class="narration" aria-live="polite">
+        <h2 id="narrationTitle">Narration</h2>
+        <p id="narrationText"></p>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const SVG_NS = "http://www.w3.org/2000/svg";
+    const COLORS = {
+      ink: "#263142",
+      muted: "#596779",
+      chromosome: "#e5eaf2",
+      chromosomeStroke: "#748094",
+      original: "#2374f7",
+      duplicate: "#0aa6a6",
+      duplicate2: "#21a67a",
+      mutated: "#8a4bd8",
+      orange: "#f08a24",
+      green: "#2e9d57",
+      red: "#df4b4b",
+      yellow: "#ffd66b",
+      rt: "#d45ba6",
+      integrase: "#35a06f",
+      pseudo: "#9ba6b5"
+    };
+
+    const scene = document.getElementById("scene");
+    const modeTitle = document.getElementById("modeTitle");
+    const stepBadge = document.getElementById("stepBadge");
+    const narrationTitle = document.getElementById("narrationTitle");
+    const narrationText = document.getElementById("narrationText");
+    const copyCount = document.getElementById("copyCount");
+    const copyTitle = document.getElementById("copyTitle");
+    const copyBody = document.getElementById("copyBody");
+    const playPause = document.getElementById("playPause");
+    const stepBack = document.getElementById("stepBack");
+    const stepForward = document.getElementById("stepForward");
+    const resetButton = document.getElementById("reset");
+    const nondisjunctionToggle = document.getElementById("nondisjunctionToggle");
+    const wholeGenomeToggle = document.getElementById("wholeGenomeToggle");
+
+    const state = {
+      mode: "breakRepair",
+      step: 0,
+      playing: false,
+      timer: null,
+      nondisjunctionVariant: "I",
+      wholeGenomeVariant: "I"
+    };
+
+    // Each animation keeps its own step list. The draw function is the stage instruction.
+    const breakRepairSteps = [
+      {
+        title: "Homologous chromosomes with similar regions",
+        narration: "A chromosome carries one bright blue original gene. A homologous chromosome has related DNA nearby that can accidentally act as a template during repair.",
+        copyLines: ["Original gene copies: 1", "Final gene copies: not changed yet"],
+        draw: () => drawBreakRepairScene(0)
+      },
+      {
+        title: "DNA break near the gene",
+        narration: "A double-strand break forms near the original gene. The cell must repair this chromosome, but the repair machinery needs a template.",
+        copyLines: ["Original gene copies: 1", "The broken chromosome still has one tracked gene copy."],
+        draw: () => drawBreakRepairScene(1)
+      },
+      {
+        title: "The broken DNA searches for a template",
+        narration: "The matching homologous chromosome is the expected template. Similar repeated DNA elsewhere can confuse the alignment.",
+        copyLines: ["Original gene copies: 1", "DNA repair machinery uses a similar, but incorrect piece of DNA as a template to repair the fix."],
+        draw: () => drawBreakRepairScene(2)
+      },
+      {
+        title: "Wrong similar sequence is used",
+        narration: "The broken DNA mistakenly aligns with a mismatched region on the homologous chromosome instead of the correct matching position.",
+        copyLines: ["Original gene copies: 1", "Misalignment can make one section get copied twice."],
+        draw: () => drawBreakRepairScene(3)
+      },
+      {
+        title: "DNA polymerase copies the wrong segment",
+        narration: "DNA polymerase extends the broken strand using the wrong region as its template. The copied section includes the gene region.",
+        copyLines: ["Original gene copies: 1", "DNA polymerase is copying an extra gene-containing segment."],
+        draw: () => drawBreakRepairScene(4)
+      },
+      {
+        title: "Repaired chromosome has two nearby gene copies",
+        narration: "During repair of a DNA break, a chromosome may align with the wrong similar sequence. DNA polymerase then copies from the wrong template, causing a section of DNA, including a gene, to be duplicated.",
+        copyLines: ["Original gene copies: 1", "Final gene copies: 2 on the repaired chromosome"],
+        final: true,
+        draw: () => drawBreakRepairScene(5)
+      }
+    ];
+
+    const retroSteps = [
+      {
+        title: "RNA polymerase transcribes the original gene",
+        narration: "RNA polymerase moves along the original gene and makes an RNA transcript. This RNA is a temporary message, not yet a new chromosomal gene copy.",
+        copyLines: ["Original gene copies: 1", "RNA polymerase is making the RNA transcript."],
+        draw: () => drawRetroScene(0)
+      },
+      {
+        title: "Reverse transcriptase makes DNA from RNA",
+        narration: "A retrotransposon can provide reverse transcriptase, an enzyme that copies RNA back into DNA.",
+        copyLines: ["Original gene copies: 1", "A DNA copy is being made from the RNA."],
+        draw: () => drawRetroScene(1)
+      },
+      {
+        title: "Gene copy travels with mobile DNA",
+        narration: "The copied gene sequence can be carried with or by a retrotransposon. The new copy may lack some regulatory DNA or introns.",
+        copyLines: ["Original gene copies: 1", "Mobile DNA is carrying a simplified copied gene."],
+        draw: () => drawRetroScene(2)
+      },
+      {
+        title: "Integrase inserts the copy at a new site",
+        narration: "Integrase helps insert the copied DNA into a new chromosome location.",
+        copyLines: ["Original gene copies: 1", "The inserted copy is becoming a second chromosomal gene copy."],
+        draw: () => drawRetroScene(3)
+      },
+      {
+        title: "Inserted gene copy is now part of the genome",
+        narration: "RNA polymerase first makes an RNA transcript from the gene. Reverse transcriptase then makes DNA from that RNA, and integrase inserts the copied DNA at another chromosomal location.",
+        copyLines: ["Original gene copies: 1", "RNA polymerase makes RNA; reverse transcriptase makes DNA from the RNA; integrase inserts it elsewhere.", "Final gene copies: 2 at different chromosomal locations"],
+        final: true,
+        draw: () => drawRetroScene(4)
+      }
+    ];
+
+    const crossingSteps = [
+      {
+        title: "Homologous chromosomes line up for meiosis",
+        narration: "During meiosis, homologous chromosomes pair up. The nearby orange blocks mark a different gene on the same chromosome so the exchanged region is easy to track.",
+        copyLines: ["Original gene copies: 1 per chromosome", "The chromosomes are ready for crossing over."],
+        draw: () => drawCrossingScene(0)
+      },
+      {
+        title: "Chromosome regions line up incorrectly",
+        narration: "The homologous chromosomes are offset, so the original gene on one chromosome aligns with a neighboring chromosome region.",
+        copyLines: ["Original gene copies: 1 per chromosome", "The neighboring different-gene regions are offset."],
+        draw: () => drawCrossingScene(1)
+      },
+      {
+        title: "Unequal crossover happens",
+        narration: "Crossing over occurs between mismatched positions, so the exchanged DNA segments are not equal.",
+        copyLines: ["Original gene copies: 1 per chromosome before the swap", "Unequal crossover is highlighted."],
+        draw: () => drawCrossingScene(2)
+      },
+      {
+        title: "One chromosome gains what the other loses",
+        narration: "After the unequal exchange, one chromosome receives an extra gene-containing section while the other loses that section.",
+        copyLines: ["One product gains a duplicated segment.", "The other product has a deletion."],
+        draw: () => drawCrossingScene(3)
+      },
+      {
+        title: "Duplication and deletion products",
+        narration: "If homologous chromosomes line up incorrectly, crossing over can be unequal. One chromosome receives an extra copy of a gene, while the other loses that segment.",
+        copyLines: ["Original gene copies: 1", "Duplication chromosome: 2 copies; deletion chromosome: 0 copies at that locus"],
+        draw: () => drawCrossingScene(4)
+      },
+      {
+        title: "Meiosis completes and gametes form",
+        narration: "The chromosome products separate as meiosis finishes. The chromosome with the duplicated region can enter one gamete, while the chromosome with the deletion can enter another.",
+        copyLines: ["Duplication product is moving into a gamete.", "Deletion product is moving into a different gamete."],
+        draw: () => drawCrossingScene(5)
+      },
+      {
+        title: "A gamete carries the duplicated gene",
+        narration: "The biological consequence matters when a gamete receives the duplication chromosome. That gamete carries two copies of the tracked gene, while a gamete receiving the deletion chromosome carries no copy at that locus.",
+        copyLines: ["Normal gamete: 1 tracked gene copy", "Duplication gamete: 2 tracked gene copies", "Deletion gamete: 0 tracked gene copies at that locus"],
+        final: true,
+        draw: () => drawCrossingScene(6)
+      }
+    ];
+
+    const nondisjunctionISteps = [
+      {
+        title: "Start with homologous chromosomes",
+        narration: "The starting cell has two homologous chromosomes. Each chromosome carries a marker for the tracked original gene.",
+        copyLines: ["Normal gamete copy number would be 1.", "This mechanism changes whole chromosome number."],
+        draw: () => drawNondisjunctionScene("I", 0)
+      },
+      {
+        title: "Anaphase I: homologs fail to separate",
+        narration: "In an Anaphase I error, homologous chromosomes move together instead of separating into different daughter cells.",
+        copyLines: ["Both homologs move to one side.", "The other side receives none of that chromosome."],
+        draw: () => drawNondisjunctionScene("I", 1)
+      },
+      {
+        title: "After meiosis I, one cell has both homologs",
+        narration: "One daughter cell has an extra homologous chromosome pair for this chromosome, while the other daughter cell is missing it.",
+        copyLines: ["One cell: two tracked gene copies.", "Other cell: zero tracked gene copies."],
+        draw: () => drawNondisjunctionScene("I", 2)
+      },
+      {
+        title: "Gametes inherit chromosome-number errors",
+        narration: "When meiosis finishes, gametes from the extra-chromosome cell carry too many copies. Gametes from the missing-chromosome cell carry none.",
+        copyLines: ["Two gametes can be n + 1.", "Two gametes can be n - 1."],
+        draw: () => drawNondisjunctionScene("I", 3)
+      },
+      {
+        title: "Abnormal gamete meets a normal gamete",
+        narration: "A gamete carrying the extra chromosome can participate in fertilization with a normal gamete that carries one copy of the tracked chromosome.",
+        copyLines: ["Abnormal gamete: 2 tracked gene copies", "Normal gamete: 1 tracked gene copy"],
+        draw: () => drawNondisjunctionScene("I", 4)
+      },
+      {
+        title: "Zygote has an extra chromosome",
+        narration: "Non-disjunction changes the number of whole chromosomes, not just one gene. After fertilization, the zygote shown has three copies of the tracked chromosome and therefore three copies of the tracked gene.",
+        copyLines: ["Normal zygote tracked gene copies: 2", "Resulting zygote tracked gene copies: 3 on three homologous chromosomes"],
+        final: true,
+        draw: () => drawNondisjunctionScene("I", 5)
+      }
+    ];
+
+    const nondisjunctionIISteps = [
+      {
+        title: "Start with homologous chromosomes",
+        narration: "The starting cell has two homologous chromosomes. Each chromosome carries a marker for the tracked original gene.",
+        copyLines: ["Normal gamete copy number would be 1.", "This mechanism changes whole chromosome number."],
+        draw: () => drawNondisjunctionScene("II", 0)
+      },
+      {
+        title: "Meiosis I separates homologs normally",
+        narration: "For an Anaphase II error, homologous chromosomes separate correctly during meiosis I.",
+        copyLines: ["Each daughter cell receives one homolog.", "No error has happened yet."],
+        draw: () => drawNondisjunctionScene("II", 1)
+      },
+      {
+        title: "Anaphase II: sister chromatids fail to separate",
+        narration: "In one meiosis II cell, sister chromatids fail to separate. Both gene-carrying chromatids move to the same gamete.",
+        copyLines: ["One side gets two chromatids.", "The other side gets none."],
+        draw: () => drawNondisjunctionScene("II", 2)
+      },
+      {
+        title: "Final gametes after Anaphase II error",
+        narration: "An Anaphase II error can make one gamete with an extra chromosome copy, one missing that chromosome, and other gametes that are normal.",
+        copyLines: ["One gamete: 2 tracked gene copies.", "One gamete: 0 copies. Two gametes: 1 copy each."],
+        draw: () => drawNondisjunctionScene("II", 3)
+      },
+      {
+        title: "Abnormal gamete meets a normal gamete",
+        narration: "The Anaphase II error produced one gamete with an extra chromosome. That abnormal gamete can participate in fertilization with a normal gamete.",
+        copyLines: ["Abnormal gamete: 2 tracked gene copies", "Normal gamete: 1 tracked gene copy"],
+        draw: () => drawNondisjunctionScene("II", 4)
+      },
+      {
+        title: "Zygote has an extra chromosome",
+        narration: "Non-disjunction changes whole chromosome number. After fertilization, the zygote shown has three copies of the tracked chromosome and therefore three copies of the tracked gene.",
+        copyLines: ["Normal zygote tracked gene copies: 2", "Resulting zygote tracked gene copies: 3 on three homologous chromosomes"],
+        final: true,
+        draw: () => drawNondisjunctionScene("II", 5)
+      }
+    ];
+
+    const wholeGenomeISteps = [
+      {
+        title: "Egg and sperm germ cells begin meiosis",
+        narration: "The egg side and sperm side each begin with two simplified homologous chromosome sets. The orange dot marks the tracked gene in every full set.",
+        copyLines: ["Egg precursor: 2 chromosome sets", "Sperm precursor: 2 chromosome sets"],
+        draw: () => drawWholeGenomeScene("I", 0)
+      },
+      {
+        title: "All chromosomes replicate before division",
+        narration: "Before meiosis, every chromosome in both the egg precursor and sperm precursor is copied into paired sister chromatids. The orange tracked gene is copied too.",
+        copyLines: ["Egg: every chromosome set replicated", "Sperm: every chromosome set replicated"],
+        draw: () => drawWholeGenomeScene("I", 1)
+      },
+      {
+        title: "Anaphase I: homologous sets fail to separate",
+        narration: "Complete Anaphase I non-disjunction occurs on both sides. The replicated homologous chromosome sets move together instead of separating, so the error affects the entire genome.",
+        copyLines: ["Egg: both replicated full sets move together", "Sperm: both replicated full sets move together"],
+        draw: () => drawWholeGenomeScene("I", 2)
+      },
+      {
+        title: "Meiosis continues after the Anaphase I error",
+        narration: "One meiosis-I product on each side contains both complete replicated sets while the other contains none. Sister chromatids then separate, producing an unreduced gamete.",
+        copyLines: ["Selected egg pathway retains 2 full sets", "Selected sperm pathway retains 2 full sets"],
+        draw: () => drawWholeGenomeScene("I", 3)
+      },
+      {
+        title: "Two abnormal unreduced gametes form",
+        narration: "Neither final gamete is normal. The egg and sperm each carry two complete chromosome sets, including two orange tracked-gene markers.",
+        copyLines: ["Abnormal egg: 2 complete sets", "Abnormal sperm: 2 complete sets"],
+        draw: () => drawWholeGenomeScene("I", 4)
+      },
+      {
+        title: "Abnormal egg and sperm fuse",
+        narration: "The unreduced egg and unreduced sperm fuse. Each abnormal gamete contributes two full chromosome sets.",
+        copyLines: ["Unreduced egg contributes 2 sets", "Unreduced sperm contributes 2 sets"],
+        draw: () => drawWholeGenomeScene("I", 5)
+      },
+      {
+        title: "Zygote has four complete chromosome sets",
+        narration: "Both abnormal gametes contributed extra full chromosome sets, producing a zygote with four complete sets. This is whole-genome duplication because every chromosome and gene is present in four copies.",
+        copyLines: ["Original gene copies per haploid set: 1", "Final tracked gene copies in the zygote: 4, one in each complete chromosome set"],
+        final: true,
+        draw: () => drawWholeGenomeScene("I", 6)
+      }
+    ];
+
+    const wholeGenomeIISteps = [
+      {
+        title: "Egg and sperm germ cells begin meiosis",
+        narration: "The egg side and sperm side each begin with two simplified homologous chromosome sets. The orange dot marks the tracked gene in every full set.",
+        copyLines: ["Egg precursor: 2 chromosome sets", "Sperm precursor: 2 chromosome sets"],
+        draw: () => drawWholeGenomeScene("II", 0)
+      },
+      {
+        title: "All chromosomes replicate before division",
+        narration: "Before meiosis, every chromosome in both the egg precursor and sperm precursor is copied into paired sister chromatids. The orange tracked gene is copied too.",
+        copyLines: ["Egg: every chromosome set replicated", "Sperm: every chromosome set replicated"],
+        draw: () => drawWholeGenomeScene("II", 1)
+      },
+      {
+        title: "Meiosis I separates homologous sets normally",
+        narration: "On both sides, the homologous full chromosome sets separate normally during meiosis I. Each daughter cell receives one replicated full set.",
+        copyLines: ["Egg meiosis I: full sets separated", "Sperm meiosis I: full sets separated"],
+        draw: () => drawWholeGenomeScene("II", 2)
+      },
+      {
+        title: "Anaphase II: sister chromatids fail to separate",
+        narration: "Complete Anaphase II non-disjunction occurs in the selected egg and sperm pathways. Sister chromatids for every chromosome move together, retaining an entire extra set.",
+        copyLines: ["Egg: all sister chromatids retained together", "Sperm: all sister chromatids retained together"],
+        draw: () => drawWholeGenomeScene("II", 3)
+      },
+      {
+        title: "Two abnormal unreduced gametes form",
+        narration: "Neither final gamete is normal. The egg and sperm each carry two complete chromosome sets, including two orange tracked-gene markers.",
+        copyLines: ["Abnormal egg: 2 complete sets", "Abnormal sperm: 2 complete sets"],
+        draw: () => drawWholeGenomeScene("II", 4)
+      },
+      {
+        title: "Abnormal egg and sperm fuse",
+        narration: "The unreduced egg and unreduced sperm fuse. Each abnormal gamete contributes two full chromosome sets.",
+        copyLines: ["Unreduced egg contributes 2 sets", "Unreduced sperm contributes 2 sets"],
+        draw: () => drawWholeGenomeScene("II", 5)
+      },
+      {
+        title: "Zygote has four complete chromosome sets",
+        narration: "Both abnormal gametes contributed extra full chromosome sets, producing a zygote with four complete sets. This is whole-genome duplication because every chromosome and gene is present in four copies.",
+        copyLines: ["Original gene copies per haploid set: 1", "Final tracked gene copies in the zygote: 4, one in each complete chromosome set"],
+        final: true,
+        draw: () => drawWholeGenomeScene("II", 6)
+      }
+    ];
+
+    const familySteps = [
+      {
+        title: "Begin with one ancestral gene",
+        narration: "A gene family starts with one ancestral gene. Later duplications can give evolution extra copies to modify.",
+        copyLines: ["Original ancestral gene copies: 1", "No gene family has formed yet."],
+        draw: () => drawFamilyScene(0)
+      },
+      {
+        title: "First duplication creates two related copies",
+        narration: "A duplication event splits the history of the gene into two branches. Both copies descend from the same ancestral gene.",
+        copyLines: ["Original gene copies: 1", "Family copies after first split: 2"],
+        draw: () => drawFamilyScene(1)
+      },
+      {
+        title: "Mutations accumulate after duplication",
+        narration: "Once copies are separate, mutations can build up independently. Some changes are harmless, some alter function, and some break the gene.",
+        copyLines: ["Related copies: 2", "Mutated marks show sequence changes over time."],
+        draw: () => drawFamilyScene(2)
+      },
+      {
+        title: "Repeated duplication expands the family",
+        narration: "More duplication events create more branches. Some branches keep the original job, while others begin to specialize.",
+        copyLines: ["Related copies: 4", "Several branches now descend from the ancestral gene."],
+        draw: () => drawFamilyScene(3)
+      },
+      {
+        title: "Some copies become pseudogenes",
+        narration: "A copy can collect damaging mutations, such as a stop signal, and become an inactive pseudogene.",
+        copyLines: ["Functional copies and inactive pseudogenes can coexist.", "Pseudogenes are faded and dashed."],
+        draw: () => drawFamilyScene(4)
+      },
+      {
+        title: "A gene family contains related functional genes and pseudogenes",
+        narration: "Gene families form when duplicated genes persist over evolutionary time. Mutations can cause copies to keep the original function, gain a modified function, specialize, or become inactive pseudogenes.",
+        copyLines: ["Original ancestral gene copies: 1", "Final related family members shown: 5, including functional copies and pseudogenes"],
+        final: true,
+        draw: () => drawFamilyScene(5)
+      }
+    ];
+
+    const animations = {
+      breakRepair: {
+        label: "DNA Break Repair Duplication",
+        steps: breakRepairSteps,
+        render: renderDNABreakRepair
+      },
+      retro: {
+        label: "Retrotransposon-Mediated Duplication",
+        steps: retroSteps,
+        render: renderRetrotransposon
+      },
+      crossing: {
+        label: "Misaligned Crossing Over",
+        steps: crossingSteps,
+        render: renderMisalignedCrossingOver
+      },
+      nondisjunction: {
+        label: "Non-Disjunction",
+        steps: nondisjunctionISteps,
+        render: renderNondisjunction
+      },
+      wholeGenome: {
+        label: "Whole-Genome Duplication",
+        steps: wholeGenomeISteps,
+        render: renderWholeGenomeDuplication
+      },
+      family: {
+        label: "Build Gene Family Tree",
+        steps: familySteps,
+        render: renderGeneFamilyTree
+      }
+    };
+
+    function getActiveSteps() {
+      if (state.mode === "nondisjunction") {
+        return state.nondisjunctionVariant === "I" ? nondisjunctionISteps : nondisjunctionIISteps;
+      }
+      if (state.mode === "wholeGenome") {
+        return state.wholeGenomeVariant === "I" ? wholeGenomeISteps : wholeGenomeIISteps;
+      }
+      return animations[state.mode].steps;
+    }
+
+    function renderDNABreakRepair() {
+      renderStepList(breakRepairSteps);
+    }
+
+    function renderRetrotransposon() {
+      renderStepList(retroSteps);
+    }
+
+    function renderMisalignedCrossingOver() {
+      renderStepList(crossingSteps);
+    }
+
+    function renderNondisjunction() {
+      renderStepList(getActiveSteps());
+    }
+
+    function renderWholeGenomeDuplication() {
+      renderStepList(getActiveSteps());
+    }
+
+    function renderGeneFamilyTree() {
+      renderStepList(familySteps);
+    }
+
+    function renderStepList(steps) {
+      clearScene();
+      drawStageFrame();
+      const step = steps[state.step];
+      step.draw();
+    }
+
+    function renderScene() {
+      const active = animations[state.mode];
+      const steps = getActiveSteps();
+      if (state.step >= steps.length) state.step = steps.length - 1;
+      active.render();
+      updateInterface(active, steps[state.step], steps.length);
+    }
+
+    function updateInterface(active, step, totalSteps) {
+      modeTitle.textContent = active.label;
+      stepBadge.textContent = `Step ${state.step + 1} of ${totalSteps}`;
+      narrationTitle.textContent = step.title;
+      narrationText.textContent = step.narration;
+      copyTitle.textContent = step.final ? "Highlighted copy-number result" : "Copy number";
+      copyCount.classList.toggle("is-final", Boolean(step.final));
+      copyBody.replaceChildren(...step.copyLines.map(line => {
+        const p = document.createElement("p");
+        p.textContent = line;
+        return p;
+      }));
+
+      document.querySelectorAll(".mode-button").forEach(button => {
+        button.classList.toggle("active", button.dataset.mode === state.mode);
+      });
+      document.querySelectorAll(".nd-button").forEach(button => {
+        button.classList.toggle("active", button.dataset.variant === state.nondisjunctionVariant);
+      });
+      document.querySelectorAll(".wg-button").forEach(button => {
+        button.classList.toggle("active", button.dataset.wgVariant === state.wholeGenomeVariant);
+      });
+      nondisjunctionToggle.classList.toggle("hidden", state.mode !== "nondisjunction");
+      wholeGenomeToggle.classList.toggle("hidden", state.mode !== "wholeGenome");
+      playPause.textContent = state.playing ? "Pause" : "Play";
+      stepBack.disabled = state.step === 0;
+      stepForward.disabled = state.step === totalSteps - 1;
+    }
+
+    function clearScene() {
+      scene.replaceChildren();
+      const defs = make("defs", {}, scene);
+      const marker = make("marker", {
+        id: "arrowHead",
+        markerWidth: 10,
+        markerHeight: 10,
+        refX: 8,
+        refY: 3,
+        orient: "auto",
+        markerUnits: "strokeWidth"
+      }, defs);
+      make("path", { d: "M0,0 L0,6 L9,3 z", fill: "#273142" }, marker);
+
+      const markerSoft = make("marker", {
+        id: "arrowHeadSoft",
+        markerWidth: 10,
+        markerHeight: 10,
+        refX: 8,
+        refY: 3,
+        orient: "auto",
+        markerUnits: "strokeWidth"
+      }, defs);
+      make("path", { d: "M0,0 L0,6 L9,3 z", fill: "#64748b" }, markerSoft);
+
+      const markerRed = make("marker", {
+        id: "arrowHeadRed",
+        markerWidth: 10,
+        markerHeight: 10,
+        refX: 8,
+        refY: 3,
+        orient: "auto",
+        markerUnits: "strokeWidth"
+      }, defs);
+      make("path", { d: "M0,0 L0,6 L9,3 z", fill: COLORS.red }, markerRed);
+    }
+
+    function drawStageFrame() {
+      make("rect", { x: 0, y: 0, width: 1000, height: 560, fill: "#ffffff" }, scene);
+      make("path", {
+        d: "M40 506 C190 535, 340 520, 500 532 S810 525, 960 505",
+        stroke: "#e8edf6",
+        "stroke-width": 18,
+        fill: "none",
+        opacity: 0.9
+      }, scene);
+    }
+
+    function make(type, attrs, parent, text) {
+      const node = document.createElementNS(SVG_NS, type);
+      Object.entries(attrs || {}).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) node.setAttribute(key, value);
+      });
+      if (text !== undefined) node.textContent = text;
+      parent.appendChild(node);
+      return node;
+    }
+
+    function group(attrs = {}, parent = scene) {
+      return make("g", attrs, parent);
+    }
+
+    function label(text, x, y, className = "scene-label", anchor = "middle", parent = scene) {
+      return make("text", {
+        x,
+        y,
+        class: className,
+        "text-anchor": anchor,
+        "dominant-baseline": "middle"
+      }, parent, text);
+    }
+
+    function multiline(lines, x, y, options = {}) {
+      const node = make("text", {
+        x,
+        y,
+        class: options.className || "small-label",
+        "text-anchor": options.anchor || "middle"
+      }, options.parent || scene);
+      lines.forEach((line, index) => {
+        const span = make("tspan", {
+          x,
+          dy: index === 0 ? 0 : (options.lineHeight || 18)
+        }, node, line);
+        if (index === 0) span.setAttribute("dominant-baseline", "middle");
+      });
+      return node;
+    }
+
+    function drawChromosome(x, y, width, labelText, options = {}) {
+      const g = group(options.groupAttrs || {});
+      if (labelText) label(labelText, x + width / 2, y - 18, options.labelClass || "small-label", "middle", g);
+      make("rect", {
+        x,
+        y,
+        width,
+        height: options.height || 32,
+        rx: 16,
+        class: "chromosome-shape",
+        fill: options.fill || COLORS.chromosome,
+        stroke: options.stroke || COLORS.chromosomeStroke,
+        opacity: options.opacity || 1
+      }, g);
+      return g;
+    }
+
+    function drawGene(x, y, width, text, color, options = {}) {
+      const g = group({ class: options.pulse ? "pulse" : "" });
+      const rect = make("rect", {
+        x,
+        y,
+        width,
+        height: options.height || 34,
+        rx: 7,
+        fill: color,
+        opacity: options.opacity || 1,
+        class: "gene-box",
+        stroke: options.stroke || "rgba(18,32,51,0.34)",
+        "stroke-dasharray": options.dashed ? "8 6" : ""
+      }, g);
+      if (options.pseudo) {
+        rect.setAttribute("fill", "rgba(155,166,181,0.32)");
+        rect.setAttribute("stroke", COLORS.pseudo);
+        rect.setAttribute("stroke-dasharray", "8 6");
+      }
+      label(text, x + width / 2, y + (options.height || 34) / 2, options.small ? "tiny-label" : "small-label", "middle", g)
+        .setAttribute("fill", options.textColor || (options.pseudo ? "#596779" : "#ffffff"));
+      if (options.mutations) {
+        for (let i = 0; i < options.mutations; i++) {
+          const mx = x + 16 + i * 18;
+          make("circle", { cx: mx, cy: y - 7, r: 4.5, fill: COLORS.red, stroke: "#ffffff", "stroke-width": 1.5 }, g);
+          label("*", mx, y - 8, "tiny-label", "middle", g).setAttribute("fill", "#ffffff");
+        }
+      }
+      if (options.stop) {
+        make("line", { x1: x + width - 22, y1: y + 8, x2: x + width - 8, y2: y + 26, stroke: COLORS.red, "stroke-width": 4 }, g);
+        make("line", { x1: x + width - 8, y1: y + 8, x2: x + width - 22, y2: y + 26, stroke: COLORS.red, "stroke-width": 4 }, g);
+      }
+      return g;
+    }
+
+    function drawArrow(x1, y1, x2, y2, text, options = {}) {
+      const cls = options.red ? "red-arrow" : options.soft ? "soft-arrow" : "arrow";
+      make("line", { x1, y1, x2, y2, class: cls, stroke: options.color || null }, scene);
+      if (text) {
+        const lx = (x1 + x2) / 2 + (options.dx || 0);
+        const ly = (y1 + y2) / 2 + (options.dy || -12);
+        label(text, lx, ly, options.className || "small-label");
+      }
+    }
+
+    function drawCurvedArrow(pathD, text, tx, ty, options = {}) {
+      make("path", {
+        d: pathD,
+        class: options.red ? "red-arrow" : options.soft ? "soft-arrow" : "arrow",
+        stroke: options.color || null
+      }, scene);
+      if (text) label(text, tx, ty, options.className || "small-label");
+    }
+
+    function drawBreakMark(x, y, height = 54) {
+      make("polyline", {
+        points: `${x},${y} ${x - 13},${y + 15} ${x + 8},${y + 28} ${x - 10},${y + 43} ${x + 5},${y + height}`,
+        fill: "none",
+        stroke: COLORS.red,
+        "stroke-width": 5,
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round"
+      }, scene);
+    }
+
+    function drawIncorrectTemplateStrand(y, options = {}) {
+      const opacity = options.opacity || 1;
+      make("path", {
+        d: `M438 ${y} C510 ${y - 7}, 600 ${y + 7}, 704 ${y}`,
+        stroke: COLORS.duplicate,
+        "stroke-width": 7,
+        "stroke-linecap": "round",
+        fill: "none",
+        opacity
+      }, scene);
+      for (let x = 460; x <= 680; x += 28) {
+        make("line", {
+          x1: x,
+          y1: y - 7,
+          x2: x + 7,
+          y2: y + 7,
+          stroke: x % 56 === 12 ? COLORS.orange : COLORS.mutated,
+          "stroke-width": 3,
+          opacity
+        }, scene);
+      }
+      label(options.label || "incorrect template strand aligned beside the break", 575, y + 31, "tiny-label");
+    }
+
+    function drawEnzyme(x, y, text, fill, options = {}) {
+      const width = options.width || Math.max(112, text.length * 8.2);
+      const g = group({ class: options.pulse ? "pulse" : "" });
+      make("rect", {
+        x,
+        y,
+        width,
+        height: 42,
+        rx: 21,
+        fill,
+        stroke: "rgba(38,49,66,0.34)",
+        "stroke-width": 2
+      }, g);
+      label(text, x + width / 2, y + 21, "tiny-label", "middle", g).setAttribute("fill", "#263142");
+      return g;
+    }
+
+    function drawBracket(x1, x2, y, text, color = COLORS.green) {
+      make("path", {
+        d: `M${x1} ${y} v-14 H${x2} v14`,
+        stroke: color,
+        "stroke-width": 4,
+        fill: "none",
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round"
+      }, scene);
+      label(text, (x1 + x2) / 2, y - 30, "small-label");
+    }
+
+    function drawWavyRNA(x, y, width, options = {}) {
+      let d = `M ${x} ${y}`;
+      for (let i = 0; i <= width; i += 28) {
+        const cx = x + i + 14;
+        const cy = y + (i / 28 % 2 === 0 ? -16 : 16);
+        d += ` Q ${cx} ${cy} ${x + i + 28} ${y}`;
+      }
+      make("path", {
+        d,
+        stroke: options.color || COLORS.orange,
+        "stroke-width": 5,
+        fill: "none",
+        "stroke-linecap": "round"
+      }, scene);
+      label(options.label || "RNA transcript", x + width / 2, y + 35, "small-label");
+    }
+
+    function drawCell(cx, cy, rx, ry, text, options = {}) {
+      make("ellipse", {
+        cx,
+        cy,
+        rx,
+        ry,
+        fill: options.fill || "#f8fbff",
+        stroke: options.stroke || "#98a8bf",
+        "stroke-width": options.strokeWidth || 3
+      }, scene);
+      if (text) label(text, cx, cy + ry + 22, options.className || "small-label");
+    }
+
+    function drawMiniChromosome(x, y, options = {}) {
+      const g = group({ transform: `translate(${x} ${y}) rotate(${options.rotate || 0})` });
+      make("rect", {
+        x: -7,
+        y: -32,
+        width: 14,
+        height: 64,
+        rx: 7,
+        fill: options.fill || COLORS.chromosome,
+        stroke: options.stroke || COLORS.chromosomeStroke,
+        "stroke-width": 2
+      }, g);
+      if (options.gene !== false) {
+        make("circle", {
+          cx: 0,
+          cy: options.markerY || -8,
+          r: 7,
+          fill: options.geneColor || COLORS.original,
+          stroke: "#ffffff",
+          "stroke-width": 2
+        }, g);
+      }
+      if (options.sister) {
+        make("rect", {
+          x: 7,
+          y: -32,
+          width: 14,
+          height: 64,
+          rx: 7,
+          fill: options.fill || COLORS.chromosome,
+          stroke: options.stroke || COLORS.chromosomeStroke,
+          "stroke-width": 2
+        }, g);
+        if (options.gene !== false) {
+          make("circle", {
+            cx: 14,
+            cy: options.markerY || -8,
+            r: 7,
+            fill: options.geneColor || COLORS.original,
+            stroke: "#ffffff",
+            "stroke-width": 2
+          }, g);
+        }
+      }
+      return g;
+    }
+
+    function drawBreakRepairScene(stage) {
+      if (stage < 5) {
+        drawChromosome(90, 145, 790, "Chromosome being repaired");
+        drawGene(245, 144, 145, "Original gene", COLORS.original, { pulse: stage <= 1 });
+        drawChromosome(90, 318, 790, "Homologous chromosome / possible repair template", { opacity: 0.95 });
+        drawGene(245, 317, 145, "Correct match", COLORS.original, { opacity: stage >= 2 ? 0.34 : 0.55, small: true });
+        drawGene(545, 317, 150, "Wrong similar region", COLORS.duplicate, { opacity: stage >= 2 ? 0.96 : 0.6, pulse: stage >= 2 && stage <= 4, small: true });
+        label("Same gene neighborhood", 318, 222, "tiny-label");
+        drawArrow(318, 190, 318, 300, "", { soft: true });
+      }
+
+      if (stage >= 1 && stage < 5) {
+        drawBreakMark(420, 134);
+        label("DNA break", 455, 78, "small-label", "start");
+      }
+
+      if (stage === 2) {
+        drawCurvedArrow("M425 153 C520 80, 675 100, 638 304", "template search", 594, 104, { soft: true });
+        make("rect", { x: 232, y: 304, width: 172, height: 60, rx: 14, class: "highlight-ring", opacity: 0.45 }, scene);
+        label("expected template", 318, 389, "tiny-label");
+        make("rect", { x: 532, y: 304, width: 178, height: 60, rx: 14, class: "highlight-ring" }, scene);
+        label("similar but mismatched", 621, 389, "tiny-label");
+      }
+
+      if (stage === 3) {
+        drawIncorrectTemplateStrand(214);
+        drawCurvedArrow("M622 317 C720 285, 730 225, 690 214", "strand taken from wrong region", 765, 272, { color: COLORS.orange, className: "tiny-label" });
+        make("rect", { x: 421, y: 190, width: 300, height: 64, rx: 16, class: "highlight-ring" }, scene);
+      }
+
+      if (stage === 4) {
+        drawIncorrectTemplateStrand(222, { label: "incorrect template strand used by DNA polymerase" });
+        make("path", {
+          d: "M438 184 H705",
+          stroke: COLORS.green,
+          "stroke-width": 7,
+          "stroke-dasharray": "20 14",
+          class: "copy-sweep",
+          fill: "none"
+        }, scene);
+        drawEnzyme(525, 187, "DNA polymerase", COLORS.yellow, { width: 146, pulse: true });
+        drawArrow(458, 276, 690, 276, "copies along the incorrect strand", { dy: -13 });
+        drawGene(475, 143, 130, "new copy", COLORS.duplicate, { opacity: 0.58, pulse: true });
+      }
+
+      if (stage >= 5) {
+        drawChromosome(95, 214, 800, "Repaired chromosome with tandem duplication");
+        drawGene(282, 213, 145, "Original gene", COLORS.original, { pulse: true });
+        drawGene(445, 213, 145, "Duplicated gene", COLORS.duplicate, { pulse: true });
+        drawBracket(276, 596, 288, "Duplicated DNA segment");
+        make("rect", { x: 264, y: 198, width: 348, height: 66, rx: 18, class: "highlight-ring" }, scene);
+        label("two nearby copies after repair", 500, 355, "scene-label");
+        drawArrow(500, 318, 500, 274, "", {});
+      }
+    }
+
+    function drawRetroScene(stage) {
+      drawChromosome(115, 105, 765, stage >= 3 ? "Original chromosome" : "Chromosome");
+      drawGene(285, 104, 150, "Original gene", COLORS.original, { pulse: stage === 0 });
+
+      if (stage === 0) {
+        drawArrow(360, 141, 360, 182, "reads gene", { soft: true, dx: 68, dy: 0 });
+        drawEnzyme(285, 188, "RNA polymerase", COLORS.yellow, { width: 150, pulse: true });
+        drawArrow(440, 210, 520, 232, "RNA synthesis", { dy: -18 });
+        drawWavyRNA(520, 245, 250, { label: "new RNA transcript" });
+        label("RNA polymerase makes the transcript first", 500, 370, "scene-label");
+      }
+
+      if (stage === 1) {
+        drawWavyRNA(145, 245, 250, { label: "RNA template" });
+        drawEnzyme(420, 218, "Reverse transcriptase", COLORS.rt, { width: 170, pulse: true });
+        drawArrow(600, 252, 685, 275, "DNA from RNA", { dy: -20 });
+        drawGene(700, 258, 145, "DNA copy", COLORS.duplicate, { pulse: true, small: true });
+        label("reverse transcription", 505, 350, "scene-label");
+      }
+
+      if (stage === 2) {
+        make("rect", { x: 370, y: 330, width: 260, height: 58, rx: 12, fill: "#fff0dc", stroke: COLORS.orange, "stroke-width": 3 }, scene);
+        label("retrotransposon / mobile DNA", 500, 359, "small-label");
+        drawGene(420, 228, 160, "copied gene", COLORS.duplicate2, { small: true, pulse: true });
+        drawArrow(500, 270, 500, 322, "carried with mobile DNA", { dy: -12 });
+        multiline(["copy may lack some", "introns or regulatory DNA"], 190, 340, { className: "small-label" });
+        make("rect", { x: 266, y: 86, width: 28, height: 15, rx: 3, fill: "#6d7788", opacity: 0.65 }, scene);
+        make("rect", { x: 425, y: 86, width: 28, height: 15, rx: 3, fill: "#6d7788", opacity: 0.65 }, scene);
+      }
+
+      if (stage === 3) {
+        drawGene(420, 205, 160, "copied gene", COLORS.duplicate2, { small: true });
+        make("rect", { x: 370, y: 260, width: 260, height: 50, rx: 12, fill: "#fff0dc", stroke: COLORS.orange, "stroke-width": 3 }, scene);
+        label("mobile DNA carrying gene copy", 500, 285, "small-label");
+        drawChromosome(115, 425, 765, "New insertion site");
+        make("rect", { x: 574, y: 420, width: 42, height: 42, rx: 8, fill: "#ffffff", stroke: COLORS.red, "stroke-width": 3, "stroke-dasharray": "7 6" }, scene);
+        drawEnzyme(520, 342, "Integrase", COLORS.integrase, { width: 112, pulse: true });
+        drawArrow(585, 384, 595, 415, "insertion", { dy: -13 });
+      }
+
+      if (stage === 4) {
+        drawEnzyme(150, 225, "RNA polymerase", COLORS.yellow, { width: 150 });
+        drawArrow(305, 246, 390, 246, "RNA", { dy: -17 });
+        drawEnzyme(405, 225, "Reverse transcriptase", COLORS.rt, { width: 170 });
+        drawArrow(580, 246, 655, 246, "DNA", { dy: -17 });
+        drawEnzyme(670, 225, "Integrase", COLORS.integrase, { width: 112 });
+        drawChromosome(115, 405, 765, "New chromosomal location");
+        drawGene(548, 404, 155, "Inserted gene copy", COLORS.duplicate2, { pulse: true, small: true });
+        make("rect", { x: 535, y: 390, width: 182, height: 62, rx: 16, class: "highlight-ring" }, scene);
+        label("RNA transcript to DNA copy to chromosome insertion", 500, 330, "scene-label");
+      }
+    }
+
+    function drawCrossingScene(stage) {
+      if (stage < 4) {
+        const topX = 138;
+        const bottomX = stage >= 1 ? 208 : 138;
+        drawChromosome(topX, 170, 680, "Homolog 1");
+        drawChromosome(bottomX, 270, 680, "Homolog 2");
+        drawGene(topX + 105, 169, 112, "Different gene", COLORS.orange, { small: true, opacity: 0.82 });
+        drawGene(topX + 232, 169, 118, "Original gene", COLORS.original, { pulse: stage === 0 });
+        drawGene(topX + 370, 169, 112, "Different gene", COLORS.orange, { small: true, opacity: 0.82 });
+        drawGene(bottomX + 105, 269, 112, "Different gene", COLORS.orange, { small: true, opacity: 0.82 });
+        drawGene(bottomX + 232, 269, 118, "Original gene", COLORS.original, { pulse: stage === 0 });
+        drawGene(bottomX + 370, 269, 112, "Different gene", COLORS.orange, { small: true, opacity: 0.82 });
+      }
+
+      if (stage === 0) {
+        label("Orange blocks mark a different gene on the chromosome", 500, 400, "scene-label");
+      }
+
+      if (stage === 1) {
+        make("path", { d: "M480 155 V320", stroke: COLORS.orange, "stroke-width": 4, "stroke-dasharray": "10 8", fill: "none" }, scene);
+        label("misaligned", 520, 135, "small-label", "start");
+        drawArrow(432, 250, 502, 250, "offset", { soft: true, dy: -12 });
+      }
+
+      if (stage === 2) {
+        make("line", { x1: 463, y1: 188, x2: 575, y2: 292, stroke: COLORS.red, "stroke-width": 7, "stroke-linecap": "round" }, scene);
+        make("line", { x1: 575, y1: 188, x2: 463, y2: 292, stroke: COLORS.red, "stroke-width": 7, "stroke-linecap": "round" }, scene);
+        label("Unequal crossover", 520, 352, "scene-label");
+      }
+
+      if (stage === 3) {
+        drawChromosome(120, 150, 760, "Product chromosome 1");
+        drawGene(275, 149, 118, "Original gene", COLORS.original);
+        drawGene(412, 149, 118, "Duplicated gene", COLORS.duplicate, { pulse: true });
+        drawChromosome(120, 310, 760, "Product chromosome 2");
+        drawGene(255, 309, 112, "Different gene", COLORS.orange, { small: true, opacity: 0.7 });
+        make("rect", { x: 412, y: 306, width: 118, height: 40, rx: 8, fill: "#fff", stroke: COLORS.red, "stroke-width": 4, "stroke-dasharray": "10 8" }, scene);
+        label("missing segment", 471, 370, "small-label");
+        drawArrow(520, 235, 520, 188, "extra gene section", { color: COLORS.green });
+        drawArrow(520, 275, 520, 324, "lost section", { red: true });
+      }
+
+      if (stage === 4) {
+        drawChromosome(105, 135, 790, "Duplication product");
+        drawGene(260, 134, 125, "Original gene", COLORS.original, { pulse: true });
+        drawGene(398, 134, 125, "Duplicated gene", COLORS.duplicate, { pulse: true });
+        drawBracket(252, 531, 216, "Duplication", COLORS.green);
+        drawChromosome(105, 330, 790, "Deletion product");
+        drawGene(245, 329, 112, "Different gene", COLORS.orange, { small: true, opacity: 0.7 });
+        make("rect", { x: 388, y: 326, width: 145, height: 40, rx: 8, fill: "#ffffff", stroke: COLORS.red, "stroke-width": 4, "stroke-dasharray": "10 8" }, scene);
+        label("Deletion", 460, 407, "scene-label");
+        make("line", { x1: 430, y1: 336, x2: 493, y2: 357, stroke: COLORS.red, "stroke-width": 5 }, scene);
+      }
+
+      if (stage === 5) {
+        label("Meiosis separates chromosome products into gametes", 500, 52, "scene-label");
+
+        drawChromosome(95, 115, 350, "Duplication chromosome");
+        drawGene(160, 114, 105, "Original gene", COLORS.original, { small: true });
+        drawGene(275, 114, 105, "Extra copy", COLORS.duplicate, { small: true, pulse: true });
+
+        drawChromosome(555, 115, 350, "Deletion chromosome");
+        make("rect", { x: 665, y: 111, width: 118, height: 40, rx: 8, fill: "#ffffff", stroke: COLORS.red, "stroke-width": 4, "stroke-dasharray": "10 8" }, scene);
+        make("line", { x1: 700, y1: 120, x2: 748, y2: 143, stroke: COLORS.red, "stroke-width": 5 }, scene);
+
+        drawArrow(270, 175, 270, 300, "meiosis completes", { dy: -12 });
+        drawArrow(730, 175, 730, 300, "meiosis completes", { dy: -12 });
+        drawCrossingGamete(270, 390, "forming duplication gamete", 2, { rx: 125 });
+        drawCrossingGamete(730, 390, "forming deletion gamete", 0, { rx: 125 });
+      }
+
+      if (stage === 6) {
+        label("Gametes after unequal crossing over", 500, 52, "scene-label");
+        drawCrossingGamete(155, 280, "duplication gamete", 2, { stroke: COLORS.green, pulse: true });
+        drawCrossingGamete(385, 280, "normal gamete", 1);
+        drawCrossingGamete(615, 280, "normal gamete", 1);
+        drawCrossingGamete(845, 280, "deletion gamete", 0, { stroke: COLORS.red });
+        make("rect", { x: 62, y: 181, width: 186, height: 205, rx: 22, class: "highlight-ring" }, scene);
+        label("The duplication matters because this gamete carries an extra gene copy", 500, 462, "scene-label");
+      }
+    }
+
+    function drawCrossingGamete(cx, cy, text, copies, options = {}) {
+      drawCell(cx, cy, options.rx || 88, 78, text, { stroke: options.stroke || "#98a8bf", strokeWidth: options.stroke ? 4 : 3 });
+      const g = group({ class: options.pulse ? "pulse" : "", transform: `translate(${cx} ${cy})` });
+      make("rect", {
+        x: -9,
+        y: -42,
+        width: 18,
+        height: 84,
+        rx: 9,
+        fill: copies === 0 ? "#f7e9e9" : COLORS.chromosome,
+        stroke: copies === 0 ? COLORS.red : COLORS.chromosomeStroke,
+        "stroke-width": 3,
+        "stroke-dasharray": copies === 0 ? "8 6" : ""
+      }, g);
+      if (copies >= 1) {
+        make("circle", { cx: 0, cy: copies === 2 ? -15 : -5, r: 8, fill: COLORS.original, stroke: "#ffffff", "stroke-width": 2 }, g);
+      }
+      if (copies === 2) {
+        make("circle", { cx: 0, cy: 13, r: 8, fill: COLORS.duplicate, stroke: "#ffffff", "stroke-width": 2 }, g);
+      }
+      if (copies === 0) {
+        make("line", { x1: -20, y1: -13, x2: 20, y2: 13, stroke: COLORS.red, "stroke-width": 5 }, g);
+        make("line", { x1: 20, y1: -13, x2: -20, y2: 13, stroke: COLORS.red, "stroke-width": 5 }, g);
+      }
+      label(`${copies} tracked gene ${copies === 1 ? "copy" : "copies"}`, cx, cy - 102, copies === 2 ? "scene-label" : "small-label");
+    }
+
+    function drawNondisjunctionScene(variant, stage) {
+      label(`Non-disjunction: Anaphase ${variant} error`, 500, 48, "scene-label");
+      if (variant === "I") drawNondisjunctionI(stage);
+      if (variant === "II") drawNondisjunctionII(stage);
+    }
+
+    function drawNondisjunctionI(stage) {
+      if (stage === 0) {
+        drawCell(500, 255, 230, 150, "starting meiotic cell");
+        drawMiniChromosome(455, 245, { rotate: -8, geneColor: COLORS.original, sister: true });
+        drawMiniChromosome(535, 245, { rotate: 8, geneColor: COLORS.original, sister: true, fill: "#dfe8f8" });
+        label("gene marker", 500, 150, "small-label");
+        drawArrow(500, 166, 500, 216, "", { soft: true });
+      }
+
+      if (stage === 1) {
+        drawCell(500, 255, 250, 155, "Anaphase I");
+        drawMiniChromosome(560, 235, { rotate: -8, geneColor: COLORS.original, sister: true });
+        drawMiniChromosome(642, 258, { rotate: 8, geneColor: COLORS.original, sister: true, fill: "#dfe8f8" });
+        drawArrow(470, 245, 335, 245, "none move left", { soft: true, dy: -22 });
+        drawArrow(545, 245, 690, 245, "both homologs move right", { red: true, dy: -22 });
+        label("homologs fail to separate", 500, 104, "scene-label");
+      }
+
+      if (stage === 2) {
+        drawCell(330, 260, 160, 120, "missing this chromosome");
+        drawCell(670, 260, 160, 120, "extra chromosome cell");
+        drawMiniChromosome(630, 246, { rotate: -7, sister: true });
+        drawMiniChromosome(710, 246, { rotate: 7, sister: true, fill: "#dfe8f8" });
+        label("0 copies", 330, 252, "scene-label");
+        label("2 copies", 670, 155, "scene-label");
+      }
+
+      if (stage === 3) {
+        const xs = [210, 405, 595, 790];
+        xs.forEach((x, i) => drawCell(x, 285, 86, 78, i < 2 ? "n - 1 gamete" : "n + 1 gamete", { stroke: i < 2 ? COLORS.red : COLORS.green }));
+        label("0 gene copies", 210, 284, "small-label");
+        label("0 gene copies", 405, 284, "small-label");
+        drawMiniChromosome(570, 280, { rotate: -8, sister: false });
+        drawMiniChromosome(620, 280, { rotate: 8, sister: false, fill: "#dfe8f8" });
+        drawMiniChromosome(765, 280, { rotate: -8, sister: false });
+        drawMiniChromosome(815, 280, { rotate: 8, sister: false, fill: "#dfe8f8" });
+        label("2 copies", 595, 182, "scene-label");
+        label("2 copies", 790, 182, "scene-label");
+      }
+
+      if (stage >= 4) drawExtraChromosomeFertilization(stage);
+    }
+
+    function drawNondisjunctionII(stage) {
+      if (stage === 0) {
+        drawCell(500, 255, 230, 150, "starting meiotic cell");
+        drawMiniChromosome(455, 245, { rotate: -8, geneColor: COLORS.original, sister: true });
+        drawMiniChromosome(535, 245, { rotate: 8, geneColor: COLORS.original, sister: true, fill: "#dfe8f8" });
+        label("gene marker on each homolog", 500, 150, "small-label");
+      }
+
+      if (stage === 1) {
+        drawCell(335, 255, 150, 115, "meiosis I product");
+        drawCell(665, 255, 150, 115, "meiosis I product");
+        drawMiniChromosome(335, 242, { rotate: -5, sister: true });
+        drawMiniChromosome(665, 242, { rotate: 6, sister: true, fill: "#dfe8f8" });
+        drawArrow(490, 246, 390, 246, "homologs separate", { soft: true, dy: -22 });
+        drawArrow(510, 246, 610, 246, "", { soft: true });
+      }
+
+      if (stage === 2) {
+        drawCell(320, 260, 155, 120, "normal meiosis II");
+        drawCell(680, 260, 155, 120, "Anaphase II error", { stroke: COLORS.red });
+        drawMiniChromosome(300, 250, { rotate: -6, sister: false });
+        drawMiniChromosome(340, 250, { rotate: 6, sister: false });
+        drawMiniChromosome(725, 250, { rotate: 6, sister: true, fill: "#dfe8f8" });
+        drawArrow(650, 245, 575, 245, "none", { red: true, dy: -22 });
+        drawArrow(700, 245, 790, 245, "both sister chromatids", { red: true, dy: -22 });
+      }
+
+      if (stage === 3) {
+        const xs = [185, 395, 605, 815];
+        xs.forEach((x, i) => drawCell(x, 285, 82, 75, i < 2 ? "normal gamete" : (i === 2 ? "n - 1 gamete" : "n + 1 gamete"), { stroke: i === 2 ? COLORS.red : (i === 3 ? COLORS.green : "#98a8bf") }));
+        drawMiniChromosome(185, 280, { rotate: -4, sister: false });
+        drawMiniChromosome(395, 280, { rotate: 4, sister: false });
+        label("0 copies", 605, 284, "small-label");
+        drawMiniChromosome(792, 280, { rotate: -5, sister: false, fill: "#dfe8f8" });
+        drawMiniChromosome(840, 280, { rotate: 5, sister: false, fill: "#dfe8f8" });
+        label("1 copy", 185, 184, "small-label");
+        label("1 copy", 395, 184, "small-label");
+        label("2 copies", 815, 184, "scene-label");
+      }
+
+      if (stage >= 4) drawExtraChromosomeFertilization(stage);
+    }
+
+    function drawExtraChromosomeFertilization(stage) {
+      if (stage === 4) {
+        drawCell(285, 275, 165, 112, "n + 1 abnormal gamete", { stroke: COLORS.green, strokeWidth: 4 });
+        drawMiniChromosome(250, 270, { rotate: -7, sister: false, geneColor: COLORS.original });
+        drawMiniChromosome(320, 270, { rotate: 7, sister: false, geneColor: COLORS.duplicate, fill: "#d9f1ee" });
+        label("2 tracked gene copies", 285, 145, "scene-label");
+
+        drawCell(715, 275, 145, 105, "normal gamete", { stroke: "#98a8bf" });
+        drawMiniChromosome(715, 270, { sister: false, geneColor: COLORS.original });
+        label("1 tracked gene copy", 715, 155, "scene-label");
+
+        make("circle", { cx: 500, cy: 275, r: 27, fill: "#fff5cf", stroke: "#e4b940", "stroke-width": 3 }, scene);
+        label("+", 500, 275, "scene-label");
+        drawArrow(450, 275, 470, 275, "fertilization", { dy: -28 });
+        drawArrow(565, 275, 530, 275, "", {});
+      }
+
+      if (stage === 5) {
+        drawCell(500, 275, 265, 155, "", { stroke: COLORS.green, strokeWidth: 4 });
+        label("zygote with an extra chromosome", 500, 112, "scene-label");
+        drawMiniChromosome(410, 275, { rotate: -7, sister: false, geneColor: COLORS.original });
+        drawMiniChromosome(500, 275, { sister: false, geneColor: COLORS.original, fill: "#dfe8f8" });
+        drawMiniChromosome(590, 275, { rotate: 7, sister: false, geneColor: COLORS.duplicate, fill: "#d9f1ee" });
+        make("rect", { x: 548, y: 218, width: 84, height: 114, rx: 18, class: "highlight-ring" }, scene);
+        label("extra chromosome carries an extra gene copy", 590, 172, "small-label");
+        drawArrow(590, 190, 590, 228, "", { soft: true });
+        label("3 tracked gene copies in the zygote", 500, 455, "scene-label");
+      }
+    }
+
+    function drawWholeGenomeScene(variant, stage) {
+      label(`Whole-genome duplication: Anaphase ${variant} full-set non-disjunction`, 500, 38, "scene-label");
+
+      if (stage <= 4) drawWholeGenomePanels();
+
+      if (stage === 0) {
+        label("2 homologous full sets", 255, 148, "small-label");
+        label("2 homologous full sets", 745, 148, "small-label");
+        drawCell(255, 285, 165, 112, "starting egg cell");
+        drawGenomeSet(220, 275, "Set 1", COLORS.orange, 0.66);
+        drawGenomeSet(290, 275, "Set 2", COLORS.orange, 0.66);
+        drawCell(745, 285, 165, 112, "starting sperm cell");
+        drawGenomeSet(710, 275, "Set 1", COLORS.orange, 0.66);
+        drawGenomeSet(780, 275, "Set 2", COLORS.orange, 0.66);
+      }
+
+      if (stage === 1) {
+        label("DNA replication", 255, 148, "small-label");
+        label("DNA replication", 745, 148, "small-label");
+        drawCell(255, 285, 175, 118, "replicated egg precursor");
+        drawReplicatedGenomeSet(205, 275, "copied set 1", COLORS.orange, 0.66);
+        drawReplicatedGenomeSet(305, 275, "copied set 2", COLORS.orange, 0.66);
+        drawCell(745, 285, 175, 118, "replicated sperm precursor");
+        drawReplicatedGenomeSet(695, 275, "copied set 1", COLORS.orange, 0.66);
+        drawReplicatedGenomeSet(795, 275, "copied set 2", COLORS.orange, 0.66);
+      }
+
+      if (stage === 2 && variant === "I") {
+        label("Anaphase I error", 255, 142, "small-label");
+        label("Anaphase I error", 745, 142, "small-label");
+        drawCell(255, 285, 180, 118, "egg meiosis I");
+        label("empty pole", 140, 285, "tiny-label");
+        drawReplicatedGenomeSet(315, 275, "full set 1", COLORS.orange, 0.57);
+        drawReplicatedGenomeSet(375, 275, "full set 2", COLORS.orange, 0.57);
+        drawArrow(205, 285, 285, 285, "both sets together", { red: true, dy: -30 });
+
+        drawCell(745, 285, 180, 118, "sperm meiosis I");
+        label("empty pole", 630, 285, "tiny-label");
+        drawReplicatedGenomeSet(805, 275, "full set 1", COLORS.orange, 0.57);
+        drawReplicatedGenomeSet(865, 275, "full set 2", COLORS.orange, 0.57);
+        drawArrow(695, 285, 775, 285, "both sets together", { red: true, dy: -30 });
+      }
+
+      if (stage === 2 && variant === "II") {
+        label("Meiosis I separates homologous sets", 255, 142, "small-label");
+        label("Meiosis I separates homologous sets", 745, 142, "small-label");
+        drawMeiosisIDaughters(255);
+        drawMeiosisIDaughters(745);
+      }
+
+      if (stage === 3 && variant === "I") {
+        label("Meiosis II follows the Anaphase I error", 255, 132, "small-label");
+        label("Meiosis II follows the Anaphase I error", 745, 132, "small-label");
+        drawAnaphaseIOutcome(255, "egg");
+        drawAnaphaseIOutcome(745, "sperm");
+      }
+
+      if (stage === 3 && variant === "II") {
+        label("Anaphase II: all sister chromatids stay together", 255, 132, "tiny-label");
+        label("Anaphase II: all sister chromatids stay together", 745, 132, "tiny-label");
+        drawAnaphaseIIOutcome(255, "egg");
+        drawAnaphaseIIOutcome(745, "sperm");
+      }
+
+      if (stage === 4) {
+        label("neither gamete is normal", 500, 462, "scene-label");
+        drawUnreducedGamete(255, 285, "abnormal egg: 2 full sets");
+        drawUnreducedGamete(745, 285, "abnormal sperm: 2 full sets");
+      }
+
+      if (stage === 5) {
+        label("Both abnormal gametes contribute extra full sets", 500, 82, "scene-label");
+        drawCell(245, 285, 170, 112, "unreduced egg", { stroke: COLORS.green, strokeWidth: 4 });
+        drawGenomeSet(210, 275, "Set 1", COLORS.orange, 0.64);
+        drawGenomeSet(280, 275, "Set 2", COLORS.orange, 0.64);
+        drawCell(755, 285, 170, 112, "unreduced sperm", { stroke: COLORS.green, strokeWidth: 4 });
+        drawGenomeSet(720, 275, "Set 1", COLORS.orange, 0.64);
+        drawGenomeSet(790, 275, "Set 2", COLORS.orange, 0.64);
+        drawArrow(415, 285, 465, 285, "fertilization", { dy: -30 });
+        drawArrow(585, 285, 535, 285, "", {});
+        make("circle", { cx: 500, cy: 285, r: 27, fill: "#fff5cf", stroke: "#e4b940", "stroke-width": 3 }, scene);
+        label("+", 500, 285, "scene-label");
+      }
+
+      if (stage === 6) {
+        label("Both abnormal gametes supplied complete extra chromosome sets", 500, 62, "scene-label");
+        label("orange dot = tracked gene in every set", 500, 100, "small-label");
+        drawCell(500, 285, 325, 165, "", { stroke: COLORS.green, strokeWidth: 4 });
+        drawGenomeSet(350, 270, "Set 1", COLORS.orange, 0.82);
+        drawGenomeSet(450, 270, "Set 2", COLORS.orange, 0.82);
+        drawGenomeSet(550, 270, "Set 3", COLORS.orange, 0.82);
+        drawGenomeSet(650, 270, "Set 4", COLORS.orange, 0.82);
+        make("rect", { x: 288, y: 155, width: 424, height: 248, rx: 24, class: "highlight-ring" }, scene);
+        label("zygote: 4 complete chromosome sets", 500, 462, "small-label");
+        label("whole-genome duplication: every chromosome and gene has four copies", 500, 490, "scene-label");
+      }
+    }
+
+    function drawWholeGenomePanels() {
+      make("rect", { x: 38, y: 68, width: 424, height: 400, fill: "#f7fbff", opacity: 0.94 }, scene);
+      make("rect", { x: 538, y: 68, width: 424, height: 400, fill: "#fff9f4", opacity: 0.94 }, scene);
+      make("line", { x1: 500, y1: 72, x2: 500, y2: 468, stroke: "#b8c4d4", "stroke-width": 3, "stroke-dasharray": "9 8" }, scene);
+      label("EGG DEVELOPMENT", 255, 92, "scene-label");
+      label("SPERM DEVELOPMENT", 745, 92, "scene-label");
+      make("circle", { cx: 438, cy: 92, r: 6, fill: COLORS.orange, stroke: "#ffffff", "stroke-width": 2 }, scene);
+      label("tracked gene", 426, 115, "tiny-label", "end");
+    }
+
+    function drawReplicatedGenomeSet(x, y, text, geneColor, scale = 1) {
+      const g = group({ transform: `translate(${x} ${y}) scale(${scale})` });
+      [-25, -8].forEach(offset => {
+        make("rect", { x: offset, y: -48, width: 13, height: 96, rx: 7, fill: COLORS.chromosome, stroke: COLORS.chromosomeStroke, "stroke-width": 2 }, g);
+        make("circle", { cx: offset + 6.5, cy: -18, r: 6, fill: geneColor, stroke: "#ffffff", "stroke-width": 2 }, g);
+      });
+      [20, 37].forEach(offset => {
+        make("rect", { x: offset, y: -35, width: 13, height: 70, rx: 7, fill: "#e7eadf", stroke: COLORS.chromosomeStroke, "stroke-width": 2 }, g);
+      });
+      make("line", { x1: -19, y1: 0, x2: -1, y2: 0, stroke: COLORS.chromosomeStroke, "stroke-width": 3 }, g);
+      make("line", { x1: 26, y1: 0, x2: 44, y2: 0, stroke: COLORS.chromosomeStroke, "stroke-width": 3 }, g);
+      label(text, x + 7 * scale, y + 70 * scale, "tiny-label");
+    }
+
+    function drawMeiosisIDaughters(cx) {
+      drawCell(cx - 95, 285, 72, 74, "", { stroke: "#98a8bf" });
+      drawReplicatedGenomeSet(cx - 95, 275, "one full set", COLORS.orange, 0.46);
+      drawCell(cx + 95, 285, 72, 74, "", { stroke: "#98a8bf" });
+      drawReplicatedGenomeSet(cx + 95, 275, "one full set", COLORS.orange, 0.46);
+      label("two meiosis-I daughter cells", cx, 402, "tiny-label");
+    }
+
+    function drawAnaphaseIOutcome(cx, gameteType) {
+      drawCell(cx - 105, 220, 68, 65, "", { stroke: COLORS.red });
+      label("empty", cx - 105, 220, "tiny-label");
+      drawCell(cx + 95, 220, 92, 72, "", { stroke: COLORS.red });
+      drawReplicatedGenomeSet(cx + 70, 212, "", COLORS.orange, 0.4);
+      drawReplicatedGenomeSet(cx + 125, 212, "", COLORS.orange, 0.4);
+      drawArrow(cx + 95, 302, cx, 348, "sisters separate", { soft: true, dy: -16 });
+      drawCell(cx, 405, 118, 58, "", { stroke: COLORS.green, strokeWidth: 4 });
+      drawGenomeSet(cx - 28, 398, "", COLORS.orange, 0.42);
+      drawGenomeSet(cx + 28, 398, "", COLORS.orange, 0.42);
+      label(`unreduced ${gameteType}: 2 sets`, cx, 478, "tiny-label");
+    }
+
+    function drawAnaphaseIIOutcome(cx, gameteType) {
+      drawCell(cx, 218, 112, 76, "", { stroke: COLORS.red });
+      drawReplicatedGenomeSet(cx, 210, "replicated full set", COLORS.orange, 0.58);
+      drawArrow(cx, 305, cx, 348, "all sisters together", { red: true, dy: -18 });
+      drawCell(cx, 405, 118, 58, "", { stroke: COLORS.green, strokeWidth: 4 });
+      drawGenomeSet(cx - 28, 398, "", COLORS.orange, 0.42);
+      drawGenomeSet(cx + 28, 398, "", COLORS.orange, 0.42);
+      label(`unreduced ${gameteType}: 2 sets`, cx, 478, "tiny-label");
+    }
+
+    function drawUnreducedGamete(cx, cy, text) {
+      drawCell(cx, cy, 172, 112, text, { stroke: COLORS.green, strokeWidth: 4 });
+      drawGenomeSet(cx - 38, cy - 10, "Set 1", COLORS.orange, 0.65);
+      drawGenomeSet(cx + 38, cy - 10, "Set 2", COLORS.orange, 0.65);
+    }
+
+    function drawGenomeSet(x, y, text, geneColor, scale = 1) {
+      const g = group({ transform: `translate(${x} ${y}) scale(${scale})` });
+      make("rect", { x: -8, y: -48, width: 16, height: 96, rx: 8, fill: COLORS.chromosome, stroke: COLORS.chromosomeStroke, "stroke-width": 2 }, g);
+      make("circle", { cx: 0, cy: -18, r: 7, fill: geneColor, stroke: "#ffffff", "stroke-width": 2 }, g);
+      make("rect", { x: 24, y: -35, width: 16, height: 70, rx: 8, fill: "#e7eadf", stroke: COLORS.chromosomeStroke, "stroke-width": 2 }, g);
+      label(text, x + 16 * scale, y + 68 * scale, "tiny-label");
+    }
+
+    function drawFamilyScene(stage) {
+      label("Gene family tree: repeated duplication plus mutation", 500, 40, "scene-label");
+      drawFamilyNode(500, 82, "Ancestral gene", COLORS.original, { pulse: stage === 0 });
+
+      if (stage >= 1) {
+        drawBranch(500, 104, 340, 190);
+        drawBranch(500, 104, 660, 190);
+        drawFamilyNode(340, 202, "Gene A", COLORS.original, { label2: "original function" });
+        drawFamilyNode(660, 202, "Copy 1", COLORS.duplicate, { pulse: stage === 1 });
+      }
+
+      if (stage >= 2) {
+        drawMutationMarks([[565, 142], [615, 170]]);
+        drawFamilyNode(660, 202, "Mutated copy", COLORS.mutated, { mutations: 2, pulse: stage === 2 });
+      }
+
+      if (stage >= 3) {
+        drawBranch(660, 224, 535, 320);
+        drawBranch(660, 224, 785, 320);
+        drawFamilyNode(535, 332, "Gene B", COLORS.mutated, { mutations: 2, label2: "modified function" });
+        drawFamilyNode(785, 332, "Gene C", COLORS.duplicate2, { mutations: 1, label2: "specialized function" });
+        drawBranch(340, 224, 225, 320);
+        drawBranch(340, 224, 410, 320);
+        drawFamilyNode(225, 332, "Gene A", COLORS.original, { label2: "original function" });
+        drawFamilyNode(410, 332, "Copy 2", COLORS.duplicate, { mutations: 1 });
+      }
+
+      if (stage >= 4) {
+        drawMutationMarks([[392, 286], [430, 312], [820, 292]]);
+        drawFamilyNode(410, 332, "pseudogene", COLORS.pseudo, { pseudo: true, stop: true });
+        if (stage >= 5) {
+          drawBranch(785, 354, 710, 445);
+          drawBranch(785, 354, 870, 445);
+          drawFamilyNode(710, 458, "Gene C", COLORS.duplicate2, { mutations: 1, label2: "specialized function" });
+          drawFamilyNode(870, 458, "pseudogene", COLORS.pseudo, { pseudo: true, stop: true, mutations: 2 });
+        }
+      }
+
+      if (stage === 5) {
+        make("rect", { x: 150, y: 300, width: 790, height: 205, rx: 24, class: "highlight-ring" }, scene);
+        label("all final copies descend from the original gene", 500, 530, "scene-label");
+      }
+    }
+
+    function drawFamilyNode(x, y, text, color, options = {}) {
+      drawGene(x - 70, y - 18, 140, text, color, {
+        pulse: options.pulse,
+        pseudo: options.pseudo,
+        stop: options.stop,
+        mutations: options.mutations,
+        small: true
+      });
+      if (options.label2) {
+        label(options.label2, x, y + 36, "tiny-label");
+      }
+    }
+
+    function drawBranch(x1, y1, x2, y2) {
+      make("path", {
+        d: `M${x1} ${y1} C${x1} ${(y1 + y2) / 2}, ${x2} ${(y1 + y2) / 2}, ${x2} ${y2}`,
+        stroke: "#6f7d91",
+        "stroke-width": 4,
+        fill: "none"
+      }, scene);
+    }
+
+    function drawMutationMarks(points) {
+      points.forEach(([x, y]) => {
+        make("circle", { cx: x, cy: y, r: 8, fill: COLORS.red, stroke: "#ffffff", "stroke-width": 2 }, scene);
+        label("*", x, y - 1, "tiny-label").setAttribute("fill", "#ffffff");
+      });
+    }
+
+    function setMode(mode) {
+      if (!animations[mode]) return;
+      stopPlay();
+      state.mode = mode;
+      state.step = 0;
+      renderScene();
+    }
+
+    function startPlay() {
+      const steps = getActiveSteps();
+      if (state.step >= steps.length - 1) state.step = 0;
+      state.playing = true;
+      playPause.textContent = "Pause";
+      restartTimer();
+    }
+
+    function stopPlay() {
+      state.playing = false;
+      if (state.timer) window.clearInterval(state.timer);
+      state.timer = null;
+      playPause.textContent = "Play";
+    }
+
+    function restartTimer() {
+      if (state.timer) window.clearInterval(state.timer);
+      if (!state.playing) return;
+      state.timer = window.setInterval(() => {
+        const steps = getActiveSteps();
+        if (state.step < steps.length - 1) {
+          state.step += 1;
+          renderScene();
+        } else {
+          stopPlay();
+          renderScene();
+        }
+      }, 2100);
+    }
+
+    document.getElementById("modeButtons").addEventListener("click", event => {
+      const button = event.target.closest("button[data-mode]");
+      if (!button) return;
+      setMode(button.dataset.mode);
+    });
+
+    nondisjunctionToggle.addEventListener("click", event => {
+      const button = event.target.closest("button[data-variant]");
+      if (!button) return;
+      stopPlay();
+      state.nondisjunctionVariant = button.dataset.variant;
+      state.step = 0;
+      renderScene();
+    });
+
+    wholeGenomeToggle.addEventListener("click", event => {
+      const button = event.target.closest("button[data-wg-variant]");
+      if (!button) return;
+      stopPlay();
+      state.wholeGenomeVariant = button.dataset.wgVariant;
+      state.step = 0;
+      renderScene();
+    });
+
+    playPause.addEventListener("click", () => {
+      if (state.playing) stopPlay();
+      else startPlay();
+      renderScene();
+    });
+
+    stepBack.addEventListener("click", () => {
+      stopPlay();
+      state.step = Math.max(0, state.step - 1);
+      renderScene();
+    });
+
+    stepForward.addEventListener("click", () => {
+      stopPlay();
+      const steps = getActiveSteps();
+      state.step = Math.min(steps.length - 1, state.step + 1);
+      renderScene();
+    });
+
+    resetButton.addEventListener("click", () => {
+      stopPlay();
+      state.step = 0;
+      renderScene();
+    });
+
+    window.addEventListener("keydown", event => {
+      if (event.target instanceof HTMLInputElement) return;
+      if (event.key === "ArrowRight") stepForward.click();
+      if (event.key === "ArrowLeft") stepBack.click();
+      if (event.key === " ") {
+        event.preventDefault();
+        playPause.click();
+      }
+    });
+
+    renderScene();
+  </script>
+</body>
+</html>

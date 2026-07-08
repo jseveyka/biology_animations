@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Renal Corpuscle Filtration and GFR</title>
+  <style>
+    :root {
+      --bg: #f7fbff;
+      --surface: #ffffff;
+      --ink: #193045;
+      --muted: #587083;
+      --line: #cbdde9;
+      --capillary-fill: rgba(245, 111, 123, 0.24);
+      --capillary-stroke: #c84d5f;
+      --blood: #ffe1e5;
+      --blood-deep: #d4596a;
+      --fluid: #77c7eb;
+      --fluid-soft: #e8f8ff;
+      --tubule-fluid: #eef8d5;
+      --hydro: #1689d6;
+      --oncotic: #b98645;
+      --protein: #d6a86a;
+      --net: #df3636;
+      --nfp-purple: #7c3fd6;
+      --green: #278767;
+      --warning: #9d332f;
+      --shadow: 0 18px 45px rgba(34, 78, 110, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.42;
+    }
+
+    .page {
+      width: min(1480px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 14px 0 20px;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 29px;
+      line-height: 1.12;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 760px;
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .attribution {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .app-grid {
+      display: grid;
+      grid-template-columns: minmax(720px, 1fr) minmax(330px, 390px);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .visual-wrap {
+      overflow: hidden;
+    }
+
+    .scene-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px 26px;
+      padding: 9px 14px 0;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .force-key {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 900;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .force-key.hydro {
+      color: var(--hydro);
+    }
+
+    .force-key.oncotic {
+      color: var(--oncotic);
+    }
+
+    .force-key.net {
+      color: var(--nfp-purple);
+    }
+
+    .key-arrow {
+      position: relative;
+      width: 40px;
+      height: 0;
+      border-top: 4px solid currentColor;
+      border-radius: 999px;
+    }
+
+    .key-arrow::after {
+      position: absolute;
+      top: -8px;
+      right: -2px;
+      width: 0;
+      height: 0;
+      border-top: 6px solid transparent;
+      border-bottom: 6px solid transparent;
+      border-left: 10px solid currentColor;
+      content: "";
+    }
+
+    .svg-frame {
+      width: 100%;
+      padding: 0 8px 7px;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: calc(100vh - 108px);
+      min-height: 520px;
+    }
+
+    .side-stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .controls,
+    .readout-panel,
+    .condition-panel {
+      padding: 13px 14px;
+    }
+
+    h2 {
+      margin: 0 0 11px;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .slider-block {
+      padding: 10px 0;
+      border-top: 1px solid #d9e8f0;
+    }
+
+    .slider-block:first-of-type {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .slider-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 5px;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .slider-value {
+      flex: 0 0 auto;
+      color: var(--green);
+      font-weight: 900;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--hydro);
+    }
+
+    .range-row {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+      font-weight: 700;
+    }
+
+    .button-row {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    button {
+      min-height: 38px;
+      border: 1px solid #b9d3e3;
+      border-radius: 8px;
+      background: #eef7fc;
+      color: var(--ink);
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #e2f2fb;
+    }
+
+    .equation-line {
+      margin: 5px 0;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 14px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .value-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 5px 12px;
+      margin: 11px 0 0;
+      padding-top: 10px;
+      border-top: 1px solid #d9e8f0;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .value-grid span:nth-child(2n) {
+      color: var(--green);
+      white-space: nowrap;
+    }
+
+    .summary {
+      margin-top: 11px;
+      padding-top: 10px;
+      border-top: 1px solid #d9e8f0;
+      font-size: 16px;
+    }
+
+    .summary strong {
+      display: block;
+      color: var(--nfp-purple);
+      font-size: 19px;
+      line-height: 1.18;
+    }
+
+    .summary span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .condition-panel {
+      border-left: 6px solid var(--green);
+    }
+
+    .condition-panel.warning {
+      border-left-color: var(--warning);
+    }
+
+    .condition-title {
+      margin: 0 0 7px;
+      color: var(--green);
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .condition-panel.warning .condition-title {
+      color: var(--warning);
+    }
+
+    .condition-text {
+      margin: 0;
+      color: #2f4858;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .fixed-label,
+    .dynamic-pressure-label,
+    .net-label,
+    .final-nfp-text,
+    .final-nfp-subtext,
+    .small-label {
+      font-family: Arial, Helvetica, sans-serif;
+      paint-order: stroke;
+      stroke: #fff;
+      stroke-width: 4px;
+      stroke-linejoin: round;
+    }
+
+    .pressure-line,
+    .net-line,
+    .nfp-reveal-line {
+      stroke-linecap: round;
+      transition: stroke-width 160ms ease, opacity 160ms ease;
+    }
+
+    .vessel-outer,
+    .vessel-inner,
+    .capillary-outer,
+    .capillary-inner,
+    .pore,
+    .leak-label,
+    .proteinuria-badge {
+      transition: stroke-width 180ms ease, opacity 180ms ease, fill 180ms ease;
+    }
+
+    .particle,
+    .filtrate-dot,
+    .albumin-dot,
+    .leak-dot,
+    .tubule-dot {
+      transition: opacity 180ms ease;
+    }
+
+    .filtrate-dot,
+    .tubule-dot {
+      filter: drop-shadow(0 0 4px rgba(35, 139, 209, 0.45));
+    }
+
+    .leak-dot {
+      filter: drop-shadow(0 0 4px rgba(185, 134, 69, 0.48));
+    }
+
+    @media (max-width: 1160px) {
+      .app-grid {
+        grid-template-columns: 1fr;
+      }
+
+      svg {
+        max-height: none;
+      }
+
+      .side-stack {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        align-items: start;
+      }
+    }
+
+    @media (max-width: 920px) {
+      .page {
+        width: min(100% - 20px, 760px);
+        padding-top: 12px;
+      }
+
+      header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .scene-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .svg-frame {
+        overflow-x: auto;
+      }
+
+      svg {
+        min-width: 760px;
+      }
+
+      .side-stack {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div>
+        <h1>Filtration and GFR at the Renal Corpuscle</h1>
+        <p class="subtitle">A simplified teaching model of how pressure, albumin, arteriole diameter, and fenestration size change glomerular filtration.</p>
+        <p class="attribution">Animation Prompted by Jerred Seveyka for his biology class.</p>
+      </div>
+    </header>
+
+    <main class="app-grid">
+      <section class="panel visual-wrap" aria-label="Renal corpuscle animation">
+        <div class="scene-header">
+          <span class="force-key hydro"><span class="key-arrow" aria-hidden="true"></span>Blue = hydrostatic push</span>
+          <span class="force-key oncotic"><span class="key-arrow" aria-hidden="true"></span>Tan = oncotic pull toward albumin</span>
+          <span class="force-key net"><span class="key-arrow" aria-hidden="true"></span>Purple = net filtration pressure</span>
+        </div>
+
+        <div class="svg-frame">
+          <svg id="scene" viewBox="0 0 980 640" role="img" aria-labelledby="svgTitle svgDesc">
+            <title id="svgTitle">Interactive renal corpuscle filtration diagram</title>
+            <desc id="svgDesc">A diagram of the glomerulus, Bowman's capsule, afferent arteriole, efferent arteriole, filtration membrane, and proximal tubule with live pressure arrows and animated particles.</desc>
+            <defs>
+              <marker id="arrowBlue" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth">
+                <path d="M 0 0 L 7 3.5 L 0 7 z" fill="#1689d6"></path>
+              </marker>
+              <marker id="arrowTan" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth">
+                <path d="M 0 0 L 7 3.5 L 0 7 z" fill="#b98645"></path>
+              </marker>
+              <marker id="arrowRed" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+                <path d="M 0 0 L 8 4 L 0 8 z" fill="#df3636"></path>
+              </marker>
+              <marker id="arrowRedStart" markerWidth="8" markerHeight="8" refX="1" refY="4" orient="auto" markerUnits="strokeWidth">
+                <path d="M 8 0 L 0 4 L 8 8 z" fill="#df3636"></path>
+              </marker>
+              <marker id="arrowPurple" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+                <path d="M 0 0 L 8 4 L 0 8 z" fill="#7c3fd6"></path>
+              </marker>
+              <marker id="arrowPurpleStart" markerWidth="8" markerHeight="8" refX="1" refY="4" orient="auto" markerUnits="strokeWidth">
+                <path d="M 8 0 L 0 4 L 8 8 z" fill="#7c3fd6"></path>
+              </marker>
+              <clipPath id="capsuleClip">
+                <path d="M 238 318 C 238 198, 337 112, 476 112 C 618 112, 722 200, 722 318 C 722 441, 615 526, 476 526 C 337 526, 238 441, 238 318 Z"></path>
+              </clipPath>
+            </defs>
+
+            <rect x="0" y="0" width="980" height="640" fill="#f7fbff"></rect>
+            <rect x="22" y="18" width="936" height="604" rx="8" fill="#ffffff" stroke="#d7e5ee"></rect>
+
+            <g id="mainScene">
+              <path id="capsuleOuter" d="M 214 318 C 214 183, 328 86, 478 86 C 630 86, 746 184, 746 318 C 746 451, 630 548, 478 548 C 328 548, 214 451, 214 318 Z" fill="#dff3fb" stroke="#6ea6bd" stroke-width="8"></path>
+              <path id="capsuleInner" d="M 242 318 C 242 201, 339 118, 478 118 C 617 118, 716 201, 716 318 C 716 435, 617 518, 478 518 C 339 518, 242 435, 242 318 Z" fill="#f2fbff" stroke="#b5dce8" stroke-width="3"></path>
+
+              <g id="proximalTubule">
+                <path d="M 478 520 C 478 548, 490 580, 488 616" fill="none" stroke="#78aeb8" stroke-width="66" stroke-linecap="round"></path>
+                <path d="M 478 520 C 478 548, 490 580, 488 616" fill="none" stroke="#eef8d5" stroke-width="50" stroke-linecap="round"></path>
+                <path d="M 466 526 C 467 554, 478 580, 476 606" fill="none" stroke="#ffffff" stroke-width="5" opacity="0.45" stroke-linecap="round"></path>
+                <text x="602" y="606" text-anchor="middle" class="fixed-label" font-size="17" font-weight="900" fill="#4c6a32">Proximal tubule</text>
+              </g>
+
+              <g id="capsuleFluidParticles" clip-path="url(#capsuleClip)"></g>
+              <g id="tubuleParticles"></g>
+
+              <g id="afferentArteriole">
+                <path id="afferentOuter" class="vessel-outer" d="M 54 374 C 114 358, 177 337, 263 333" fill="none" stroke="#c84d5f" stroke-width="54" stroke-linecap="round"></path>
+                <path id="afferentInner" class="vessel-inner" d="M 54 374 C 114 358, 177 337, 263 333" fill="none" stroke="#ffe1e5" stroke-width="42" stroke-linecap="round"></path>
+                <path d="M 65 360 C 126 344, 178 327, 250 324" fill="none" stroke="#ffffff" stroke-width="5" opacity="0.45" stroke-linecap="round"></path>
+                <text x="128" y="311" text-anchor="middle" class="fixed-label" font-size="17" font-weight="900" fill="#8e2f3e">Afferent arteriole</text>
+              </g>
+
+              <g id="efferentArteriole">
+                <path id="efferentOuter" class="vessel-outer" d="M 506 164 C 526 103, 604 65, 754 58" fill="none" stroke="#c84d5f" stroke-width="46" stroke-linecap="round"></path>
+                <path id="efferentInner" class="vessel-inner" d="M 506 164 C 526 103, 604 65, 754 58" fill="none" stroke="#ffe1e5" stroke-width="34" stroke-linecap="round"></path>
+                <path d="M 517 152 C 544 98, 614 70, 744 63" fill="none" stroke="#ffffff" stroke-width="5" opacity="0.45" stroke-linecap="round"></path>
+                <text x="705" y="38" text-anchor="middle" class="fixed-label" font-size="17" font-weight="900" fill="#8e2f3e">Efferent arteriole</text>
+              </g>
+
+              <g id="capillaryTuft">
+                <path class="capillary-outer" d="M 276 320 C 294 221, 425 185, 504 251 C 591 324, 496 431, 379 392 C 265 354, 321 236, 445 224 C 595 209, 648 344, 535 420 C 421 496, 270 432, 276 320" fill="none" stroke="#c84d5f" stroke-width="50" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path class="capillary-inner" d="M 276 320 C 294 221, 425 185, 504 251 C 591 324, 496 431, 379 392 C 265 354, 321 236, 445 224 C 595 209, 648 344, 535 420 C 421 496, 270 432, 276 320" fill="none" stroke="#ffe1e5" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path class="capillary-outer" d="M 366 188 C 273 249, 288 389, 409 438 C 548 494, 671 371, 610 238 C 563 137, 441 139, 366 188" fill="none" stroke="#c84d5f" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path class="capillary-inner" d="M 366 188 C 273 249, 288 389, 409 438 C 548 494, 671 371, 610 238 C 563 137, 441 139, 366 188" fill="none" stroke="#ffe1e5" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"></path>
+              </g>
+
+              <g id="albuminParticles"></g>
+
+              <g id="filtrationMembrane">
+                <path d="M 570 190 C 629 248, 628 367, 568 432" fill="none" stroke="#f2d89a" stroke-width="28" stroke-linecap="round" opacity="0.5"></path>
+                <path d="M 570 190 C 629 248, 628 367, 568 432" fill="none" stroke="#c84d5f" stroke-width="18" stroke-linecap="round"></path>
+                <path d="M 584 203 C 632 260, 629 354, 581 419" fill="none" stroke="#ffffff" stroke-width="4" opacity="0.55" stroke-linecap="round"></path>
+                <g id="fenestrationPores"></g>
+              </g>
+
+              <g id="filtrationParticles"></g>
+              <g id="albuminLeakParticles"></g>
+
+              <g id="proteinuriaBadge" class="proteinuria-badge" opacity="0">
+                <rect x="672" y="336" width="228" height="48" rx="8" fill="#fff6ef" stroke="#c77c42" stroke-width="2"></rect>
+                <text x="786" y="357" text-anchor="middle" class="fixed-label" font-size="16" font-weight="900" fill="#9d332f">Abnormal protein leakage</text>
+                <text x="786" y="376" text-anchor="middle" class="fixed-label" font-size="13" font-weight="900" fill="#9d332f">albumin in filtrate: proteinuria</text>
+              </g>
+
+              <g id="pressureArrows">
+                <g id="pgcArrow">
+                  <line class="pressure-line" stroke="#1689d6" marker-end="url(#arrowBlue)"></line>
+                  <text class="dynamic-pressure-label" text-anchor="middle" font-size="15" font-weight="900" fill="#213c4d"></text>
+                </g>
+                <g id="pbsArrow">
+                  <line class="pressure-line" stroke="#1689d6" marker-end="url(#arrowBlue)"></line>
+                  <text class="dynamic-pressure-label" text-anchor="middle" font-size="15" font-weight="900" fill="#213c4d"></text>
+                </g>
+                <g id="pigcArrow">
+                  <line class="pressure-line" stroke="#b98645" marker-end="url(#arrowTan)"></line>
+                  <text class="dynamic-pressure-label" text-anchor="middle" font-size="15" font-weight="900" fill="#213c4d"></text>
+                </g>
+                <g id="pibsArrow" opacity="0">
+                  <line class="pressure-line" stroke="#b98645" marker-end="url(#arrowTan)"></line>
+                  <text class="dynamic-pressure-label" text-anchor="middle" font-size="15" font-weight="900" fill="#8b5f29"></text>
+                </g>
+                <g id="netArrow" style="display: none;">
+                  <line class="net-line" stroke="#7c3fd6" marker-end="url(#arrowPurple)"></line>
+                  <text class="net-label" text-anchor="middle" font-size="16" font-weight="900" fill="#5f24c5"></text>
+                </g>
+              </g>
+            </g>
+
+            <g id="finalNfpReadout" style="display: none;">
+              <rect class="readout-box" x="36" y="560" width="396" height="58" rx="8" fill="#fbf7ff" stroke="#7c3fd6" stroke-width="2"></rect>
+              <text id="finalNfpReadoutText" x="234" y="584" text-anchor="middle" class="final-nfp-text" font-size="17" font-weight="900" fill="#7c3fd6">NFP = +10 mmHg outward (filtration)</text>
+              <text id="finalNfpReadoutSubtext" x="234" y="604" text-anchor="middle" class="final-nfp-subtext" font-size="13" font-weight="800" fill="#587083">Estimated GFR = 125 mL/min</text>
+            </g>
+          </svg>
+        </div>
+      </section>
+
+      <aside class="side-stack">
+        <section class="panel controls" aria-label="Controls">
+          <h2>Controls</h2>
+
+          <div class="slider-block">
+            <div class="slider-head">
+              <label for="albuminLevel">Albumin level in blood</label>
+              <span class="slider-value" id="albuminLevelValue">Normal</span>
+            </div>
+            <input id="albuminLevel" type="range" min="0" max="2" step="0.01" value="1">
+            <div class="range-row"><span>Low</span><span>Normal</span><span>High</span></div>
+          </div>
+
+          <div class="slider-block">
+            <div class="slider-head">
+              <label for="afferentDiameter">Afferent arteriole diameter</label>
+              <span class="slider-value" id="afferentDiameterValue">Normal</span>
+            </div>
+            <input id="afferentDiameter" type="range" min="0" max="2" step="0.01" value="1">
+            <div class="range-row"><span>Constricted</span><span>Normal</span><span>Dilated</span></div>
+          </div>
+
+          <div class="slider-block">
+            <div class="slider-head">
+              <label for="efferentDiameter">Efferent arteriole diameter</label>
+              <span class="slider-value" id="efferentDiameterValue">Normal</span>
+            </div>
+            <input id="efferentDiameter" type="range" min="0" max="2" step="0.01" value="1">
+            <div class="range-row"><span>Constricted</span><span>Normal</span><span>Dilated</span></div>
+          </div>
+
+          <div class="slider-block">
+            <div class="slider-head">
+              <label for="fenestrationSize">Fenestration size</label>
+              <span class="slider-value" id="fenestrationSizeValue">Normal</span>
+            </div>
+            <input id="fenestrationSize" type="range" min="0" max="1" step="0.01" value="0">
+            <div class="range-row"><span>Normal</span><span>Enlarged</span></div>
+          </div>
+
+          <div class="button-row">
+            <button id="nfpToggleButton" type="button" aria-pressed="false">Show Net Filtration Pressure</button>
+            <button id="resetButton" type="button">Reset to normal physiology</button>
+          </div>
+        </section>
+
+        <section class="panel readout-panel" aria-label="Net filtration pressure calculation">
+          <h2>Calculation Panel</h2>
+          <div class="equation-line">NFP = P<sub>GC</sub> - P<sub>BS</sub> - &pi;<sub>GC</sub> + &pi;<sub>BS</sub></div>
+          <div class="equation-line" id="nfpSubstitution">NFP = 55 - 15 - 30 + 0</div>
+          <div class="equation-line" id="gfrSubstitution">GFR = Kf x NFP = 12.5 x 10</div>
+
+          <div class="value-grid">
+            <span>P<sub>GC</sub> Glomerular Hydrostatic Pressure</span><span id="pgcValue">55 mmHg</span>
+            <span>P<sub>BS</sub> Capsular Hydrostatic Pressure</span><span id="pbsValue">15 mmHg</span>
+            <span>&pi;<sub>GC</sub> Glomerular Oncotic Pressure</span><span id="pigcValue">30 mmHg</span>
+            <span>&pi;<sub>BS</sub> capsular oncotic pressure</span><span id="pibsValue">0 mmHg</span>
+            <span>Kf filtration coefficient</span><span id="kfValue">12.5</span>
+          </div>
+
+          <div class="summary">
+            <strong id="nfpSummary">NFP = +10 mmHg outward</strong>
+            <span id="gfrSummary">Estimated GFR = 125 mL/min, approximately normal</span>
+          </div>
+        </section>
+
+        <section class="panel condition-panel" id="conditionPanel" aria-live="polite">
+          <div class="condition-title" id="conditionTitle">Normal filtration</div>
+          <p class="condition-text" id="conditionText">Small solutes and water enter the capsule; albumin remains in the bloodstream.</p>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    const SVG_NS = "http://www.w3.org/2000/svg";
+
+    const baseline = {
+      albuminLevel: 1,
+      afferentDiameter: 1,
+      efferentDiameter: 1,
+      fenestrationSize: 0
+    };
+
+    const state = {
+      albuminLevel: baseline.albuminLevel,
+      afferentDiameter: baseline.afferentDiameter,
+      efferentDiameter: baseline.efferentDiameter,
+      fenestrationSize: baseline.fenestrationSize,
+      pgc: 55,
+      pbs: 15,
+      piGC: 30,
+      piBS: 0,
+      nfp: 10,
+      kf: 12.5,
+      gfr: 125,
+      leakSeverity: 0,
+      nfpVisible: false
+    };
+
+    const pores = [
+      { x: 582, y: 216, angle: -25 },
+      { x: 603, y: 248, angle: -15 },
+      { x: 614, y: 286, angle: -5 },
+      { x: 615, y: 326, angle: 6 },
+      { x: 604, y: 365, angle: 18 },
+      { x: 582, y: 403, angle: 28 }
+    ];
+
+    const loopSpecs = [
+      { cx: 430, cy: 302, rx: 124, ry: 82, wobble: 8 },
+      { cx: 452, cy: 310, rx: 156, ry: 112, wobble: 11 },
+      { cx: 468, cy: 296, rx: 105, ry: 96, wobble: 9 },
+      { cx: 405, cy: 330, rx: 132, ry: 88, wobble: 7 }
+    ];
+
+    const particles = {
+      albumin: [],
+      filtrate: [],
+      tubule: [],
+      leakedAlbumin: [],
+      capsuleFluid: []
+    };
+
+    const els = {};
+    let previousTime = 0;
+
+    function initializeScene() {
+      cacheElements();
+      createFenestrations();
+      createAlbuminParticles();
+      createCapsuleFluidParticles();
+      createFiltrationParticles();
+      createTubuleParticles();
+      createLeakedAlbuminParticles();
+      addListeners();
+      updateModel();
+      requestAnimationFrame(animationLoop);
+    }
+
+    function cacheElements() {
+      els.albuminLevel = document.getElementById("albuminLevel");
+      els.afferentDiameter = document.getElementById("afferentDiameter");
+      els.efferentDiameter = document.getElementById("efferentDiameter");
+      els.fenestrationSize = document.getElementById("fenestrationSize");
+      els.albuminLevelValue = document.getElementById("albuminLevelValue");
+      els.afferentDiameterValue = document.getElementById("afferentDiameterValue");
+      els.efferentDiameterValue = document.getElementById("efferentDiameterValue");
+      els.fenestrationSizeValue = document.getElementById("fenestrationSizeValue");
+      els.nfpToggleButton = document.getElementById("nfpToggleButton");
+      els.resetButton = document.getElementById("resetButton");
+
+      els.afferentOuter = document.getElementById("afferentOuter");
+      els.afferentInner = document.getElementById("afferentInner");
+      els.efferentOuter = document.getElementById("efferentOuter");
+      els.efferentInner = document.getElementById("efferentInner");
+      els.fenestrationPores = document.getElementById("fenestrationPores");
+      els.albuminParticles = document.getElementById("albuminParticles");
+      els.capsuleFluidParticles = document.getElementById("capsuleFluidParticles");
+      els.filtrationParticles = document.getElementById("filtrationParticles");
+      els.tubuleParticles = document.getElementById("tubuleParticles");
+      els.albuminLeakParticles = document.getElementById("albuminLeakParticles");
+      els.proteinuriaBadge = document.getElementById("proteinuriaBadge");
+
+      els.pgcArrow = document.getElementById("pgcArrow");
+      els.pbsArrow = document.getElementById("pbsArrow");
+      els.pigcArrow = document.getElementById("pigcArrow");
+      els.pibsArrow = document.getElementById("pibsArrow");
+      els.netArrow = document.getElementById("netArrow");
+      els.finalNfpReadout = document.getElementById("finalNfpReadout");
+
+      els.nfpSubstitution = document.getElementById("nfpSubstitution");
+      els.gfrSubstitution = document.getElementById("gfrSubstitution");
+      els.pgcValue = document.getElementById("pgcValue");
+      els.pbsValue = document.getElementById("pbsValue");
+      els.pigcValue = document.getElementById("pigcValue");
+      els.pibsValue = document.getElementById("pibsValue");
+      els.kfValue = document.getElementById("kfValue");
+      els.nfpSummary = document.getElementById("nfpSummary");
+      els.gfrSummary = document.getElementById("gfrSummary");
+      els.finalNfpReadoutText = document.getElementById("finalNfpReadoutText");
+      els.finalNfpReadoutSubtext = document.getElementById("finalNfpReadoutSubtext");
+      els.conditionPanel = document.getElementById("conditionPanel");
+      els.conditionTitle = document.getElementById("conditionTitle");
+      els.conditionText = document.getElementById("conditionText");
+    }
+
+    function addListeners() {
+      [els.albuminLevel, els.afferentDiameter, els.efferentDiameter, els.fenestrationSize].forEach((slider) => {
+        slider.addEventListener("input", updateModel);
+      });
+
+      els.nfpToggleButton.addEventListener("click", () => {
+        state.nfpVisible = !state.nfpVisible;
+        updateNfpVisibility();
+      });
+
+      els.resetButton.addEventListener("click", () => {
+        els.albuminLevel.value = baseline.albuminLevel;
+        els.afferentDiameter.value = baseline.afferentDiameter;
+        els.efferentDiameter.value = baseline.efferentDiameter;
+        els.fenestrationSize.value = baseline.fenestrationSize;
+        updateModel();
+      });
+    }
+
+    function updateModel() {
+      state.albuminLevel = Number(els.albuminLevel.value);
+      state.afferentDiameter = Number(els.afferentDiameter.value);
+      state.efferentDiameter = Number(els.efferentDiameter.value);
+      state.fenestrationSize = Number(els.fenestrationSize.value);
+
+      // Simplified physiology model for teaching:
+      // - Albumin sets blood oncotic pressure.
+      // - Afferent dilation raises PGC; afferent constriction lowers it.
+      // - Efferent constriction raises PGC by backing up pressure.
+      // - Enlarged fenestrations slightly raise Kf and, when abnormal, let albumin
+      //   enter Bowman's space, creating capsular oncotic pressure.
+      state.piGC = 22 + state.albuminLevel * 8;
+      const afferentEffect = (state.afferentDiameter - 1) * 14;
+      const efferentEffect = (1 - state.efferentDiameter) * 12;
+      state.pgc = clamp(55 + afferentEffect + efferentEffect, 32, 82);
+      state.pbs = 15;
+      state.leakSeverity = clamp((state.fenestrationSize - 0.58) / 0.42, 0, 1);
+      state.piBS = state.leakSeverity * (3.6 + state.albuminLevel * 2.4);
+      state.kf = 12.5 * (1 + state.fenestrationSize * 0.18);
+      state.nfp = state.pgc - state.pbs - state.piGC + state.piBS;
+      state.gfr = Math.max(0, state.kf * state.nfp);
+
+      updateControls();
+      updateVessels();
+      updateFenestrations();
+      updateArrows();
+      updateReadouts();
+      updateConditionText();
+      updateProteinLeakVisibility();
+      updateNfpVisibility();
+    }
+
+    function updateControls() {
+      els.albuminLevelValue.textContent = `${levelLabel(state.albuminLevel)} (${formatPressure(state.piGC)} mmHg)`;
+      els.afferentDiameterValue.textContent = diameterLabel(state.afferentDiameter);
+      els.efferentDiameterValue.textContent = diameterLabel(state.efferentDiameter);
+      els.fenestrationSizeValue.textContent = state.leakSeverity > 0.08 ? "Protein leak" : (state.fenestrationSize > 0.45 ? "Enlarged" : "Normal");
+    }
+
+    function updateVessels() {
+      const afferentInner = mapRange(state.afferentDiameter, 0, 2, 24, 54);
+      const efferentInner = mapRange(state.efferentDiameter, 0, 2, 20, 48);
+      els.afferentInner.setAttribute("stroke-width", formatPressure(afferentInner));
+      els.afferentOuter.setAttribute("stroke-width", formatPressure(afferentInner + 12));
+      els.efferentInner.setAttribute("stroke-width", formatPressure(efferentInner));
+      els.efferentOuter.setAttribute("stroke-width", formatPressure(efferentInner + 12));
+    }
+
+    function updateFenestrations() {
+      const rx = mapRange(state.fenestrationSize, 0, 1, 4, 12);
+      const ry = mapRange(state.fenestrationSize, 0, 1, 6, 14);
+      pores.forEach((pore, index) => {
+        const element = document.getElementById(`pore-${index}`);
+        element.setAttribute("rx", formatPressure(rx));
+        element.setAttribute("ry", formatPressure(ry));
+        element.setAttribute("fill", state.leakSeverity > 0 ? "#fff8e8" : "#eaf8ff");
+      });
+    }
+
+    function updateProteinLeakVisibility() {
+      const opacity = state.leakSeverity > 0.05 ? "1" : "0";
+      els.proteinuriaBadge.setAttribute("opacity", opacity);
+    }
+
+    function updateArrows() {
+      updateHorizontalForceArrow({
+        group: els.pgcArrow,
+        value: state.pgc,
+        label: `Glomerular Hydrostatic Pressure ${formatPressure(state.pgc)} mmHg`,
+        x: 560,
+        y: 176,
+        outward: true,
+        color: "#1689d6",
+        marker: "url(#arrowBlue)"
+      });
+
+      updateHorizontalForceArrow({
+        group: els.pbsArrow,
+        value: state.pbs,
+        label: `Capsular Hydrostatic Pressure ${formatPressure(state.pbs)} mmHg`,
+        x: 730,
+        y: 288,
+        outward: false,
+        color: "#1689d6",
+        marker: "url(#arrowBlue)"
+      });
+
+      updateHorizontalForceArrow({
+        group: els.pigcArrow,
+        value: state.piGC,
+        label: `Glomerular Oncotic Pressure ${formatPressure(state.piGC)} mmHg`,
+        x: 742,
+        y: 376,
+        outward: false,
+        color: "#b98645",
+        marker: "url(#arrowTan)"
+      });
+
+      updateHorizontalForceArrow({
+        group: els.pibsArrow,
+        value: state.piBS,
+        label: `Abnormal capsular oncotic pull ${formatPressure(state.piBS)} mmHg`,
+        x: 565,
+        y: 444,
+        outward: true,
+        color: "#b98645",
+        marker: "url(#arrowTan)"
+      });
+      els.pibsArrow.setAttribute("opacity", state.piBS > 0.2 ? "1" : "0");
+
+      updateNetArrow();
+    }
+
+    function updateHorizontalForceArrow(spec) {
+      const line = spec.group.querySelector("line");
+      const label = spec.group.querySelector("text");
+      const len = pressureLength(spec.value);
+      const width = pressureWidth(spec.value);
+      const x1 = spec.outward ? spec.x : spec.x;
+      const x2 = spec.outward ? spec.x + len : spec.x - len;
+      const labelX = (x1 + x2) / 2;
+
+      line.setAttribute("x1", formatPressure(x1));
+      line.setAttribute("y1", formatPressure(spec.y));
+      line.setAttribute("x2", formatPressure(x2));
+      line.setAttribute("y2", formatPressure(spec.y));
+      line.setAttribute("stroke-width", formatPressure(width));
+      line.setAttribute("stroke", spec.color);
+      line.setAttribute("marker-end", spec.marker);
+
+      label.setAttribute("x", formatPressure(labelX));
+      label.setAttribute("y", formatPressure(spec.y - 17));
+      label.textContent = spec.label;
+    }
+
+    function updateNetArrow() {
+      const group = els.netArrow;
+      const line = group.querySelector("line");
+      const label = group.querySelector("text");
+      const nearZero = Math.abs(state.nfp) < 0.7;
+      const outward = state.nfp > 0;
+      const centerX = 478;
+      const y = 318;
+      const len = nearZero ? 76 : clamp(70 + Math.abs(state.nfp) * 5, 86, 190);
+      const xStart = nearZero ? centerX - len / 2 : centerX;
+      const xEnd = nearZero ? centerX + len / 2 : (outward ? centerX + len : centerX - len);
+
+      line.setAttribute("x1", formatPressure(xStart));
+      line.setAttribute("y1", formatPressure(y));
+      line.setAttribute("x2", formatPressure(xEnd));
+      line.setAttribute("y2", formatPressure(y));
+      line.setAttribute("stroke-width", nearZero ? "5" : formatPressure(clamp(5 + Math.abs(state.nfp) * 0.24, 5, 11)));
+      line.setAttribute("stroke", "#7c3fd6");
+      line.setAttribute("marker-end", "url(#arrowPurple)");
+      if (nearZero) {
+        line.setAttribute("marker-start", "url(#arrowPurpleStart)");
+      } else {
+        line.removeAttribute("marker-start");
+      }
+
+      label.setAttribute("x", formatPressure((xStart + xEnd) / 2));
+      label.setAttribute("y", formatPressure(y - 20));
+      label.setAttribute("fill", "#5f24c5");
+      label.textContent = nearZero ? "NFP near 0" : "Net filtration pressure";
+    }
+
+    function updateNfpVisibility() {
+      const display = state.nfpVisible ? "" : "none";
+      els.netArrow.style.display = display;
+      els.finalNfpReadout.style.display = display;
+      els.nfpToggleButton.textContent = state.nfpVisible ? "Hide Net Filtration Pressure" : "Show Net Filtration Pressure";
+      els.nfpToggleButton.setAttribute("aria-pressed", String(state.nfpVisible));
+    }
+
+    function updateReadouts() {
+      const nfpText = `${formatSigned(state.nfp)} mmHg ${directionText(state.nfp)}`;
+      const gfrText = `${Math.round(state.gfr)} mL/min`;
+      els.nfpSubstitution.innerHTML = `NFP = ${formatPressure(state.pgc)} - ${formatPressure(state.pbs)} - ${formatPressure(state.piGC)} + ${formatPressure(state.piBS)} = ${formatSigned(state.nfp)} mmHg`;
+      els.gfrSubstitution.textContent = `GFR = Kf x NFP = ${formatPressure(state.kf)} x ${formatPressure(Math.max(0, state.nfp))} = ${gfrText}`;
+      els.pgcValue.textContent = `${formatPressure(state.pgc)} mmHg`;
+      els.pbsValue.textContent = `${formatPressure(state.pbs)} mmHg`;
+      els.pigcValue.textContent = `${formatPressure(state.piGC)} mmHg`;
+      els.pibsValue.textContent = `${formatPressure(state.piBS)} mmHg`;
+      els.kfValue.textContent = formatPressure(state.kf);
+      els.nfpSummary.textContent = `NFP = ${nfpText}`;
+      els.gfrSummary.textContent = `Estimated GFR = ${gfrText}, ${gfrStatus(state.gfr)}`;
+      els.finalNfpReadoutText.textContent = `NFP = ${nfpText}`;
+      els.finalNfpReadoutSubtext.textContent = `Estimated GFR = ${gfrText}`;
+    }
+
+    function updateConditionText() {
+      const condition = currentCondition();
+      els.conditionPanel.classList.toggle("warning", condition.warning);
+      els.conditionTitle.textContent = condition.title;
+      els.conditionText.textContent = condition.text;
+    }
+
+    function currentCondition() {
+      if (state.leakSeverity > 0.1) {
+        return {
+          title: "Large fenestrations",
+          text: "Albumin leaks into the filtrate, which is abnormal. Capsular oncotic pull now favors filtration but signals proteinuria.",
+          warning: true
+        };
+      }
+      if (state.albuminLevel < 0.62) {
+        return {
+          title: "Low blood albumin",
+          text: "Less oncotic pull back into the capillary means less opposition to filtration, so NFP and GFR rise.",
+          warning: false
+        };
+      }
+      if (state.albuminLevel > 1.38) {
+        return {
+          title: "High blood albumin",
+          text: "More albumin strengthens blood oncotic pressure, pulling water back toward the capillary and lowering filtration.",
+          warning: false
+        };
+      }
+      if (state.afferentDiameter < 0.62) {
+        return {
+          title: "Afferent constriction",
+          text: "Less pressure enters the glomerulus, so glomerular blood pressure and filtration fall.",
+          warning: false
+        };
+      }
+      if (state.afferentDiameter > 1.38) {
+        return {
+          title: "Afferent dilation",
+          text: "More pressure reaches the glomerulus, so glomerular blood pressure and filtration rise.",
+          warning: false
+        };
+      }
+      if (state.efferentDiameter < 0.62) {
+        return {
+          title: "Efferent constriction",
+          text: "Pressure backs up in the glomerulus, raising glomerular blood pressure and increasing filtration in this simplified model.",
+          warning: false
+        };
+      }
+      if (state.efferentDiameter > 1.38) {
+        return {
+          title: "Efferent dilation",
+          text: "Blood leaves the glomerulus more easily, lowering glomerular pressure and reducing filtration.",
+          warning: false
+        };
+      }
+      return {
+        title: "Normal filtration",
+        text: "Small solutes and water enter the capsule; albumin remains in the bloodstream.",
+        warning: false
+      };
+    }
+
+    function animationLoop(timestamp) {
+      const deltaSeconds = Math.min((timestamp - previousTime) / 1000 || 0, 0.05);
+      previousTime = timestamp;
+      animateAlbumin(deltaSeconds);
+      animateCapsuleFluid(deltaSeconds);
+      animateFiltration(deltaSeconds);
+      animateTubuleFlow(deltaSeconds);
+      animateAlbuminLeak(deltaSeconds);
+      requestAnimationFrame(animationLoop);
+    }
+
+    function createFenestrations() {
+      pores.forEach((pore, index) => {
+        const element = svgEl("ellipse", {
+          id: `pore-${index}`,
+          class: "pore",
+          cx: pore.x,
+          cy: pore.y,
+          rx: 4,
+          ry: 6,
+          fill: "#eaf8ff",
+          stroke: "#8e2f3e",
+          "stroke-width": 1.5,
+          transform: `rotate(${pore.angle} ${pore.x} ${pore.y})`
+        });
+        els.fenestrationPores.appendChild(element);
+      });
+    }
+
+    function createAlbuminParticles() {
+      for (let i = 0; i < 48; i += 1) {
+        const loop = loopSpecs[i % loopSpecs.length];
+        const particle = {
+          loop,
+          phase: Math.random(),
+          speed: random(0.008, 0.02),
+          radius: random(5.5, 8.2),
+          element: svgEl("circle", {
+            class: "albumin-dot",
+            r: random(5.5, 8.2),
+            fill: "#d6a86a",
+            stroke: "#9f692c",
+            "stroke-width": 1.6,
+            opacity: 0
+          })
+        };
+        els.albuminParticles.appendChild(particle.element);
+        particles.albumin.push(particle);
+      }
+    }
+
+    function createCapsuleFluidParticles() {
+      for (let i = 0; i < 52; i += 1) {
+        const particle = {
+          x: random(610, 708),
+          y: random(214, 480),
+          vx: random(-4.4, 4.4),
+          vy: random(-3.4, 3.4),
+          element: svgEl("circle", {
+            class: "particle",
+            r: random(2.3, 4.1),
+            fill: i % 3 === 0 ? "#f5d77a" : "#77c7eb",
+            opacity: 0.62
+          })
+        };
+        els.capsuleFluidParticles.appendChild(particle.element);
+        particles.capsuleFluid.push(particle);
+      }
+    }
+
+    function createFiltrationParticles() {
+      for (let i = 0; i < 38; i += 1) {
+        const pore = pores[i % pores.length];
+        const particle = {
+          pore,
+          phase: Math.random(),
+          speedJitter: random(0.48, 0.95),
+          yJitter: random(-12, 12),
+          element: svgEl("circle", {
+            class: "filtrate-dot",
+            r: random(2.8, 4.5),
+            fill: i % 3 === 0 ? "#f5d77a" : "#68c4ef",
+            opacity: 0
+          })
+        };
+        els.filtrationParticles.appendChild(particle.element);
+        particles.filtrate.push(particle);
+      }
+    }
+
+    function createTubuleParticles() {
+      for (let i = 0; i < 34; i += 1) {
+        const particle = {
+          phase: Math.random(),
+          lane: random(-13, 13),
+          speedJitter: random(0.46, 0.92),
+          element: svgEl("circle", {
+            class: "tubule-dot",
+            r: random(2.7, 4.3),
+            fill: i % 4 === 0 ? "#f5d77a" : "#68c4ef",
+            opacity: 0
+          })
+        };
+        els.tubuleParticles.appendChild(particle.element);
+        particles.tubule.push(particle);
+      }
+    }
+
+    function createLeakedAlbuminParticles() {
+      for (let i = 0; i < 18; i += 1) {
+        const pore = pores[i % pores.length];
+        const particle = {
+          pore,
+          phase: Math.random(),
+          yJitter: random(-8, 16),
+          speedJitter: random(0.42, 0.82),
+          element: svgEl("circle", {
+            class: "leak-dot",
+            r: random(5, 7.5),
+            fill: "#d6a86a",
+            stroke: "#9f692c",
+            "stroke-width": 1.6,
+            opacity: 0
+          })
+        };
+        els.albuminLeakParticles.appendChild(particle.element);
+        particles.leakedAlbumin.push(particle);
+      }
+    }
+
+    function animateAlbumin(deltaSeconds) {
+      const visibleCount = Math.round(mapRange(state.albuminLevel, 0, 2, 18, 46));
+      particles.albumin.forEach((particle, index) => {
+        const visible = index < visibleCount;
+        if (!visible) {
+          particle.element.setAttribute("opacity", "0");
+          return;
+        }
+        particle.phase = (particle.phase + particle.speed * deltaSeconds * 42) % 1;
+        const t = particle.phase * Math.PI * 2;
+        const loop = particle.loop;
+        const x = loop.cx + Math.cos(t) * loop.rx + Math.sin(t * 2) * loop.wobble;
+        const y = loop.cy + Math.sin(t) * loop.ry + Math.cos(t * 3) * 5;
+        particle.element.setAttribute("cx", formatPressure(x));
+        particle.element.setAttribute("cy", formatPressure(y));
+        particle.element.setAttribute("opacity", "0.93");
+      });
+    }
+
+    function animateCapsuleFluid(deltaSeconds) {
+      const activity = mapRange(state.gfr, 0, 260, 0.35, 0.82);
+      particles.capsuleFluid.forEach((particle) => {
+        particle.x += particle.vx * deltaSeconds * activity;
+        particle.y += particle.vy * deltaSeconds * activity;
+        if (particle.x < 586 || particle.x > 710) {
+          particle.vx *= -1;
+          particle.x = clamp(particle.x, 586, 710);
+        }
+        if (particle.y < 196 || particle.y > 492) {
+          particle.vy *= -1;
+          particle.y = clamp(particle.y, 196, 492);
+        }
+        particle.element.setAttribute("cx", formatPressure(particle.x));
+        particle.element.setAttribute("cy", formatPressure(particle.y));
+        particle.element.setAttribute("opacity", formatPressure(mapRange(state.gfr, 0, 260, 0.28, 0.72)));
+      });
+    }
+
+    function animateFiltration(deltaSeconds) {
+      const activeCount = Math.round(mapRange(state.gfr, 0, 300, 4, particles.filtrate.length));
+      const speed = mapRange(state.gfr, 0, 300, 0.1, 0.62);
+      particles.filtrate.forEach((particle, index) => {
+        if (index >= activeCount || state.gfr < 1) {
+          particle.element.setAttribute("opacity", state.gfr < 1 ? "0" : "0.08");
+          return;
+        }
+        particle.phase = (particle.phase + deltaSeconds * speed * particle.speedJitter) % 1;
+        const eased = easeInOut(particle.phase);
+        const startX = particle.pore.x - 40;
+        const endX = particle.pore.x + 86;
+        const startY = particle.pore.y + particle.yJitter * 0.35;
+        const endY = particle.pore.y + particle.yJitter + Math.sin(particle.phase * Math.PI) * 12;
+        const x = startX + (endX - startX) * eased;
+        const y = startY + (endY - startY) * eased;
+        const fade = Math.sin(particle.phase * Math.PI);
+        particle.element.setAttribute("cx", formatPressure(x));
+        particle.element.setAttribute("cy", formatPressure(y));
+        particle.element.setAttribute("opacity", formatPressure(clamp(fade * mapRange(state.gfr, 0, 260, 0.35, 0.95), 0.06, 0.96)));
+      });
+    }
+
+    function animateTubuleFlow(deltaSeconds) {
+      const activeCount = Math.round(mapRange(state.gfr, 0, 300, 5, particles.tubule.length));
+      const speed = mapRange(state.gfr, 0, 300, 0.07, 0.46);
+      particles.tubule.forEach((particle, index) => {
+        if (index >= activeCount || state.gfr < 1) {
+          particle.element.setAttribute("opacity", state.gfr < 1 ? "0" : "0.06");
+          return;
+        }
+        particle.phase = (particle.phase + deltaSeconds * speed * particle.speedJitter) % 1;
+        const p = tubulePoint(particle.phase);
+        particle.element.setAttribute("cx", formatPressure(p.x + particle.lane));
+        particle.element.setAttribute("cy", formatPressure(p.y));
+        particle.element.setAttribute("opacity", formatPressure(clamp(Math.sin(particle.phase * Math.PI) * 0.85, 0.12, 0.88)));
+      });
+    }
+
+    function animateAlbuminLeak(deltaSeconds) {
+      const activeCount = Math.round(mapRange(state.leakSeverity, 0, 1, 0, particles.leakedAlbumin.length));
+      const speed = mapRange(state.leakSeverity, 0, 1, 0.05, 0.28);
+      particles.leakedAlbumin.forEach((particle, index) => {
+        if (index >= activeCount || state.leakSeverity <= 0.02) {
+          particle.element.setAttribute("opacity", "0");
+          return;
+        }
+        particle.phase = (particle.phase + deltaSeconds * speed * particle.speedJitter) % 1;
+        const eased = easeInOut(particle.phase);
+        const startX = particle.pore.x - 32;
+        const endX = particle.pore.x + 74 + state.leakSeverity * 36;
+        const startY = particle.pore.y + particle.yJitter * 0.2;
+        const endY = particle.pore.y + particle.yJitter + 18;
+        const x = startX + (endX - startX) * eased;
+        const y = startY + (endY - startY) * eased;
+        const fade = Math.sin(particle.phase * Math.PI);
+        particle.element.setAttribute("cx", formatPressure(x));
+        particle.element.setAttribute("cy", formatPressure(y));
+        particle.element.setAttribute("opacity", formatPressure(clamp(fade * state.leakSeverity, 0.05, 0.95)));
+      });
+    }
+
+    function tubulePoint(t) {
+      const p0 = { x: 478, y: 520 };
+      const p1 = { x: 478, y: 548 };
+      const p2 = { x: 490, y: 580 };
+      const p3 = { x: 488, y: 616 };
+      const a = Math.pow(1 - t, 3);
+      const b = 3 * Math.pow(1 - t, 2) * t;
+      const c = 3 * (1 - t) * t * t;
+      const d = t * t * t;
+      return {
+        x: a * p0.x + b * p1.x + c * p2.x + d * p3.x,
+        y: a * p0.y + b * p1.y + c * p2.y + d * p3.y
+      };
+    }
+
+    function levelLabel(value) {
+      if (value < 0.67) return "Low";
+      if (value > 1.33) return "High";
+      return "Normal";
+    }
+
+    function diameterLabel(value) {
+      if (value < 0.67) return "Constricted";
+      if (value > 1.33) return "Dilated";
+      return "Normal";
+    }
+
+    function gfrStatus(value) {
+      if (value < 25) return "filtration nearly stopped";
+      if (value < 90) return "reduced";
+      if (value <= 145) return "approximately normal";
+      return "increased";
+    }
+
+    function pressureLength(value) {
+      return clamp(28 + value * 2.05, 30, 170);
+    }
+
+    function pressureWidth(value) {
+      return clamp(2.5 + Math.sqrt(Math.max(value, 0)) * 0.72, 2.5, 8.4);
+    }
+
+    function directionText(value) {
+      if (Math.abs(value) < 0.7) return "near equilibrium";
+      return value > 0 ? "outward (filtration)" : "inward (opposes filtration)";
+    }
+
+    function formatPressure(value) {
+      const rounded = Math.round(value * 10) / 10;
+      return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+    }
+
+    function formatSigned(value) {
+      const pressure = formatPressure(value);
+      return value > 0 ? `+${pressure}` : pressure;
+    }
+
+    function random(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    function mapRange(value, inMin, inMax, outMin, outMax) {
+      const t = clamp((value - inMin) / (inMax - inMin), 0, 1);
+      return outMin + (outMax - outMin) * t;
+    }
+
+    function easeInOut(t) {
+      return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    }
+
+    function svgEl(tag, attrs) {
+      const el = document.createElementNS(SVG_NS, tag);
+      Object.entries(attrs).forEach(([key, value]) => {
+        el.setAttribute(key, value);
+      });
+      return el;
+    }
+
+    document.addEventListener("DOMContentLoaded", initializeScene);
+  </script>
+</body>
+</html>

@@ -1,0 +1,1277 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Post-Transcriptional and Post-Translational Control of Gene Expression</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #596579;
+      --panel: #ffffff;
+      --line: #d8e0ec;
+      --blue: #2f7de1;
+      --green: #24a36b;
+      --orange: #e8842f;
+      --purple: #8b5bd6;
+      --gray: #9aa4b2;
+      --red: #d83b4c;
+      --gold: #f2bf2f;
+      --teal: #188d9e;
+      --bg: #f3f7fb;
+      --control: #25466f;
+      color-scheme: light;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 20% 8%, rgba(47, 125, 225, 0.12), transparent 28rem),
+        radial-gradient(circle at 88% 18%, rgba(36, 163, 107, 0.10), transparent 24rem),
+        linear-gradient(180deg, #f8fbff 0%, #eef4f9 100%);
+    }
+
+    .app {
+      width: min(1480px, 100%);
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    header {
+      position: relative;
+      padding: 0 180px;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.2rem, 2.1vw, 2rem);
+      line-height: 1.12;
+      letter-spacing: 0;
+      text-align: center;
+    }
+
+    .step-readout {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      min-width: 168px;
+      color: var(--muted);
+      font-weight: 700;
+      text-align: right;
+      font-size: 0.95rem;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .stage-wrap,
+    .controls,
+    .caption-card {
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid var(--line);
+      box-shadow: 0 18px 44px rgba(31, 49, 80, 0.10);
+    }
+
+    .stage-wrap {
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 420px;
+      background: #f9fcff;
+    }
+
+    .controls {
+      border-radius: 8px;
+      padding: 14px;
+      position: sticky;
+      top: 12px;
+    }
+
+    .controls h2 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+      letter-spacing: 0;
+    }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    button {
+      border: 1px solid #1c3d64;
+      border-radius: 8px;
+      background: var(--control);
+      color: white;
+      font: inherit;
+      font-weight: 750;
+      min-height: 42px;
+      padding: 9px 10px;
+      cursor: pointer;
+      transition: transform 120ms ease, background 120ms ease, box-shadow 120ms ease;
+    }
+
+    button:hover {
+      background: #1b3659;
+      box-shadow: 0 8px 16px rgba(37, 70, 111, 0.18);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button.secondary {
+      background: #f8fbff;
+      color: var(--control);
+    }
+
+    button.secondary:hover {
+      background: #edf5ff;
+    }
+
+    button.full {
+      grid-column: 1 / -1;
+      background: #1f7a68;
+      border-color: #176050;
+    }
+
+    .field {
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+      margin-top: 12px;
+    }
+
+    .field label,
+    .toggle-list label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--ink);
+      font-size: 0.94rem;
+      line-height: 1.25;
+    }
+
+    .speed-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--teal);
+    }
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--teal);
+      flex: 0 0 auto;
+    }
+
+    .toggle-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .caption-card {
+      border-radius: 8px;
+      margin-top: 14px;
+      padding: 14px 16px;
+      min-height: 88px;
+    }
+
+    .caption-title {
+      margin: 0 0 4px;
+      font-weight: 800;
+      color: #234568;
+    }
+
+    .caption-text {
+      margin: 0;
+      color: #26364f;
+      font-size: 1.02rem;
+      line-height: 1.45;
+    }
+
+    .attribution {
+      margin: -4px 0 12px;
+      color: var(--muted);
+      font-size: 0.94rem;
+      text-align: center;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 980px) {
+      header {
+        padding: 0;
+      }
+
+      .step-readout {
+        position: static;
+        margin: 6px auto 0;
+        text-align: center;
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        position: static;
+      }
+
+    }
+
+    @media (max-width: 620px) {
+      .app {
+        padding: 12px;
+      }
+
+      .step-readout {
+        margin-top: 8px;
+      }
+
+      .button-grid {
+        grid-template-columns: 1fr;
+      }
+
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Post-Transcriptional and Post-Translational Control of Gene Expression</h1>
+      <div class="step-readout" id="stepReadout">Step 1 of 12</div>
+    </header>
+    <p class="attribution">Animation Prompted by Jerred Seveyka for his biology class.</p>
+
+    <main class="workspace">
+      <section>
+        <div class="stage-wrap" aria-label="Gene expression control animation">
+          <svg id="stage" viewBox="0 0 1200 700" role="img" aria-labelledby="svgTitle svgDesc">
+            <title id="svgTitle">Gene expression control animation</title>
+            <desc id="svgDesc">Step-based animation showing mRNA processing, translation control, ubiquitin tagging, and proteasome degradation.</desc>
+          </svg>
+        </div>
+
+        <section class="caption-card" aria-live="polite">
+          <p class="caption-title" id="captionTitle">Step 1 - Transcription of pre-mRNA in the nucleus</p>
+          <p class="caption-text" id="captionText">A gene is transcribed into pre-mRNA, which contains both exons and introns.</p>
+        </section>
+      </section>
+
+      <aside class="controls" aria-label="Animation controls">
+        <h2>Controls</h2>
+        <div class="button-grid">
+          <button id="playPause" type="button" aria-label="Play / Pause animation" title="Play / Pause">Play</button>
+          <button id="repeatStep" type="button" class="secondary">Repeat Step</button>
+          <button id="stepBack" type="button" class="secondary">Step Back</button>
+          <button id="stepForward" type="button" class="secondary">Step Forward</button>
+          <button id="reset" type="button" class="secondary">Reset</button>
+          <button id="runFull" type="button" class="full">Run Full Sequence</button>
+        </div>
+
+        <div class="field">
+          <label for="speed">Speed <strong id="speedValue">1.0x</strong></label>
+          <div class="speed-row">
+            <input id="speed" type="range" min="0.5" max="2.5" step="0.1" value="1">
+          </div>
+        </div>
+
+        <div class="field toggle-list">
+          <label>Show alternate splicing <input id="toggleAlt" type="checkbox" checked></label>
+          <label>Show microRNA inhibition <input id="toggleMicro" type="checkbox" checked></label>
+          <label>Show siRNA degradation <input id="toggleSi" type="checkbox" checked></label>
+          <label>Show poly-A tail shortening <input id="togglePolyShort" type="checkbox" checked></label>
+          <label>Show ubiquitin/proteasome degradation <input id="toggleUb" type="checkbox" checked></label>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    // Data model for the step-based animation.
+    const STEPS = [
+      {
+        title: "Transcription of pre-mRNA in the nucleus",
+        duration: 6200,
+        caption: "A gene is transcribed into pre-mRNA, which contains both exons and introns."
+      },
+      {
+        title: "RNA splicing",
+        duration: 6200,
+        caption: "Introns are removed and exons are joined to produce mature mRNA."
+      },
+      {
+        title: "Alternate RNA splicing",
+        duration: 6500,
+        caption: "Alternate RNA splicing allows one gene to produce different mRNA isoforms."
+      },
+      {
+        title: "5' cap and poly-A tail",
+        duration: 5400,
+        caption: "A 5&#8217; cap and poly-A tail help protect mRNA and support translation."
+      },
+      {
+        title: "Export through a nuclear pore",
+        duration: 6000,
+        caption: "Mature mRNA exits the nucleus through a nuclear pore."
+      },
+      {
+        title: "Translation by ribosomes",
+        duration: 7200,
+        caption: "Different mRNA isoforms can be translated into different protein isoforms."
+      },
+      {
+        title: "microRNA blocks translation",
+        duration: 5600,
+        caption: "microRNA can bind mRNA and block translation."
+      },
+      {
+        title: "siRNA causes mRNA degradation",
+        duration: 5700,
+        caption: "siRNA binds a matching mRNA, then recruits the RISC complex, which degrades the mRNA."
+      },
+      {
+        title: "Poly-A tail shortening and exonuclease degradation",
+        duration: 6500,
+        caption: "As the poly-A tail shortens, mRNA becomes less stable and may be degraded by exonucleases."
+      },
+      {
+        title: "Transition to post-translational control",
+        duration: 5200,
+        caption: "The view shifts from mRNA regulation to post-translational control of proteins."
+      },
+      {
+        title: "Ubiquitin tagging",
+        duration: 6500,
+        caption: "Proteins can be tagged with ubiquitin. Longer ubiquitin chains often mark proteins for degradation."
+      },
+      {
+        title: "Proteasome degradation",
+        duration: 7000,
+        caption: "Proteins with long ubiquitin chains are degraded by the proteasome into short fragments."
+      }
+    ];
+
+    const EXON_COLORS = {
+      1: "#2f7de1",
+      2: "#24a36b",
+      3: "#e8842f",
+      4: "#8b5bd6"
+    };
+
+    const PRE_MRNA = [
+      { type: "exon", id: 1, w: 82, color: EXON_COLORS[1], label: "Exon 1" },
+      { type: "intron", id: 1, w: 50, color: "#9aa4b2", label: "Intron 1" },
+      { type: "exon", id: 2, w: 82, color: EXON_COLORS[2], label: "Exon 2" },
+      { type: "intron", id: 2, w: 50, color: "#9aa4b2", label: "Intron 2" },
+      { type: "exon", id: 3, w: 82, color: EXON_COLORS[3], label: "Exon 3" },
+      { type: "intron", id: 3, w: 50, color: "#9aa4b2", label: "Intron 3" },
+      { type: "exon", id: 4, w: 82, color: EXON_COLORS[4], label: "Exon 4" }
+    ];
+
+    const ISOFORMS = [
+      { key: "A", label: "mRNA isoform A", protein: "Protein isoform A", exons: [1, 2, 3, 4] },
+      { key: "B", label: "mRNA isoform B", protein: "Protein isoform B", exons: [1, 3, 4] },
+      { key: "C", label: "mRNA isoform C", protein: "Protein isoform C", exons: [1, 2, 4] }
+    ];
+
+    const DEFAULTS = {
+      alt: true,
+      micro: true,
+      si: true,
+      polyShort: true,
+      ub: true
+    };
+
+    const state = {
+      stepIndex: 0,
+      progress: 0,
+      isPlaying: false,
+      fullSequence: false,
+      speed: 1,
+      toggles: { ...DEFAULTS },
+      lastTime: null
+    };
+
+    const stage = document.getElementById("stage");
+    const captionTitle = document.getElementById("captionTitle");
+    const captionText = document.getElementById("captionText");
+    const stepReadout = document.getElementById("stepReadout");
+    const playPause = document.getElementById("playPause");
+    const speed = document.getElementById("speed");
+    const speedValue = document.getElementById("speedValue");
+    const toggleMap = {
+      alt: document.getElementById("toggleAlt"),
+      micro: document.getElementById("toggleMicro"),
+      si: document.getElementById("toggleSi"),
+      polyShort: document.getElementById("togglePolyShort"),
+      ub: document.getElementById("toggleUb")
+    };
+
+    const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const ease = (t) => {
+      const x = clamp(t);
+      return x * x * (3 - 2 * x);
+    };
+
+    function attrs(values) {
+      return Object.entries(values)
+        .filter(([, value]) => value !== undefined && value !== null)
+        .map(([key, value]) => `${key}="${value}"`)
+        .join(" ");
+    }
+
+    function text(x, y, content, options = {}) {
+      const className = options.className || "label";
+      const anchor = options.anchor || "middle";
+      const size = options.size || 18;
+      const weight = options.weight || 700;
+      const fill = options.fill || "#172033";
+      const opacity = options.opacity === undefined ? 1 : options.opacity;
+      return `<text ${attrs({ x, y, "text-anchor": anchor, "font-size": size, "font-weight": weight, fill, opacity, class: className })}>${content}</text>`;
+    }
+
+    function labelBox(x, y, content, width, options = {}) {
+      const height = options.height || 32;
+      const fill = options.fill || "#ffffff";
+      const stroke = options.stroke || "#c8d4e4";
+      const opacity = options.opacity === undefined ? 1 : options.opacity;
+      return `
+        <g opacity="${opacity}">
+          <rect x="${x - width / 2}" y="${y - height + 7}" width="${width}" height="${height}" rx="7" fill="${fill}" stroke="${stroke}"/>
+          ${text(x, y, content, { size: options.size || 15, fill: options.textFill || "#172033" })}
+        </g>`;
+    }
+
+    function defs() {
+      return `
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#315b9b"></path>
+          </marker>
+          <marker id="redArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#d83b4c"></path>
+          </marker>
+          <linearGradient id="cytoGrad" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stop-color="#f8fcff"></stop>
+            <stop offset="55%" stop-color="#eef8f8"></stop>
+            <stop offset="100%" stop-color="#f7fbf0"></stop>
+          </linearGradient>
+          <linearGradient id="nucleusGrad" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stop-color="#eaf2ff"></stop>
+            <stop offset="100%" stop-color="#cfdef7"></stop>
+          </linearGradient>
+          <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="8" stdDeviation="9" flood-color="#1b3559" flood-opacity="0.14"></feDropShadow>
+          </filter>
+        </defs>`;
+    }
+
+    function background() {
+      const dots = [];
+      for (let i = 0; i < 34; i += 1) {
+        const x = 44 + ((i * 149) % 1110);
+        const y = 48 + ((i * 91) % 590);
+        const r = 2 + (i % 3);
+        dots.push(`<circle cx="${x}" cy="${y}" r="${r}" fill="#d4e3ef" opacity="0.34"/>`);
+      }
+      return `<rect width="1200" height="700" fill="url(#cytoGrad)"/>${dots.join("")}`;
+    }
+
+    // Shared molecular drawing helpers.
+    function drawNucleus(cx, cy, r, options = {}) {
+      const opacity = options.opacity === undefined ? 1 : options.opacity;
+      const poreY = options.poreY || cy;
+      const pore = options.pore
+        ? `
+          <g opacity="${opacity}">
+            <ellipse cx="${cx + r - 6}" cy="${poreY}" rx="17" ry="38" fill="#ffffff" stroke="#315b9b" stroke-width="4"/>
+            <path d="M ${cx + r - 25} ${poreY - 28} C ${cx + r + 8} ${poreY - 8}, ${cx + r + 8} ${poreY + 8}, ${cx + r - 25} ${poreY + 28}" fill="none" stroke="#315b9b" stroke-width="4"/>
+            ${labelBox(cx + r + 78, poreY - 45, "nuclear pore", 122, { opacity, height: 30, size: 14 })}
+          </g>`
+        : "";
+      return `
+        <g opacity="${opacity}">
+          <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#nucleusGrad)" stroke="#315b9b" stroke-width="5" filter="url(#softShadow)"/>
+          <circle cx="${cx}" cy="${cy}" r="${r - 14}" fill="none" stroke="#7fa4d8" stroke-width="2" stroke-dasharray="10 10" opacity="0.65"/>
+          ${text(cx, cy - r + 37, "nucleus", { size: 20, fill: "#244b7a" })}
+          ${pore}
+        </g>`;
+    }
+
+    function wavePath(x, y, length, amp, phase = 0) {
+      const points = [];
+      for (let i = 0; i <= 48; i += 1) {
+        const t = i / 48;
+        points.push(`${x + t * length},${y + Math.sin(t * Math.PI * 8 + phase) * amp}`);
+      }
+      return `M ${points.join(" L ")}`;
+    }
+
+    function drawDNA(x, y, length, options = {}) {
+      const opacity = options.opacity === undefined ? 1 : options.opacity;
+      const pairs = [];
+      for (let i = 0; i <= 16; i += 1) {
+        const t = i / 16;
+        const px = x + t * length;
+        const y1 = y + Math.sin(t * Math.PI * 8) * 11;
+        const y2 = y + 34 - Math.sin(t * Math.PI * 8) * 11;
+        pairs.push(`<line x1="${px}" y1="${y1}" x2="${px}" y2="${y2}" stroke="#7b93b8" stroke-width="2" opacity="0.72"/>`);
+      }
+      return `
+        <g opacity="${opacity}">
+          <path d="${wavePath(x, y, length, 11, 0)}" fill="none" stroke="#315b9b" stroke-width="5" stroke-linecap="round"/>
+          <path d="${wavePath(x, y + 34, length, 11, Math.PI)}" fill="none" stroke="#315b9b" stroke-width="5" stroke-linecap="round"/>
+          ${pairs.join("")}
+          ${text(x + length / 2, y - 18, "DNA", { fill: "#244b7a" })}
+        </g>`;
+    }
+
+    function drawPolymerase(x, y, opacity = 1) {
+      return `
+        <g opacity="${opacity}">
+          <ellipse cx="${x}" cy="${y + 18}" rx="42" ry="30" fill="#ffd27a" stroke="#9b6b13" stroke-width="3"/>
+          <circle cx="${x - 17}" cy="${y + 8}" r="15" fill="#ffe3a6" stroke="#9b6b13" stroke-width="2"/>
+          <circle cx="${x + 19}" cy="${y + 24}" r="16" fill="#f6bd52" stroke="#9b6b13" stroke-width="2"/>
+          ${labelBox(x, y + 70, "RNA polymerase", 144, { size: 14 })}
+        </g>`;
+    }
+
+    function drawPreMRNA(x, y, progress = 1, options = {}) {
+      const opacity = options.opacity === undefined ? 1 : options.opacity;
+      const scale = options.scale || 1;
+      const label = options.label;
+      const h = 25 * scale;
+      const total = PRE_MRNA.reduce((sum, segment) => sum + segment.w * scale, 0);
+      let remaining = clamp(progress) * total;
+      let cursor = x;
+      const pieces = [];
+      PRE_MRNA.forEach((segment) => {
+        const w = segment.w * scale;
+        const visible = Math.max(0, Math.min(w, remaining));
+        if (visible > 0.5) {
+          const fill = segment.type === "intron" ? "#9aa4b2" : segment.color;
+          const stroke = segment.type === "intron" ? "#667180" : "#1d4c93";
+          const dash = segment.type === "intron" ? "4 4" : "";
+          pieces.push(`<rect x="${cursor}" y="${y - h / 2}" width="${visible}" height="${h}" rx="7" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-dasharray="${dash}" opacity="${segment.type === "intron" ? 0.72 : 0.96}"/>`);
+          if (visible > 31 * scale) {
+            const short = segment.type === "intron" ? `I${segment.id}` : `E${segment.id}`;
+            pieces.push(text(cursor + visible / 2, y + 5 * scale, short, { size: 14 * scale, fill: "#ffffff", weight: 800 }));
+          }
+        }
+        cursor += w;
+        remaining -= w;
+      });
+      const labelMarkup = label ? text(x + total / 2, y - 30 * scale, label, { size: 17, fill: "#2f4057" }) : "";
+      return `<g opacity="${opacity}">${labelMarkup}<line x1="${x - 10}" y1="${y}" x2="${x + total + 10}" y2="${y}" stroke="#c6b45f" stroke-width="${4 * scale}" stroke-linecap="round"/>${pieces.join("")}</g>`;
+    }
+
+    function drawCap(x, y, opacity = 1) {
+      return `
+        <g opacity="${opacity}">
+          <path d="M ${x} ${y - 18} Q ${x - 21} ${y - 11}, ${x - 21} ${y + 7} L ${x - 21} ${y + 17} L ${x + 10} ${y + 17} L ${x + 10} ${y - 18} Z" fill="#223b94" stroke="#13265d" stroke-width="2"/>
+          ${text(x - 6, y + 5, "5&#8217;", { fill: "#ffffff", size: 15 })}
+        </g>`;
+    }
+
+    function drawPolyATail(x, y, count, options = {}) {
+      const opacity = options.opacity === undefined ? 1 : options.opacity;
+      const pieces = [];
+      for (let i = 0; i < count; i += 1) {
+        const cx = x + i * 21;
+        pieces.push(`<circle cx="${cx}" cy="${y}" r="10" fill="#fff6c8" stroke="#ba8e18" stroke-width="2"/>`);
+        pieces.push(text(cx, y + 5, "A", { size: 12, fill: "#6f540d", weight: 900 }));
+      }
+      return `<g opacity="${opacity}">${pieces.join("")}</g>`;
+    }
+
+    function drawIsoformMRNA(isoform, x, y, options = {}) {
+      const opacity = options.opacity === undefined ? 1 : options.opacity;
+      const exonW = options.exonW || 66;
+      const h = options.height || 24;
+      const cap = options.cap === undefined ? true : options.cap;
+      const capProgress = options.capProgress === undefined ? 1 : options.capProgress;
+      const tailCount = options.tailCount === undefined ? 8 : options.tailCount;
+      const tailOpacity = options.tailOpacity === undefined ? 1 : options.tailOpacity;
+      const showLabel = options.showLabel !== false;
+      const pieces = [];
+      const start = x;
+      const end = x + isoform.exons.length * exonW;
+      pieces.push(`<line x1="${start - 38}" y1="${y}" x2="${end + 20 + Math.max(tailCount, 1) * 21}" y2="${y}" stroke="#2a9d8f" stroke-width="5" stroke-linecap="round"/>`);
+      if (cap) {
+        pieces.push(drawCap(start - 38, y, capProgress));
+      }
+      isoform.exons.forEach((exon, index) => {
+        const px = start + index * exonW;
+        pieces.push(`<rect x="${px}" y="${y - h / 2}" width="${exonW - 5}" height="${h}" rx="7" fill="${EXON_COLORS[exon]}" stroke="#17436e" stroke-width="2"/>`);
+        pieces.push(text(px + (exonW - 5) / 2, y + 5, `E${exon}`, { size: 14, fill: "#ffffff", weight: 850 }));
+      });
+      if (tailCount > 0) {
+        pieces.push(drawPolyATail(end + 28, y, tailCount, { opacity: tailOpacity }));
+      }
+      if (showLabel) {
+        pieces.push(text(start + (end - start) / 2, y - 31, isoform.label, { size: 17, fill: "#24364f" }));
+      }
+      return `<g opacity="${opacity}">${pieces.join("")}</g>`;
+    }
+
+    function drawRibosome(x, y, options = {}) {
+      const opacity = options.opacity === undefined ? 1 : options.opacity;
+      const blocked = options.blocked || false;
+      const pieces = `
+        <ellipse cx="${x}" cy="${y - 8}" rx="38" ry="22" fill="#bdd7ff" stroke="#315b9b" stroke-width="3"/>
+        <ellipse cx="${x + 8}" cy="${y + 17}" rx="46" ry="23" fill="#8fb8ef" stroke="#315b9b" stroke-width="3"/>
+        ${text(x, y + 54, "ribosome", { size: 14, fill: "#244b7a" })}
+      `;
+      const block = blocked
+        ? `<g>
+            <circle cx="${x + 56}" cy="${y - 17}" r="21" fill="#ffffff" stroke="#d83b4c" stroke-width="5"/>
+            <line x1="${x + 43}" y1="${y - 4}" x2="${x + 69}" y2="${y - 30}" stroke="#d83b4c" stroke-width="5" stroke-linecap="round"/>
+          </g>`
+        : "";
+      return `<g opacity="${opacity}">${pieces}${block}</g>`;
+    }
+
+    function drawProteinChain(exons, x, y, progress = 1, options = {}) {
+      const opacity = options.opacity === undefined ? 1 : options.opacity;
+      const label = options.label;
+      const domainW = options.domainW || 54;
+      const pieces = [];
+      const visibleDomains = Math.ceil(clamp(progress) * exons.length);
+      exons.forEach((exon, index) => {
+        if (index < visibleDomains) {
+          const local = clamp(progress * exons.length - index);
+          const width = Math.max(12, domainW * Math.min(1, local));
+          const px = x + index * (domainW + 8);
+          pieces.push(`<rect x="${px}" y="${y - 16}" width="${width}" height="32" rx="16" fill="${EXON_COLORS[exon]}" stroke="#17395f" stroke-width="2"/>`);
+        }
+      });
+      if (label) {
+        pieces.push(text(x + (exons.length * (domainW + 8) - 8) / 2, y + 46, label, { size: 16, fill: "#24364f" }));
+      }
+      return `<g opacity="${opacity}">${pieces.join("")}</g>`;
+    }
+
+    function drawFoldedProtein(exons, x, y, scale = 1, options = {}) {
+      const opacity = options.opacity === undefined ? 1 : options.opacity;
+      const label = options.label;
+      const coords = [
+        [-48, 0],
+        [-16, -32],
+        [22, -10],
+        [52, 22]
+      ];
+      const points = exons.map((_, index) => {
+        const base = coords[index] || [index * 26 - 30, 0];
+        return [x + base[0] * scale, y + base[1] * scale];
+      });
+      const line = points.length > 1
+        ? `<path d="M ${points.map((point) => point.join(",")).join(" L ")}" fill="none" stroke="#405064" stroke-width="${5 * scale}" stroke-linecap="round" stroke-linejoin="round" opacity="0.42"/>`
+        : "";
+      const beads = exons.map((exon, index) => {
+        const [px, py] = points[index];
+        return `<circle cx="${px}" cy="${py}" r="${18 * scale}" fill="${EXON_COLORS[exon]}" stroke="#17395f" stroke-width="${2 * scale}"/>`;
+      }).join("");
+      const labelMarkup = label ? text(x, y + 60 * scale, label, { size: 16, fill: "#26364f" }) : "";
+      return `<g opacity="${opacity}">${line}${beads}${labelMarkup}</g>`;
+    }
+
+    function drawMicroRNA(x, y, width = 130, options = {}) {
+      const opacity = options.opacity === undefined ? 1 : options.opacity;
+      const bases = [];
+      for (let i = 0; i < 7; i += 1) {
+        bases.push(`<circle cx="${x + i * 18}" cy="${y}" r="5" fill="#d83b4c"/>`);
+      }
+      return `
+        <g opacity="${opacity}">
+          <line x1="${x}" y1="${y}" x2="${x + width}" y2="${y}" stroke="#d83b4c" stroke-width="5" stroke-linecap="round"/>
+          ${bases.join("")}
+          ${text(x + width / 2, y - 16, "microRNA", { size: 16, fill: "#a01f31" })}
+        </g>`;
+    }
+
+    function drawSiRNA(x, y, width = 160, options = {}) {
+      const opacity = options.opacity === undefined ? 1 : options.opacity;
+      return `
+        <g opacity="${opacity}">
+          <line x1="${x}" y1="${y - 6}" x2="${x + width}" y2="${y - 6}" stroke="#d83b4c" stroke-width="5" stroke-linecap="round"/>
+          <line x1="${x + 10}" y1="${y + 8}" x2="${x + width - 14}" y2="${y + 8}" stroke="#f07583" stroke-width="5" stroke-linecap="round"/>
+          ${text(x + width / 2, y - 22, "siRNA", { size: 16, fill: "#a01f31" })}
+        </g>`;
+    }
+
+    function drawRISC(x, y, options = {}) {
+      const opacity = options.opacity === undefined ? 1 : options.opacity;
+      return `
+        <g opacity="${opacity}">
+          <path d="M ${x - 94} ${y - 21} C ${x - 78} ${y - 67}, ${x - 22} ${y - 70}, ${x + 8} ${y - 48} C ${x + 46} ${y - 72}, ${x + 92} ${y - 43}, ${x + 94} ${y - 5} C ${x + 98} ${y + 40}, ${x + 55} ${y + 62}, ${x + 14} ${y + 48} C ${x - 28} ${y + 72}, ${x - 84} ${y + 47}, ${x - 94} ${y - 21} Z" fill="#ffd5dc" stroke="#9f3040" stroke-width="4"/>
+          ${text(x, y - 18, "RISC", { size: 22, fill: "#7d1f2d", weight: 900 })}
+        </g>`;
+    }
+
+    function drawExonuclease(x, y, opacity = 1) {
+      return `
+        <g opacity="${opacity}">
+          <path d="M ${x - 34} ${y} C ${x - 30} ${y - 31}, ${x + 10} ${y - 38}, ${x + 32} ${y - 14} C ${x + 55} ${y + 12}, ${x + 20} ${y + 46}, ${x - 15} ${y + 34} C ${x - 42} ${y + 25}, ${x - 49} ${y + 9}, ${x - 34} ${y} Z" fill="#c4eadf" stroke="#237c6a" stroke-width="3"/>
+          ${text(x, y + 5, "exo", { size: 16, fill: "#14594b" })}
+          ${labelBox(x, y + 70, "exonuclease", 112, { size: 14 })}
+        </g>`;
+    }
+
+    function drawUbChain(x, y, count, options = {}) {
+      const opacity = options.opacity === undefined ? 1 : options.opacity;
+      const dx = options.dx || 23;
+      const dy = options.dy || -18;
+      const pieces = [];
+      for (let i = 0; i < count; i += 1) {
+        const cx = x + i * dx;
+        const cy = y + i * dy;
+        if (i > 0) {
+          pieces.push(`<line x1="${x + (i - 1) * dx}" y1="${y + (i - 1) * dy}" x2="${cx}" y2="${cy}" stroke="#ab7c0e" stroke-width="3"/>`);
+        }
+        pieces.push(`<circle cx="${cx}" cy="${cy}" r="15" fill="#f2bf2f" stroke="#8a650c" stroke-width="2"/>`);
+        pieces.push(text(cx, cy + 5, "Ub", { size: 11, fill: "#5f4607", weight: 900 }));
+      }
+      return `<g opacity="${opacity}">${pieces.join("")}</g>`;
+    }
+
+    function drawProteasome(x, y, options = {}) {
+      const opacity = options.opacity === undefined ? 1 : options.opacity;
+      const cutaway = options.cutaway || 0;
+      return `
+        <g opacity="${opacity}">
+          <rect x="${x - 88}" y="${y - 115}" width="176" height="230" rx="64" fill="#d9c8ef" stroke="#624b91" stroke-width="5"/>
+          <ellipse cx="${x}" cy="${y - 114}" rx="82" ry="34" fill="#efe5ff" stroke="#624b91" stroke-width="5"/>
+          <ellipse cx="${x}" cy="${y + 114}" rx="82" ry="34" fill="#c9b2e7" stroke="#624b91" stroke-width="5"/>
+          <rect x="${x - 30}" y="${y - 108}" width="60" height="216" rx="28" fill="#ffffff" opacity="${0.30 + cutaway * 0.28}"/>
+          <path d="M ${x - 88} ${y - 60} L ${x + 88} ${y - 60} M ${x - 88} ${y} L ${x + 88} ${y} M ${x - 88} ${y + 60} L ${x + 88} ${y + 60}" stroke="#816bad" stroke-width="3" opacity="0.45"/>
+          ${text(x, y + 166, "proteasome", { size: 19, fill: "#44336b" })}
+        </g>`;
+    }
+
+    function activeIsoforms() {
+      return state.toggles.alt ? ISOFORMS : [ISOFORMS[0]];
+    }
+
+    // Scene renderers for the twelve required biology steps.
+    function drawStep1(p) {
+      const q = ease(p);
+      const nX = 360;
+      const polymeraseX = lerp(nX - 176, nX + 188, q);
+      return `
+        ${drawNucleus(nX, 330, 250)}
+        ${drawDNA(nX - 205, 236, 410)}
+        ${drawPolymerase(polymeraseX, 232)}
+        ${drawPreMRNA(nX - 198, 345, q, { label: "pre-mRNA" })}
+        <path d="M ${polymeraseX - 12} 290 C ${polymeraseX + 20} 308, ${polymeraseX + 24} 325, ${polymeraseX + 8} 345" fill="none" stroke="#c6b45f" stroke-width="4" stroke-linecap="round"/>
+        ${labelBox(900, 120, "pre-mRNA contains exons and introns", 310, { fill: "#ffffff", size: 15 })}
+      `;
+    }
+
+    function drawStep2(p) {
+      const q = ease(p);
+      const nX = 360;
+      const x0 = nX - 238;
+      const y0 = 320;
+      const finalX = nX - 164;
+      const pieces = [];
+      let cursor = x0;
+      let exonIndex = 0;
+      PRE_MRNA.forEach((segment) => {
+        if (segment.type === "exon") {
+          const endX = finalX + exonIndex * 82;
+          const x = lerp(cursor, endX, q);
+          const y = lerp(y0, 365, q);
+          pieces.push(`<rect x="${x}" y="${y - 14}" width="82" height="28" rx="8" fill="${segment.color}" stroke="#17436e" stroke-width="2"/>`);
+          pieces.push(text(x + 41, y + 5, `E${segment.id}`, { size: 15, fill: "#ffffff", weight: 850 }));
+          exonIndex += 1;
+        } else {
+          const y = lerp(y0, 445 + (segment.id % 2) * 25, q);
+          const fade = 1 - q * 0.62;
+          pieces.push(`<path d="M ${cursor + 2} ${y0 + 5} C ${cursor + 8} ${y - 55}, ${cursor + 42} ${y - 55}, ${cursor + 48} ${y0 + 5}" fill="none" stroke="#667180" stroke-width="3" stroke-dasharray="6 5" opacity="${fade}"/>`);
+          pieces.push(`<rect x="${cursor}" y="${y - 12}" width="50" height="24" rx="7" fill="#9aa4b2" stroke="#667180" stroke-width="2" stroke-dasharray="4 4" opacity="${fade}"/>`);
+          pieces.push(text(cursor + 25, y + 5, `I${segment.id}`, { size: 13, fill: "#ffffff", opacity: fade }));
+        }
+        cursor += segment.w;
+      });
+      return `
+        ${drawNucleus(nX, 330, 250)}
+        ${drawDNA(nX - 205, 220, 410, { opacity: 0.25 })}
+        ${text(nX, 255, "pre-mRNA detached from DNA", { size: 17, fill: "#48566a", opacity: 0.8 })}
+        <line x1="${finalX - 22}" y1="365" x2="${finalX + 350}" y2="365" stroke="#2a9d8f" stroke-width="5" stroke-linecap="round" opacity="${0.25 + q * 0.65}"/>
+        ${pieces.join("")}
+        ${labelBox(nX + 100, 417, "exons spliced together", 190, { opacity: clamp((q - 0.35) / 0.5), size: 14 })}
+        ${labelBox(nX - 10, 527, "introns removed", 150, { opacity: clamp((q - 0.25) / 0.55), size: 14 })}
+      `;
+    }
+
+    function drawStep3(p) {
+      const q = ease(p);
+      const nX = 360;
+      if (!state.toggles.alt) {
+        return `
+          ${drawNucleus(nX, 330, 250)}
+          ${drawIsoformMRNA(ISOFORMS[0], 235, 350, { cap: false, tailCount: 0, opacity: 1 })}
+          ${labelBox(830, 318, "Alternate splicing hidden", 230, { fill: "#fff7e2", stroke: "#d6a34b" })}
+          ${text(830, 358, "The default mature mRNA continues.", { size: 16, fill: "#5d4b1f" })}
+        `;
+      }
+      const rows = [260, 370, 480];
+      const rowMarkup = ISOFORMS.map((isoform, index) => {
+        const rp = clamp((q - index * 0.13) / 0.72);
+        const copyOpacity = 0.62 * (1 - rp);
+        return `
+          <g>
+            ${drawPreMRNA(92, rows[index], 1, { opacity: copyOpacity, scale: 0.72 })}
+            <path d="M 430 ${rows[index]} C 480 ${rows[index]}, 500 ${rows[index]}, 535 ${rows[index]}" fill="none" stroke="#315b9b" stroke-width="3" marker-end="url(#arrow)" opacity="${0.55 + rp * 0.4}"/>
+            ${drawIsoformMRNA(isoform, 555, rows[index], { cap: false, tailCount: 0, opacity: rp, exonW: 64 })}
+          </g>`;
+      }).join("");
+      return `
+        ${drawNucleus(nX, 342, 260)}
+        ${drawPreMRNA(124, 153, 1, { label: "same pre-mRNA", scale: 0.82 })}
+        <path d="M 360 182 C 320 220, 260 226, 235 245" fill="none" stroke="#315b9b" stroke-width="3" marker-end="url(#arrow)" opacity="0.72"/>
+        <path d="M 360 182 C 420 226, 420 333, 500 354" fill="none" stroke="#315b9b" stroke-width="3" marker-end="url(#arrow)" opacity="0.72"/>
+        <path d="M 360 182 C 410 270, 350 441, 500 462" fill="none" stroke="#315b9b" stroke-width="3" marker-end="url(#arrow)" opacity="0.72"/>
+        ${rowMarkup}
+        ${labelBox(922, 151, "one gene, multiple mRNAs", 230, { fill: "#ffffff" })}
+      `;
+    }
+
+    function drawStep4(p) {
+      const q = ease(p);
+      const nX = 360;
+      const isoforms = activeIsoforms();
+      const rows = isoforms.length === 1 ? [360] : [235, 350, 465];
+      const markup = isoforms.map((isoform, index) => {
+        const rp = clamp((q - index * 0.08) / 0.78);
+        const tailCount = Math.round(lerp(0, 8, rp));
+        return drawIsoformMRNA(isoform, 236, rows[index], {
+          cap: true,
+          capProgress: rp,
+          tailCount,
+          tailOpacity: rp,
+          exonW: 64
+        });
+      }).join("");
+      return `
+        ${drawNucleus(nX, 342, 260)}
+        ${markup}
+        ${labelBox(175, 170, "5&#8217; cap", 86, { opacity: clamp(q * 2), fill: "#eef3ff", stroke: "#8fa5d8" })}
+        ${labelBox(710, 170, "poly-A tail", 112, { opacity: clamp((q - 0.25) * 2), fill: "#fff7dc", stroke: "#d5a82f" })}
+        <path d="M 188 184 L 209 221" stroke="#315b9b" stroke-width="3" marker-end="url(#arrow)" opacity="${clamp(q * 2)}"/>
+        <path d="M 704 184 L 690 226" stroke="#315b9b" stroke-width="3" marker-end="url(#arrow)" opacity="${clamp((q - 0.25) * 2)}"/>
+      `;
+    }
+
+    function drawStep5(p) {
+      const q = ease(p);
+      const nX = lerp(360, 64, q);
+      const isoforms = activeIsoforms();
+      const rows = isoforms.length === 1 ? [344] : [228, 344, 460];
+      const markup = isoforms.map((isoform, index) => {
+        const startX = nX - 128;
+        const endX = 565;
+        const x = lerp(startX, endX, q);
+        return drawIsoformMRNA(isoform, x, rows[index], {
+          exonW: 58,
+          tailCount: 7,
+          opacity: 0.95,
+          showLabel: q > 0.18
+        });
+      }).join("");
+      const poreX = nX + 248;
+      return `
+        ${drawNucleus(nX, 344, 250, { pore: true, poreY: 344 })}
+        ${markup}
+        <path d="M ${poreX + 5} 344 C 430 344, 505 344, 560 344" fill="none" stroke="#315b9b" stroke-width="4" marker-end="url(#arrow)" opacity="0.64"/>
+        ${labelBox(850, 96, "cytoplasm becomes the main workspace", 300, { fill: "#eefaf7", stroke: "#8ccabd", opacity: clamp((q - 0.18) / 0.6) })}
+      `;
+    }
+
+    function drawStep6(p) {
+      const q = ease(p);
+      const isoforms = activeIsoforms();
+      const rows = isoforms.length === 1 ? [330] : [156, 330, 504];
+      const markup = isoforms.map((isoform, index) => {
+        const rowY = rows[index];
+        const x = 104;
+        const exonW = 66;
+        const trackLen = isoform.exons.length * exonW;
+        const riboX = x + 20 + q * (trackLen + 55);
+        const proteinProgress = clamp((q - 0.12) / 0.78);
+        return `
+          ${drawIsoformMRNA(isoform, x, rowY, { exonW, tailCount: 7 })}
+          ${drawRibosome(riboX, rowY - 43)}
+          <path d="M ${riboX + 24} ${rowY - 64} C ${riboX + 42} ${rowY - 96}, ${riboX + 82} ${rowY - 98}, ${riboX + 98} ${rowY - 72}" fill="none" stroke="#405064" stroke-width="4" opacity="${proteinProgress}"/>
+          ${drawProteinChain(isoform.exons, 760, rowY - 16, proteinProgress, { label: isoform.protein, opacity: proteinProgress })}
+        `;
+      }).join("");
+      return `
+        ${drawNucleus(-70, 344, 250, { opacity: 0.18 })}
+        ${labelBox(1040, 84, "translation in cytoplasm", 210, { fill: "#eefaf7", stroke: "#8ccabd" })}
+        ${markup}
+      `;
+    }
+
+    function drawStep7(p) {
+      const q = ease(p);
+      if (!state.toggles.micro) {
+        return `
+          ${drawIsoformMRNA(ISOFORMS[0], 230, 335, { exonW: 72, tailCount: 7 })}
+          ${drawRibosome(460, 292, { opacity: 0.85 })}
+          ${labelBox(730, 300, "microRNA inhibition hidden", 240, { fill: "#fff7e2", stroke: "#d6a34b" })}
+          ${text(730, 342, "The mRNA remains available for translation.", { size: 16, fill: "#5d4b1f" })}
+        `;
+      }
+      const bindP = clamp(q / 0.48);
+      const microY = lerp(180, 322, bindP);
+      const microX = lerp(465, 405, bindP);
+      const riboX = lerp(190, 365, clamp(q / 0.62));
+      return `
+        ${labelBox(257, 135, "mRNA stays intact", 160, { fill: "#eefaf7", stroke: "#8ccabd", opacity: 0.9 })}
+        ${drawIsoformMRNA(ISOFORMS[1], 275, 350, { exonW: 78, tailCount: 7 })}
+        ${drawMicroRNA(microX, microY, 126)}
+        <path d="M ${microX + 64} ${microY + 12} L ${microX + 64} 338" stroke="#d83b4c" stroke-width="3" stroke-dasharray="5 6" opacity="${bindP}"/>
+        ${drawRibosome(riboX, 306, { blocked: q > 0.55 })}
+        ${labelBox(680, 420, "translation blocked", 184, { fill: "#ffeef1", stroke: "#d83b4c", opacity: clamp((q - 0.48) / 0.42) })}
+      `;
+    }
+
+    function drawBrokenMRNA(x, y, isoform, progress) {
+      const pieces = [];
+      const exonW = 72;
+      isoform.exons.forEach((exon, index) => {
+        const shiftX = (index - 1.2) * 18 * progress;
+        const shiftY = (index % 2 === 0 ? -1 : 1) * 42 * progress;
+        const opacity = 1 - progress * 0.78;
+        const px = x + index * exonW + shiftX;
+        pieces.push(`<rect x="${px}" y="${y - 13 + shiftY}" width="${exonW - 7}" height="26" rx="8" fill="${EXON_COLORS[exon]}" stroke="#17436e" stroke-width="2" opacity="${opacity}"/>`);
+        pieces.push(text(px + (exonW - 7) / 2, y + 5 + shiftY, `E${exon}`, { size: 14, fill: "#ffffff", opacity }));
+      });
+      for (let i = 0; i < 8; i += 1) {
+        const px = x + 50 + i * 32 + (i % 2 ? 32 : -22) * progress;
+        const py = y + 70 + (i % 3) * 18 * progress;
+        pieces.push(`<line x1="${px}" y1="${py}" x2="${px + 18}" y2="${py + 6}" stroke="#2a9d8f" stroke-width="4" stroke-linecap="round" opacity="${progress * (1 - progress * 0.25)}"/>`);
+      }
+      return pieces.join("");
+    }
+
+    function drawStep8(p) {
+      const q = ease(p);
+      if (!state.toggles.si) {
+        return `
+          ${drawIsoformMRNA(ISOFORMS[2], 240, 345, { exonW: 76, tailCount: 7 })}
+          ${labelBox(730, 306, "siRNA degradation hidden", 230, { fill: "#fff7e2", stroke: "#d6a34b" })}
+          ${text(730, 348, "No mRNA cutting is shown in this step.", { size: 16, fill: "#5d4b1f" })}
+        `;
+      }
+      const siBindP = clamp(q / 0.34);
+      const riscBindP = clamp((q - 0.38) / 0.27);
+      const riscOpacity = clamp((q - 0.36) / 0.06);
+      const cutP = clamp((q - 0.66) / 0.1);
+      const fragP = clamp((q - 0.72) / 0.26);
+      const siX = lerp(560, 352, siBindP);
+      const siY = lerp(170, 323, siBindP);
+      const riscX = lerp(760, 420, riscBindP);
+      const riscY = lerp(190, 294, riscBindP);
+      return `
+        ${fragP < 0.05 ? drawIsoformMRNA(ISOFORMS[2], 260, 350, { exonW: 76, tailCount: 7 }) : `<g>${drawBrokenMRNA(260, 350, ISOFORMS[2], fragP)}</g>`}
+        <path d="M 675 224 C 590 250, 510 282, 446 325" fill="none" stroke="#d83b4c" stroke-width="4" marker-end="url(#redArrow)" opacity="${riscOpacity * (1 - riscBindP * 0.72)}"/>
+        ${drawRISC(riscX, riscY, { opacity: riscOpacity })}
+        ${drawSiRNA(siX, siY, 154)}
+        <rect x="380" y="334" width="82" height="32" rx="10" fill="none" stroke="#d83b4c" stroke-width="3" stroke-dasharray="6 5" opacity="${siBindP * (1 - fragP)}"/>
+        <path d="M 398 327 L 420 375 M 442 327 L 420 375" stroke="#d83b4c" stroke-width="5" stroke-linecap="round" opacity="${cutP}"/>
+        ${labelBox(520, 500, "degraded mRNA fragments", 235, { fill: "#ffeef1", stroke: "#d83b4c", opacity: fragP })}
+      `;
+    }
+
+    function drawStep9(p) {
+      const q = ease(p);
+      if (!state.toggles.polyShort) {
+        return `
+          ${drawIsoformMRNA(ISOFORMS[0], 230, 335, { exonW: 72, tailCount: 8 })}
+          ${labelBox(760, 300, "poly-A shortening hidden", 240, { fill: "#fff7e2", stroke: "#d6a34b" })}
+          ${text(760, 342, "The mature mRNA is shown with a stable tail.", { size: 16, fill: "#5d4b1f" })}
+        `;
+      }
+      const tailCount = Math.max(2, Math.round(10 - clamp(q / 0.62) * 8));
+      const fragP = clamp((q - 0.64) / 0.34);
+      const exoX = lerp(850, 690, clamp((q - 0.46) / 0.32));
+      const main = fragP < 0.05
+        ? drawIsoformMRNA(ISOFORMS[0], 230, 335, { exonW: 72, tailCount })
+        : `<g>${drawBrokenMRNA(230, 335, ISOFORMS[0], fragP)}</g>`;
+      return `
+        ${main}
+        ${labelBox(655, 207, "poly-A tail shortens", 202, { fill: "#fff7dc", stroke: "#d5a82f", opacity: clamp(q / 0.35) })}
+        ${drawExonuclease(exoX, 335, clamp((q - 0.44) / 0.25))}
+        <path d="M ${exoX - 54} 335 C ${exoX - 95} 335, ${exoX - 130} 335, ${exoX - 166} 335" stroke="#237c6a" stroke-width="4" marker-end="url(#arrow)" opacity="${clamp((q - 0.52) / 0.25)}"/>
+        ${labelBox(498, 480, "unstable mRNA fragments fade", 245, { fill: "#eefaf7", stroke: "#8ccabd", opacity: fragP })}
+      `;
+    }
+
+    function drawStep10(p) {
+      const q = ease(p);
+      const backgroundOpacity = 1 - q * 0.82;
+      const proteinOpacity = clamp((q - 0.15) / 0.72);
+      const scale = lerp(0.86, 1.15, q);
+      return `
+        <g opacity="${backgroundOpacity}">
+          ${drawIsoformMRNA(ISOFORMS[0], 82, 170, { exonW: 56, tailCount: 6 })}
+          ${drawRibosome(325, 128, { opacity: 0.8 })}
+          ${drawIsoformMRNA(ISOFORMS[1], 96, 500, { exonW: 60, tailCount: 6 })}
+          ${drawRibosome(296, 458, { opacity: 0.8 })}
+        </g>
+        <g transform="translate(${lerp(0, -20, q)} ${lerp(0, -10, q)}) scale(${scale})" opacity="${proteinOpacity}">
+          ${drawFoldedProtein([1, 2, 3, 4], 330, 338, 1, { label: "folded protein A" })}
+          ${drawFoldedProtein([1, 3, 4], 560, 332, 1, { label: "folded protein B" })}
+          ${drawFoldedProtein([1, 2, 4], 790, 346, 1, { label: "folded protein C" })}
+        </g>
+        ${labelBox(600, 92, "Post-translational control: protein degradation", 420, { fill: "#ffffff", stroke: "#c8d4e4", opacity: proteinOpacity })}
+      `;
+    }
+
+    function drawStep11(p) {
+      const q = ease(p);
+      if (!state.toggles.ub) {
+        return `
+          ${drawFoldedProtein([1, 2, 3, 4], 360, 330, 1.1, { label: "folded protein" })}
+          ${drawFoldedProtein([1, 3, 4], 650, 335, 1.1, { label: "folded protein" })}
+          ${labelBox(600, 150, "ubiquitin/proteasome degradation hidden", 330, { fill: "#fff7e2", stroke: "#d6a34b" })}
+        `;
+      }
+      const shortCount = Math.max(1, Math.round(1 + q * 1.5));
+      const longCount = Math.max(1, Math.round(1 + q * 6));
+      return `
+        ${drawFoldedProtein([1, 2, 3, 4], 335, 340, 1.08, { label: "fairly new protein" })}
+        ${drawUbChain(379, 286, shortCount, { dx: 20, dy: -20 })}
+        ${labelBox(320, 512, "fairly new protein - short ubiquitin chain", 335, { fill: "#fff9de", stroke: "#d5a82f", size: 14, opacity: clamp((q - 0.18) / 0.45) })}
+        ${drawFoldedProtein([1, 3, 4], 700, 330, 1.12, { label: "older or targeted protein" })}
+        ${drawUbChain(748, 275, longCount, { dx: 24, dy: -20 })}
+        ${labelBox(790, 512, "older or targeted protein - long ubiquitin chain", 370, { fill: "#fff9de", stroke: "#d5a82f", size: 14, opacity: clamp((q - 0.35) / 0.45) })}
+        ${text(602, 116, "Ub", { size: 26, fill: "#8a650c", weight: 900 })}
+        ${text(602, 144, "ubiquitin tags", { size: 17, fill: "#6f540d" })}
+      `;
+    }
+
+    function drawStep12(p) {
+      const q = ease(p);
+      if (!state.toggles.ub) {
+        return `
+          ${drawProteasome(790, 330, { opacity: 0.45 })}
+          ${drawFoldedProtein([1, 2, 3, 4], 350, 335, 1.1, { label: "protein remains outside" })}
+          ${labelBox(590, 130, "proteasome degradation hidden", 270, { fill: "#fff7e2", stroke: "#d6a34b" })}
+        `;
+      }
+      const moveP = clamp((q - 0.12) / 0.52);
+      const enterP = clamp((q - 0.52) / 0.32);
+      const proteinX = lerp(385, 725, moveP);
+      const proteinOpacity = 1 - enterP * 0.7;
+      const peptideP = clamp((q - 0.64) / 0.3);
+      const fragments = [];
+      for (let i = 0; i < 8; i += 1) {
+        const x = 910 + i * 24 + peptideP * 70;
+        const y = 282 + (i % 4) * 28 + Math.sin(i) * 8;
+        fragments.push(`<rect x="${x}" y="${y}" width="31" height="10" rx="5" fill="${Object.values(EXON_COLORS)[i % 4]}" opacity="${peptideP}" transform="rotate(${i % 2 ? 11 : -11} ${x} ${y})"/>`);
+      }
+      return `
+        ${drawFoldedProtein([1, 2, 4], 270, 520, 1.02, { label: "short chain remains outside" })}
+        ${drawUbChain(310, 470, 2, { dx: 20, dy: -18 })}
+        <g opacity="${proteinOpacity}">
+          ${drawFoldedProtein([1, 3, 4], proteinX, 318, 1.03, { label: enterP > 0.5 ? "" : "long-chain target" })}
+          ${drawUbChain(proteinX + 46, 265, 7, { dx: 22, dy: -17 })}
+        </g>
+        <path d="M 515 316 C 620 308, 675 311, 725 319" fill="none" stroke="#624b91" stroke-width="5" marker-end="url(#arrow)" opacity="${clamp((q - 0.12) / 0.32)}"/>
+        ${drawProteasome(805, 330, { cutaway: enterP })}
+        <path d="M ${lerp(705, 805, enterP)} 318 C 760 326, 790 332, 820 330" fill="none" stroke="#405064" stroke-width="5" stroke-linecap="round" opacity="${enterP}"/>
+        ${fragments.join("")}
+        ${labelBox(1014, 240, "short peptide fragments", 205, { fill: "#ffffff", stroke: "#c8d4e4", opacity: peptideP })}
+      `;
+    }
+
+    function captionForStep() {
+      const index = state.stepIndex;
+      if (index === 2 && !state.toggles.alt) {
+        return "Alternate splicing is hidden. The default mature mRNA continues to later processing steps.";
+      }
+      if (index === 6 && !state.toggles.micro) {
+        return "microRNA inhibition is hidden, so this step shows the mRNA remaining available for translation.";
+      }
+      if (index === 7 && !state.toggles.si) {
+        return "siRNA degradation is hidden, so no siRNA-guided cutting is shown.";
+      }
+      if (index === 8 && !state.toggles.polyShort) {
+        return "Poly-A tail shortening is hidden, so the mRNA is shown with a stable tail.";
+      }
+      if ((index === 10 || index === 11) && !state.toggles.ub) {
+        return "Ubiquitin and proteasome degradation are hidden. Proteins remain outside the degradation pathway.";
+      }
+      return STEPS[index].caption;
+    }
+
+    function render() {
+      const p = clamp(state.progress);
+      const step = STEPS[state.stepIndex];
+      const renderers = [
+        drawStep1,
+        drawStep2,
+        drawStep3,
+        drawStep4,
+        drawStep5,
+        drawStep6,
+        drawStep7,
+        drawStep8,
+        drawStep9,
+        drawStep10,
+        drawStep11,
+        drawStep12
+      ];
+      stage.innerHTML = `${defs()}${background()}${renderers[state.stepIndex](p)}`;
+      captionTitle.textContent = `Step ${state.stepIndex + 1} - ${step.title}`;
+      captionText.innerHTML = captionForStep();
+      stepReadout.textContent = `Step ${state.stepIndex + 1} of ${STEPS.length}`;
+      playPause.textContent = state.isPlaying ? "Pause" : "Play";
+      speedValue.textContent = `${Number(state.speed).toFixed(1)}x`;
+      speed.value = state.speed;
+      Object.entries(toggleMap).forEach(([key, input]) => {
+        input.checked = state.toggles[key];
+      });
+    }
+
+    // requestAnimationFrame loop keeps timing smooth and independent of frame rate.
+    function tick(time) {
+      if (state.lastTime === null) {
+        state.lastTime = time;
+      }
+      const delta = time - state.lastTime;
+      state.lastTime = time;
+      if (state.isPlaying) {
+        const duration = STEPS[state.stepIndex].duration;
+        state.progress += (delta * state.speed) / duration;
+        if (state.progress >= 1) {
+          if (state.stepIndex < STEPS.length - 1) {
+            state.stepIndex += 1;
+            state.progress = 0;
+          } else {
+            state.progress = 1;
+            state.isPlaying = false;
+            state.fullSequence = false;
+          }
+        }
+        render();
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function setStep(index, progress = 0) {
+      state.stepIndex = clamp(index, 0, STEPS.length - 1);
+      state.progress = clamp(progress);
+      state.lastTime = null;
+      render();
+    }
+
+    function resetAll() {
+      state.stepIndex = 0;
+      state.progress = 0;
+      state.isPlaying = false;
+      state.fullSequence = false;
+      state.speed = 1;
+      state.toggles = { ...DEFAULTS };
+      state.lastTime = null;
+      render();
+    }
+
+    playPause.addEventListener("click", () => {
+      state.isPlaying = !state.isPlaying;
+      if (state.progress >= 1 && state.stepIndex === STEPS.length - 1) {
+        state.stepIndex = 0;
+        state.progress = 0;
+      }
+      state.lastTime = null;
+      render();
+    });
+
+    document.getElementById("repeatStep").addEventListener("click", () => {
+      state.progress = 0;
+      state.lastTime = null;
+      render();
+    });
+
+    document.getElementById("stepBack").addEventListener("click", () => {
+      if (state.progress > 0.08) {
+        setStep(state.stepIndex, 0);
+      } else {
+        setStep(state.stepIndex - 1, 0);
+      }
+    });
+
+    document.getElementById("stepForward").addEventListener("click", () => {
+      setStep(state.stepIndex + 1, 0);
+    });
+
+    document.getElementById("reset").addEventListener("click", resetAll);
+
+    document.getElementById("runFull").addEventListener("click", () => {
+      state.stepIndex = 0;
+      state.progress = 0;
+      state.isPlaying = true;
+      state.fullSequence = true;
+      state.lastTime = null;
+      render();
+    });
+
+    speed.addEventListener("input", (event) => {
+      state.speed = Number(event.target.value);
+      render();
+    });
+
+    Object.entries(toggleMap).forEach(([key, input]) => {
+      input.addEventListener("change", () => {
+        state.toggles[key] = input.checked;
+        render();
+      });
+    });
+
+    render();
+    requestAnimationFrame(tick);
+  </script>
+</body>
+</html>

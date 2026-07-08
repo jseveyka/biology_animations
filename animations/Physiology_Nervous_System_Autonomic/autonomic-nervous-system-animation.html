@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Autonomic Effects on Target Organs</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17334a;
+      --muted: #587084;
+      --paper: #fff;
+      --sym: #dc6a2f;
+      --sym-dark: #9f3f18;
+      --para: #237f9d;
+      --para-dark: #155c74;
+      --ach: #2779b9;
+      --ne: #d85d2d;
+      --epi: #9a4fc2;
+      --organ: #e98c96;
+      --organ-dark: #a94e61;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: linear-gradient(145deg, #edf8fa, #f9f4ec 55%, #f2f8fb);
+      font-family: Inter, ui-rounded, "Segoe UI", Arial, sans-serif;
+    }
+
+    .page { width: min(1320px, 100%); margin: auto; padding: 16px clamp(9px, 2vw, 24px) 26px; }
+    .attribution { margin: 0; text-align: center; color: var(--muted); font-size: .86rem; font-weight: 700; }
+    h1 { margin: 4px 0 2px; text-align: center; font-size: clamp(1.25rem, 2.6vw, 1.9rem); letter-spacing: -.025em; }
+    .subtitle { max-width: 830px; margin: 0 auto 13px; text-align: center; color: var(--muted); font-size: clamp(.82rem, 1.4vw, .98rem); }
+
+    .control-card, .diagram-shell {
+      border: 1px solid #b8d0dc;
+      border-radius: 18px;
+      background: #ffffffed;
+      box-shadow: 0 8px 28px #254b6018;
+    }
+
+    .control-card { padding: 13px clamp(10px, 2vw, 20px); margin-bottom: 12px; }
+    .activity-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; }
+    .activity-control { min-width: 0; padding: 9px 12px; border: 1px solid #c9dbe3; border-radius: 13px; background: #f9fcfd; }
+    .activity-control label { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 3px; font-weight: 850; }
+    .activity-control output { color: var(--muted); font-size: .78rem; font-weight: 800; white-space: nowrap; }
+    .range-ends { display: flex; justify-content: space-between; color: var(--muted); font-size: .68rem; font-weight: 750; }
+    #sympatheticActivity { accent-color: var(--sym); }
+    #parasympatheticActivity { accent-color: var(--para); }
+    input[type="range"] { width: 100%; accent-color: #486f83; cursor: pointer; }
+
+    .button-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 11px; }
+    button {
+      border: 2px solid #8fabb9;
+      border-radius: 999px;
+      padding: 8px 14px;
+      color: var(--ink);
+      background: #fff;
+      font: inherit;
+      font-size: .86rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    button:hover { background: #f0f7fa; }
+    button:focus-visible, input:focus-visible { outline: 3px solid #32789a55; outline-offset: 2px; }
+    .effect-wrap { display: inline-flex; align-items: center; gap: 7px; padding: 0 5px; font-size: .8rem; font-weight: 800; }
+    select { border: 2px solid #8fabb9; border-radius: 999px; padding: 7px 28px 7px 11px; color: var(--ink); background: #fff; font: inherit; font-weight: 750; cursor: pointer; }
+    select:focus-visible { outline: 3px solid #32789a55; outline-offset: 2px; }
+    .speed-wrap { display: inline-flex; align-items: center; gap: 7px; padding: 0 5px; font-size: .8rem; font-weight: 800; }
+    .speed-wrap input { width: 105px; }
+
+    .mode-summary { margin: 10px 0 0; min-height: 1.25em; text-align: center; color: #3e5d70; font-size: .8rem; font-weight: 700; }
+    .diagram-shell { overflow-x: auto; }
+    svg { display: block; width: 100%; min-width: 760px; height: auto; background: linear-gradient(90deg, #fff8f2, #fff 34% 66%, #f2fbfd); }
+
+    .section-title { font-size: 23px; font-weight: 900; text-anchor: middle; }
+    .section-sub { fill: var(--muted); font-size: 14px; font-weight: 750; text-anchor: middle; }
+    .organ-label { fill: var(--ink); font-size: 18px; font-weight: 900; text-anchor: middle; paint-order: stroke; stroke: #fff; stroke-width: 5px; stroke-linejoin: round; }
+    .organ-note { fill: var(--muted); font-size: 12px; font-weight: 750; text-anchor: middle; paint-order: stroke; stroke: #fff; stroke-width: 4px; }
+    .anatomy-label { fill: var(--ink); font-size: 13px; font-weight: 800; paint-order: stroke; stroke: #fff; stroke-width: 4px; }
+    .micro { fill: var(--muted); font-size: 11px; font-weight: 750; paint-order: stroke; stroke: #fff; stroke-width: 3px; }
+
+    .sym-fiber, .para-fiber, .pre-fiber { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .sym-fiber { stroke: var(--sym); stroke-width: 4; }
+    .para-fiber { stroke: var(--para); stroke-width: 4; }
+    .pre-fiber { stroke-width: 3; stroke-dasharray: 7 6; opacity: .8; }
+    .pathway { transition: opacity .3s ease, stroke-width .3s ease; }
+    .ganglion-sym { fill: #f6b07e; stroke: var(--sym-dark); stroke-width: 2; }
+    .ganglion-para { fill: #93d0df; stroke: var(--para-dark); stroke-width: 2; }
+    .cord { fill: #e9d7bb; stroke: #8c755b; stroke-width: 3; }
+    .thoracolumbar { fill: #ffd0aa; stroke: var(--sym-dark); stroke-width: 2; }
+    .craniosacral { fill: #c3e8ef; stroke: var(--para-dark); stroke-width: 2; }
+    .receptor-ne { fill: var(--ne); stroke: #923819; stroke-width: 2; }
+    .receptor-ach { fill: var(--ach); stroke: #175884; stroke-width: 2; }
+
+    .organ-fill { fill: var(--organ); stroke: var(--organ-dark); stroke-width: 3; }
+    .smooth { transition: all .35s ease; }
+    .secretion { fill: #55a9cf; stroke: #247da4; stroke-width: 1.5; transition: opacity .3s ease, transform .3s ease; transform-box: fill-box; transform-origin: center; }
+    .sweat-drop { fill: #47a9d4; stroke: #21779b; stroke-width: 1.5; transition: opacity .3s ease; }
+    #heartShape { transform-box: fill-box; transform-origin: center; }
+    .organ-scale { transition: transform .35s ease; }
+    .epi-particle { opacity: 0; }
+    .particle text { fill: #fff; font-size: 8px; font-weight: 900; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+    .particle circle { stroke: #fff; stroke-width: 1.5; }
+    #achBlockers { opacity: 0; transition: opacity .25s ease; }
+    .ach-blocker circle { fill: #fff5f5; stroke: #a33f4d; stroke-width: 4; }
+    .ach-blocker path { fill: none; stroke: #a33f4d; stroke-width: 4; stroke-linecap: round; }
+    .ach-buildup { opacity: 0; transition: opacity .25s ease; }
+
+    .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 15px; padding: 10px 12px; border-top: 1px solid #d5e3e9; color: #476174; font-size: .75rem; font-weight: 750; }
+    .legend span::before { display: inline-block; width: 10px; height: 10px; margin-right: 5px; border-radius: 50%; background: var(--swatch); content: ""; }
+    .footnote { margin: 9px 2px 0; text-align: center; color: var(--muted); font-size: .74rem; }
+
+    @media (max-width: 720px) {
+      .page { padding-inline: 6px; }
+      .activity-grid { grid-template-columns: 1fr; gap: 7px; }
+      button { padding: 7px 11px; font-size: .78rem; }
+      .effect-wrap { width: 100%; justify-content: center; }
+      .diagram-shell { border-radius: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <p class="attribution">&ldquo;Animation Prompted by Jerred Seveyka for his biology class.&rdquo;</p>
+    <h1>Autonomic Effects on Target Organs</h1>
+    <p class="subtitle">Adjust sympathetic and parasympathetic activity independently, then test one pharmacologic modifier at a time.</p>
+
+    <section class="control-card" aria-label="Animation controls">
+      <div class="activity-grid">
+        <div class="activity-control">
+          <label for="sympatheticActivity"><span style="color:var(--sym)">Sympathetic activity</span><output id="sympatheticOutput" for="sympatheticActivity">Normal 50%</output></label>
+          <input id="sympatheticActivity" type="range" min="0" max="100" value="50" step="1">
+          <div class="range-ends"><span>Low</span><span>High</span></div>
+        </div>
+        <div class="activity-control">
+          <label for="parasympatheticActivity"><span style="color:var(--para)">Parasympathetic activity</span><output id="parasympatheticOutput" for="parasympatheticActivity">Normal 50%</output></label>
+          <input id="parasympatheticActivity" type="range" min="0" max="100" value="50" step="1">
+          <div class="range-ends"><span>Low</span><span>High</span></div>
+        </div>
+      </div>
+      <div class="button-row">
+        <button id="playPause" type="button">Pause</button>
+        <button id="reset" type="button">Reset to normal</button>
+        <label class="effect-wrap" for="effectMode">Additional effect
+          <select id="effectMode">
+            <option value="none">None</option>
+            <option value="blocker">ACh blocker</option>
+            <option value="epi">Epinephrine</option>
+            <option value="achei">AChE inhibitor</option>
+          </select>
+        </label>
+        <label class="speed-wrap" for="speed">Speed <input id="speed" type="range" min="0.5" max="2" value="1" step="0.25"><output id="speedOutput">1&times;</output></label>
+      </div>
+      <p id="modeSummary" class="mode-summary" aria-live="polite">Normal resting state: both pathways are visible and organ effects are intermediate.</p>
+    </section>
+
+    <section class="diagram-shell" aria-label="Autonomic nervous system animation">
+      <svg id="stage" viewBox="0 0 1200 1370" role="img" aria-labelledby="svgTitle svgDesc">
+        <title id="svgTitle">Sympathetic and parasympathetic effects on organs</title>
+        <desc id="svgDesc">Sympathetic pathways on the left, eight target organs in the center, and parasympathetic pathways on the right. Controls change organ responses and transmitter release.</desc>
+        <defs>
+          <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity=".18"/></filter>
+          <radialGradient id="lumen" cx="50%" cy="45%"><stop offset="0" stop-color="#eaf8ff"/><stop offset="1" stop-color="#b7deea"/></radialGradient>
+          <linearGradient id="vesselWall" x1="0" x2="1"><stop stop-color="#c8505d"/><stop offset=".5" stop-color="#ef9299"/><stop offset="1" stop-color="#c8505d"/></linearGradient>
+        </defs>
+
+        <text class="section-title" x="190" y="37" fill="var(--sym)">Sympathetic</text>
+        <text class="section-sub" x="190" y="59">thoracolumbar outflow</text>
+        <text class="section-title" x="600" y="37">Target organs</text>
+        <text class="section-title" x="1010" y="37" fill="var(--para)">Parasympathetic</text>
+        <text class="section-sub" x="1010" y="59">craniosacral outflow</text>
+
+        <!-- Left sympathetic anatomy -->
+        <path class="cord" d="M85 108 Q70 125 80 144 L92 172 L84 1260 Q84 1282 105 1282 Q126 1282 126 1260 L120 172 L131 144 Q140 124 123 108Z"/>
+        <rect class="thoracolumbar" x="80" y="330" width="45" height="625" rx="20"/>
+        <text class="anatomy-label" x="29" y="297">Spinal cord</text>
+        <text class="micro" x="25" y="322">T1-L2 region</text>
+        <text class="micro" x="25" y="342">only</text>
+        <path class="sym-fiber" d="M222 146 L222 1248" opacity=".35"/>
+        <text class="anatomy-label" x="157" y="92">Sympathetic chain</text>
+        <text class="micro" x="158" y="110">ganglia near cord</text>
+        <g id="symGanglia"></g>
+
+        <!-- Right parasympathetic anatomy -->
+        <path class="cord" d="M1090 107 Q1069 113 1072 139 Q1075 158 1088 174 L1084 1258 Q1084 1280 1106 1280 Q1128 1280 1128 1258 L1123 174 Q1139 157 1139 136 Q1138 111 1118 107 Q1105 91 1090 107Z"/>
+        <path class="craniosacral" d="M1082 106 Q1105 79 1128 108 L1134 161 L1078 161Z"/>
+        <rect class="craniosacral" x="1083" y="1120" width="45" height="145" rx="20"/>
+        <text class="anatomy-label" x="1012" y="91">Brainstem</text>
+        <text class="micro" x="1002" y="109">cranial outflow</text>
+        <text class="anatomy-label" x="1002" y="1268">Sacral cord</text>
+        <text class="micro" x="994" y="1287">S2-S4 outflow</text>
+
+        <!-- Preganglionic and postganglionic pathways. No parasympathetic paths to sweat or vessels. -->
+        <g id="fibers">
+          <path class="pre-fiber sym-fiber" d="M123 350 C160 350 178 165 213 165"/><path class="pathway sym-fiber" data-pathway="sym" d="M230 165 C340 165 415 151 505 151"/>
+          <path class="pre-fiber sym-fiber" d="M123 405 C160 405 178 292 213 292"/><path class="pathway sym-fiber" data-pathway="sym" d="M230 292 C350 292 420 282 505 282"/>
+          <path class="pre-fiber sym-fiber" d="M123 460 C165 460 180 410 213 410"/><path class="pathway sym-fiber" data-pathway="sweat" d="M230 410 C350 410 420 414 505 414"/>
+          <path class="pre-fiber sym-fiber" d="M123 525 C165 525 180 548 213 548"/><path class="pathway sym-fiber" data-pathway="sym" d="M230 548 C360 548 425 548 505 548"/>
+          <path class="pre-fiber sym-fiber" d="M123 610 C166 610 182 690 213 690"/><path class="pathway sym-fiber" data-pathway="sym" d="M230 690 C355 690 420 690 505 690"/>
+          <path class="pre-fiber sym-fiber" d="M123 705 C165 705 180 830 213 830"/><path class="pathway sym-fiber" data-pathway="sym" d="M230 830 C345 830 420 831 505 831"/>
+          <path class="pre-fiber sym-fiber" d="M123 820 C165 820 180 1004 213 1004"/><path class="pathway sym-fiber" data-pathway="sym" d="M230 1004 C350 1004 420 1004 505 1004"/>
+          <path class="pre-fiber sym-fiber" d="M123 930 C165 930 180 1190 213 1190"/><path class="pathway sym-fiber" data-pathway="sym" d="M230 1190 C355 1190 420 1190 505 1190"/>
+
+          <path class="pre-fiber para-fiber" d="M1084 128 C1015 128 970 145 898 151"/><path class="pathway para-fiber" data-pathway="para" d="M881 151 C820 151 770 151 695 151"/>
+          <path class="pre-fiber para-fiber" d="M1084 139 C1015 160 970 265 898 282"/><path class="pathway para-fiber" data-pathway="para" d="M881 282 C820 282 770 282 695 282"/>
+          <path class="pre-fiber para-fiber" d="M1084 150 C1015 190 975 516 898 548"/><path class="pathway para-fiber" data-pathway="para" d="M881 548 C820 548 770 548 695 548"/>
+          <path class="pre-fiber para-fiber" d="M1084 158 C1010 225 980 655 898 690"/><path class="pathway para-fiber" data-pathway="para" d="M881 690 C820 690 770 690 695 690"/>
+          <path class="pre-fiber para-fiber" d="M1084 1190 C1015 1190 978 1040 898 1004"/><path class="pathway para-fiber" data-pathway="para" d="M881 1004 C820 1004 770 1004 695 1004"/>
+          <path class="pre-fiber para-fiber" d="M1084 1208 C1010 1208 970 1190 898 1190"/><path class="pathway para-fiber" data-pathway="para" d="M881 1190 C820 1190 770 1190 695 1190"/>
+        </g>
+        <g id="paraGanglia"></g>
+        <text class="micro" x="910" y="205">long preganglionic fibers</text>
+        <text class="micro" x="903" y="224">near-target ganglia</text>
+
+        <!-- Eye -->
+        <g filter="url(#shadow)">
+          <text class="organ-label" x="600" y="101">Pupils</text>
+          <path fill="#f5f7f5" stroke="#728da0" stroke-width="3" d="M526 151 Q562 113 598 151 Q562 189 526 151Z M602 151 Q638 113 674 151 Q638 189 602 151Z"/>
+          <circle cx="562" cy="151" r="17" fill="#79aec0"/><circle cx="638" cy="151" r="17" fill="#79aec0"/>
+          <circle id="pupilLeft" class="smooth" cx="562" cy="151" r="8"/><circle id="pupilRight" class="smooth" cx="638" cy="151" r="8"/>
+          <text id="pupilStatus" class="organ-note" x="600" y="203">intermediate</text>
+        </g>
+
+        <!-- Salivary gland -->
+        <g filter="url(#shadow)">
+          <text class="organ-label" x="600" y="247">Salivary gland</text>
+          <path class="organ-fill" d="M552 270 Q530 286 542 315 Q556 337 580 323 Q600 343 620 323 Q644 337 658 315 Q670 286 648 270 Q627 253 606 267 Q580 247 552 270Z"/>
+          <circle cx="568" cy="287" r="6" fill="#f7bac0"/><circle cx="595" cy="278" r="6" fill="#f7bac0"/><circle cx="624" cy="292" r="6" fill="#f7bac0"/>
+          <path class="secretion saliva" d="M568 330 q-10 14 0 20 q10-6 0-20Z"/><path class="secretion saliva" d="M600 330 q-10 14 0 20 q10-6 0-20Z"/><path class="secretion saliva" d="M632 330 q-10 14 0 20 q10-6 0-20Z"/>
+          <text id="salivaStatus" class="organ-note" x="600" y="369">low / moderate secretion</text>
+        </g>
+
+        <!-- Sweat gland -->
+        <g filter="url(#shadow)">
+          <text class="organ-label" x="600" y="395">Sweat gland</text>
+          <path class="organ-fill" d="M567 438 Q553 454 566 469 Q579 481 594 470 Q607 484 623 471 Q642 458 630 438 Q619 423 601 432 Q583 421 567 438Z"/>
+          <circle cx="579" cy="451" r="6" fill="#f7bac0"/><circle cx="601" cy="443" r="6" fill="#f7bac0"/><circle cx="619" cy="455" r="6" fill="#f7bac0"/>
+          <path d="M600 432 L600 412" fill="none" stroke="#be6680" stroke-width="5" stroke-linecap="round"/><ellipse cx="600" cy="409" rx="11" ry="4" fill="#e8a7b8"/>
+          <path class="sweat-drop" d="M570 473 q-9 14 0 19 q9-5 0-19Z"/><path class="sweat-drop" d="M600 478 q-9 14 0 19 q9-5 0-19Z"/><path class="sweat-drop" d="M630 473 q-9 14 0 19 q9-5 0-19Z"/>
+          <text id="sweatStatus" class="organ-note" x="748" y="505">low / moderate sweating</text>
+          <text class="micro" x="699" y="454">Sympathetic exception:</text><text class="micro" x="699" y="469">sweat uses ACh</text>
+        </g>
+
+        <!-- Bronchiole -->
+        <g filter="url(#shadow)">
+          <text class="organ-label" x="600" y="539">Bronchiole</text>
+          <circle cx="600" cy="591" r="45" fill="#d98b9e" stroke="#a44f64" stroke-width="3"/>
+          <circle cx="600" cy="591" r="34" fill="#f3bdc8"/>
+          <circle id="bronchLumen" class="smooth" cx="600" cy="591" r="21" fill="url(#lumen)" stroke="#649aaa" stroke-width="2"/>
+          <text class="micro" x="653" y="579">smooth muscle</text>
+          <text id="bronchStatus" class="organ-note" x="600" y="652">intermediate lumen</text>
+        </g>
+
+        <!-- Heart -->
+        <g filter="url(#shadow)">
+          <path id="heartShape" class="organ-fill" d="M600 771 C575 743 537 717 543 688 C550 655 588 656 600 682 C612 656 650 655 657 688 C663 717 625 743 600 771Z"/>
+          <path d="M600 698 C604 681 620 678 632 688" fill="none" stroke="#f7bdc2" stroke-width="5"/>
+          <text id="heartStatus" class="organ-note" x="600" y="793">60 bpm</text>
+        </g>
+
+        <!-- Blood vessel -->
+        <g filter="url(#shadow)">
+          <text class="organ-label" x="600" y="817">Blood vessels</text>
+          <g id="vesselFigure" class="organ-scale">
+            <rect x="539" y="844" width="122" height="73" rx="34" fill="url(#vesselWall)" stroke="#9e3e49" stroke-width="3"/>
+            <rect id="vesselLumen" class="smooth" x="557" y="858" width="86" height="45" rx="21" fill="#f9d8d4" stroke="#a94b52" stroke-width="2"/>
+            <circle cx="580" cy="880" r="7" fill="#c63e4d"/><circle cx="620" cy="885" r="7" fill="#c63e4d"/>
+          </g>
+          <text id="vesselStatus" class="organ-note" x="600" y="940">intermediate diameter</text>
+          <text class="micro" x="697" y="873">sympathetic only</text>
+        </g>
+
+        <!-- Intestine -->
+        <g filter="url(#shadow)">
+          <text class="organ-label" x="600" y="965">Intestine cross-section</text>
+          <g id="gutFigure">
+            <circle cx="600" cy="1040" r="53" fill="#bf697f" stroke="#8f4257" stroke-width="3"/>
+            <circle cx="600" cy="1040" r="40" fill="#f0a9b3"/>
+            <circle id="gutLumen" class="smooth" cx="600" cy="1040" r="25" fill="#ffe7d1" stroke="#b97961" stroke-width="2"/>
+            <path d="M585 1042 Q600 1024 615 1042 Q600 1060 585 1042Z" fill="#fff6ea"/>
+          </g>
+          <text class="micro" x="667" y="1024">tunica externa</text><text class="micro" x="667" y="1039">smooth muscle</text>
+          <text id="gutStatus" class="organ-note" x="745" y="1117">intermediate activity</text>
+        </g>
+
+        <!-- Bladder -->
+        <g filter="url(#shadow)">
+          <text class="organ-label" x="600" y="1150">Bladder</text>
+          <g id="bladderFigure" class="organ-scale">
+            <path id="bladderShape" class="organ-fill" d="M560 1204 Q600 1178 640 1204 L650 1250 Q650 1290 600 1302 Q550 1290 550 1250Z"/>
+            <path d="M572 1223 Q600 1205 628 1223" fill="none" stroke="#f7c1c7" stroke-width="5"/>
+          </g>
+          <text id="bladderStatus" class="organ-note" x="600" y="1332">intermediate filling</text>
+        </g>
+
+        <!-- Receptors at organ surfaces -->
+        <g aria-hidden="true">
+          <path class="receptor-ne" d="M510 143 l10 8 -10 8Z"/><path class="receptor-ach" d="M690 143 l-10 8 10 8Z"/>
+          <path class="receptor-ne" d="M510 274 l10 8 -10 8Z"/><path class="receptor-ach" d="M690 274 l-10 8 10 8Z"/>
+          <path class="receptor-ach" d="M510 406 l10 8 -10 8Z"/>
+          <path class="receptor-ne" d="M510 540 l10 8 -10 8Z"/><path class="receptor-ach" d="M690 540 l-10 8 10 8Z"/>
+          <path class="receptor-ne" d="M510 682 l10 8 -10 8Z"/><path class="receptor-ach" d="M690 682 l-10 8 10 8Z"/>
+          <path class="receptor-ne" d="M510 823 l10 8 -10 8Z"/>
+          <path class="receptor-ne" d="M510 996 l10 8 -10 8Z"/><path class="receptor-ach" d="M690 996 l-10 8 10 8Z"/>
+          <path class="receptor-ne" d="M510 1182 l10 8 -10 8Z"/><path class="receptor-ach" d="M690 1182 l-10 8 10 8Z"/>
+        </g>
+        <g id="particles" aria-hidden="true"></g>
+        <g id="achBlockers" aria-hidden="true">
+          <g class="ach-blocker" transform="translate(700 151)"><circle r="11"/><path d="M-6 -6 L6 6"/></g>
+          <g class="ach-blocker" transform="translate(700 282)"><circle r="11"/><path d="M-6 -6 L6 6"/></g>
+          <g class="ach-blocker" transform="translate(500 414)"><circle r="11"/><path d="M-6 -6 L6 6"/></g>
+          <g class="ach-blocker" transform="translate(700 548)"><circle r="11"/><path d="M-6 -6 L6 6"/></g>
+          <g class="ach-blocker" transform="translate(700 690)"><circle r="11"/><path d="M-6 -6 L6 6"/></g>
+          <g class="ach-blocker" transform="translate(700 1004)"><circle r="11"/><path d="M-6 -6 L6 6"/></g>
+          <g class="ach-blocker" transform="translate(700 1190)"><circle r="11"/><path d="M-6 -6 L6 6"/></g>
+        </g>
+      </svg>
+      <div class="legend" aria-label="Legend">
+        <span style="--swatch:var(--sym)">sympathetic fiber</span>
+        <span style="--swatch:var(--para)">parasympathetic fiber</span>
+        <span style="--swatch:var(--ne)">NE: most sympathetic targets</span>
+        <span style="--swatch:var(--ach)">ACh: parasympathetic + sweat</span>
+        <span style="--swatch:var(--epi)">Epi: circulating hormone</span>
+        <span style="--swatch:#f6b07e">ganglion</span>
+      </div>
+    </section>
+    <p class="footnote">Simplified teaching model: most blood vessels and sweat glands receive sympathetic, not parasympathetic, innervation. Vessel dilation here reflects reduced sympathetic tone.</p>
+  </main>
+
+  <script>
+    (() => {
+      const $ = id => document.getElementById(id);
+      const clamp = (n, min = 0, max = 1) => Math.max(min, Math.min(max, n));
+      const state = { sympathetic: 50, parasympathetic: 50, effect: "none", playing: true, speed: 1 };
+      const rows = [151, 282, 414, 548, 690, 831, 1004, 1190];
+      const paraRows = new Set([151, 282, 548, 690, 1004, 1190]);
+
+      const makeCircle = (parent, attrs) => {
+        const node = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+        parent.appendChild(node);
+      };
+
+      rows.forEach(y => makeCircle($("symGanglia"), { class: "ganglion-sym", cx: 222, cy: y, r: 10 }));
+      paraRows.forEach(y => makeCircle($("paraGanglia"), { class: "ganglion-para", cx: 890, cy: y, r: 9 }));
+
+      const particleData = [];
+      const achBuildupData = [];
+      function addParticle(type, y, side, phase, lane = 0) {
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        g.setAttribute("class", `particle particle-${type}`);
+        g.dataset.type = type;
+        g.dataset.y = y;
+        g.dataset.side = side;
+        g.dataset.kind = "signal";
+        const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        c.setAttribute("r", type === "Epi" ? 13 : 12);
+        c.setAttribute("fill", type === "NE" ? "var(--ne)" : type === "ACh" ? "var(--ach)" : "var(--epi)");
+        const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        t.textContent = type;
+        g.append(c, t);
+        $("particles").appendChild(g);
+        particleData.push({ g, type, y, side, phase, lane });
+      }
+
+      function addAchBuildup(y, side, slot) {
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        g.setAttribute("class", "particle particle-ACh ach-buildup");
+        g.dataset.type = "ACh";
+        g.dataset.y = y;
+        g.dataset.side = side;
+        g.dataset.kind = "buildup";
+        const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        c.setAttribute("r", 10);
+        c.setAttribute("fill", "var(--ach)");
+        const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        t.textContent = "ACh";
+        g.append(c, t);
+        $("particles").appendChild(g);
+        achBuildupData.push({ g, y, side, slot });
+      }
+
+      rows.forEach((y, index) => {
+        addParticle(index === 2 ? "ACh" : "NE", y, "left", index * .13);
+        addParticle(index === 2 ? "ACh" : "NE", y, "left", index * .13 + .52, 1);
+        if (paraRows.has(y)) {
+          addParticle("ACh", y, "right", index * .13);
+          addParticle("ACh", y, "right", index * .13 + .52, 1);
+        }
+      });
+      paraRows.forEach(y => { addAchBuildup(y, "right", 0); addAchBuildup(y, "right", 1); });
+      addAchBuildup(414, "left", 0);
+      addAchBuildup(414, "left", 1);
+      [190, 355, 530, 705, 875, 1050, 1220].forEach((y, i) => addParticle("Epi", y, "blood", i * .16));
+
+      function values() {
+        const sympathetic = state.sympathetic / 100;
+        const parasympathetic = state.parasympathetic / 100;
+        const adrenergic = clamp(sympathetic + (state.effect === "epi" ? .34 : 0));
+        const muscarinic = state.effect === "blocker" ? 0 : clamp(parasympathetic + (state.effect === "achei" ? .4 : 0));
+        const sweat = state.effect === "blocker" ? .03 : clamp(sympathetic * (.7 + (state.effect === "achei" ? .8 : 0)));
+        const net = clamp((adrenergic + (1 - muscarinic)) / 2);
+        return { sympathetic, parasympathetic, adrenergic, muscarinic, sweat, net };
+      }
+
+      function responseWord(value, low, middle, high) { return value < .36 ? low : value > .64 ? high : middle; }
+      function activityLabel(value) { return value === 50 ? "Normal 50%" : `${value}%`; }
+
+      function render() {
+        const v = values();
+        const pupil = 5 + 10 * v.net;
+        $("pupilLeft").setAttribute("r", pupil.toFixed(1));
+        $("pupilRight").setAttribute("r", pupil.toFixed(1));
+        $("pupilStatus").textContent = responseWord(v.net, "constricted", "intermediate", "dilated");
+
+        const salivation = clamp(.85 * v.muscarinic - .3 * v.adrenergic + .15);
+        document.querySelectorAll(".saliva").forEach((drop, i) => {
+          drop.style.opacity = clamp(salivation * 1.6 - i * .25);
+          drop.style.transform = `scale(${.65 + salivation * .55})`;
+        });
+        $("salivaStatus").textContent = responseWord(salivation, "reduced secretion", "moderate secretion", "increased secretion");
+
+        document.querySelectorAll(".sweat-drop").forEach((drop, i) => drop.style.opacity = clamp(v.sweat * 1.65 - i * .2));
+        $("sweatStatus").textContent = state.effect === "blocker" ? "sweating blocked" : (v.sweat < .28 ? "low sweating" : v.sweat > .64 ? "increased sweating" : "moderate sweating");
+
+        const airway = clamp(.5 + (v.adrenergic - v.muscarinic) * .48);
+        $("bronchLumen").setAttribute("r", (13 + airway * 17).toFixed(1));
+        $("bronchStatus").textContent = responseWord(airway, "constricted", "intermediate lumen", "dilated");
+
+        const bpm = Math.round(v.net < .5 ? 45 + v.net * 30 : 60 + (v.net - .5) * 100);
+        $("heartStatus").textContent = `${bpm} bpm`;
+        $("heartStatus").dataset.bpm = bpm;
+
+        const vesselOpen = 1 - v.adrenergic;
+        const vesselWidth = 48 + vesselOpen * 48;
+        $("vesselLumen").setAttribute("x", (600 - vesselWidth / 2).toFixed(1));
+        $("vesselLumen").setAttribute("width", vesselWidth.toFixed(1));
+        const vesselScale = .78 + vesselOpen * .44;
+        $("vesselFigure").style.transformOrigin = "600px 880px";
+        $("vesselFigure").style.transform = `scale(${vesselScale})`;
+        $("vesselStatus").textContent = responseWord(vesselOpen, "constricted", "intermediate diameter", "dilated as sympathetic tone falls");
+
+        const gut = clamp(.5 + (v.muscarinic - v.adrenergic) * .5);
+        $("gutFigure").style.transformOrigin = "600px 1040px";
+        $("gutStatus").textContent = responseWord(gut, "slow / weak peristalsis", "moderate peristalsis", "strong / frequent peristalsis");
+
+        const bladderContract = clamp(.5 + (v.muscarinic - v.adrenergic) * .5);
+        const bladderScale = .76 + (1 - bladderContract) * .48;
+        $("bladderFigure").style.transformOrigin = "600px 1250px";
+        $("bladderFigure").style.transform = `scale(${bladderScale})`;
+        $("bladderStatus").textContent = responseWord(bladderContract, "relaxed / filling", "intermediate filling", "contracted / emptying");
+
+        $("sympatheticOutput").textContent = activityLabel(state.sympathetic);
+        $("parasympatheticOutput").textContent = activityLabel(state.parasympathetic);
+        $("speedOutput").innerHTML = `${state.speed}&times;`;
+
+        document.querySelectorAll('[data-pathway="sym"]').forEach(p => { p.style.opacity = .28 + v.sympathetic * .72; p.style.strokeWidth = 3 + v.sympathetic * 2; });
+        document.querySelectorAll('[data-pathway="para"]').forEach(p => { p.style.opacity = .28 + v.parasympathetic * .72; p.style.strokeWidth = 3 + v.parasympathetic * 2; });
+        document.querySelectorAll('[data-pathway="sweat"]').forEach(p => { p.style.opacity = .28 + v.sympathetic * .72; p.style.strokeWidth = 3 + v.sympathetic * 2; });
+        $("achBlockers").style.opacity = state.effect === "blocker" ? 1 : 0;
+
+        const summaries = {
+          blocker: "ACh blocker: parasympathetic target effects and cholinergic sweating are blocked; sympathetic activity is unchanged.",
+          epi: "Epinephrine: a circulating hormone adds sympathetic-like influence beyond the sympathetic slider.",
+          achei: "AChE inhibitor: ACh lingers, strengthening parasympathetic effects and cholinergic sweating."
+        };
+        if (state.effect !== "none") $("modeSummary").textContent = summaries[state.effect];
+        else if (state.sympathetic === 50 && state.parasympathetic === 50) $("modeSummary").textContent = "Normal resting state: both pathways are visible and organ effects are intermediate.";
+        else $("modeSummary").textContent = `Independent activity: sympathetic ${state.sympathetic}%, parasympathetic ${state.parasympathetic}%.`;
+      }
+
+      let start = performance.now();
+      let pausedAt = 0;
+      function animate(now) {
+        const elapsed = state.playing ? (now - start) * state.speed / 1000 : pausedAt;
+        const v = values();
+        const bpm = Number($("heartStatus").dataset.bpm || 60);
+        const beat = Math.pow(Math.max(0, Math.sin(elapsed * Math.PI * bpm / 30)), 8);
+        $("heartShape").style.transform = `scale(${1 + beat * .09})`;
+
+        const gutActivity = clamp(.5 + (v.muscarinic - v.adrenergic) * .5);
+        const gutAmplitude = .025 + gutActivity * .075;
+        const gutFrequency = .3 + gutActivity * 1.1;
+        const gutWave = Math.sin(elapsed * Math.PI * 2 * gutFrequency);
+        const gutScale = 1 + gutWave * gutAmplitude;
+        $("gutFigure").style.transform = `scale(${gutScale.toFixed(4)})`;
+        $("gutLumen").setAttribute("r", (25 + gutWave * gutAmplitude * 45).toFixed(2));
+        $("gutFigure").dataset.activity = gutActivity.toFixed(3);
+        $("gutFigure").dataset.amplitude = gutAmplitude.toFixed(3);
+        $("gutFigure").dataset.frequency = gutFrequency.toFixed(3);
+
+        particleData.forEach(p => {
+          let strength = p.type === "Epi" ? (state.effect === "epi" ? .9 : 0) : p.side === "right" ? v.parasympathetic : v.sympathetic;
+          const linger = p.type === "ACh" && state.effect === "achei" ? .55 : 1;
+          const cycle = (elapsed * (.42 + strength * .55) * linger + p.phase) % 1;
+          const blocked = state.effect === "blocker" && p.type === "ACh";
+          const bounce = cycle < .5 ? cycle * 2 : (1 - cycle) * 2;
+          let x;
+          if (p.side === "left") x = blocked ? 465 + bounce * 25 : 465 + cycle * 55;
+          else if (p.side === "right") x = blocked ? 735 - bounce * 25 : 735 - cycle * 55;
+          else x = 485 + ((elapsed * .18 + p.phase) % 1) * 230;
+          const y = p.y + Math.sin(cycle * Math.PI * 2 + p.lane) * (p.side === "blood" ? 9 : 4) + p.lane * 7;
+          p.g.setAttribute("transform", `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+          p.g.style.opacity = state.playing ? clamp(strength * 1.35) : .35 * clamp(strength * 1.35);
+          p.g.dataset.rate = ((.42 + strength * .55) * state.speed * linger).toFixed(3);
+        });
+        achBuildupData.forEach((p, i) => {
+          const baseX = p.side === "left" ? 483 + p.slot * 13 : 717 - p.slot * 13;
+          const baseY = p.y + (p.slot === 0 ? -8 : 9);
+          const jitter = Math.sin(elapsed * 2.2 + i * .9) * 2;
+          p.g.setAttribute("transform", `translate(${(baseX + jitter).toFixed(1)} ${baseY})`);
+          p.g.style.opacity = state.effect === "achei" ? .92 : 0;
+        });
+        if (state.playing) pausedAt = elapsed;
+        requestAnimationFrame(animate);
+      }
+
+      $("sympatheticActivity").addEventListener("input", e => { state.sympathetic = Number(e.target.value); render(); });
+      $("parasympatheticActivity").addEventListener("input", e => { state.parasympathetic = Number(e.target.value); render(); });
+      $("speed").addEventListener("input", e => { state.speed = Number(e.target.value); render(); });
+      $("effectMode").addEventListener("change", e => { state.effect = e.target.value; render(); });
+      $("playPause").addEventListener("click", () => {
+        state.playing = !state.playing;
+        $("playPause").textContent = state.playing ? "Pause" : "Play";
+        if (state.playing) start = performance.now() - pausedAt * 1000 / state.speed;
+      });
+      $("reset").addEventListener("click", () => {
+        Object.assign(state, { sympathetic: 50, parasympathetic: 50, effect: "none", playing: true, speed: 1 });
+        $("sympatheticActivity").value = 50;
+        $("parasympatheticActivity").value = 50;
+        $("effectMode").value = "none";
+        $("speed").value = 1;
+        $("playPause").textContent = "Pause";
+        start = performance.now();
+        pausedAt = 0;
+        render();
+      });
+
+      render();
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>

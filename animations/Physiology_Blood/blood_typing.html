@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blood Typing Agglutination Animation</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --ink: #1b2430;
+      --muted: #536273;
+      --panel: #ffffff;
+      --line: #d4dce6;
+      --card: #e9eef5;
+      --rbc: #dc3d3d;
+      --rbc-dark: #a4202b;
+      --a: #3557d6;
+      --a-soft: #e8edff;
+      --b: #18985a;
+      --b-soft: #e6f7ee;
+      --rh: #ef8a20;
+      --rh-soft: #fff1de;
+      --good: #246b45;
+      --warn: #9a3412;
+      --shadow: 0 16px 42px rgba(26, 39, 63, 0.12);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(53, 87, 214, 0.08), transparent 32rem),
+        linear-gradient(180deg, #fbfcff 0%, var(--bg) 70%);
+      min-height: 100vh;
+    }
+
+    button,
+    select {
+      font: inherit;
+    }
+
+    .app {
+      width: min(1280px, calc(100vw - 28px));
+      margin: 0 auto;
+      padding: 12px 0 20px;
+    }
+
+    .attribution {
+      text-align: center;
+      font-weight: 700;
+      font-size: clamp(0.98rem, 1.6vw, 1.18rem);
+      line-height: 1.2;
+      margin: 0 0 6px;
+      color: #243044;
+    }
+
+    header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.45rem, 3vw, 2.35rem);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 11px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.72);
+      border-radius: 8px;
+      font-weight: 800;
+      min-width: 150px;
+      justify-content: center;
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--rbc);
+      box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.18);
+    }
+
+    .stage {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .reaction-wrap,
+    .control-panel,
+    .legend,
+    .explanation {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      border-radius: 8px;
+    }
+
+    .reaction-wrap {
+      padding: 10px;
+      min-height: 480px;
+    }
+
+    #reactionSvg {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 540px;
+    }
+
+    .control-panel {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .field label {
+      display: block;
+      font-weight: 800;
+      font-size: 0.92rem;
+      margin-bottom: 6px;
+    }
+
+    select {
+      width: 100%;
+      border: 1px solid #bdc8d7;
+      background: #fff;
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-weight: 750;
+      outline: none;
+    }
+
+    select:focus,
+    button:focus-visible {
+      outline: 3px solid rgba(53, 87, 214, 0.25);
+      outline-offset: 2px;
+    }
+
+    .preview-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #f9fbfe;
+    }
+
+    .preview-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 5px;
+      font-weight: 800;
+    }
+
+    .preview-type {
+      font-size: 1.42rem;
+      color: var(--rbc-dark);
+      line-height: 1;
+    }
+
+    #previewSvg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .preview-caption {
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.28;
+      min-height: 2.2em;
+      margin-top: 4px;
+    }
+
+    .button-row {
+      display: grid;
+      gap: 8px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-weight: 850;
+      cursor: pointer;
+      color: var(--ink);
+      background: #e5ebf4;
+      min-height: 42px;
+      transition: transform 130ms ease, filter 130ms ease, background 130ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      filter: brightness(0.98);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .primary {
+      background: #25334d;
+      color: #fff;
+    }
+
+    .secondary {
+      background: #dce7f6;
+      color: #17243c;
+    }
+
+    .reset {
+      background: #f2e3da;
+      color: #55230d;
+    }
+
+    .quick-readout {
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.35;
+      min-height: 5.4em;
+    }
+
+    .quick-readout strong {
+      color: var(--ink);
+    }
+
+    .below {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .explanation {
+      padding: 12px;
+      display: none;
+    }
+
+    .explanation.visible {
+      display: block;
+    }
+
+    .explanation-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 10px;
+    }
+
+    .explanation h2,
+    .legend h2 {
+      margin: 0;
+      font-size: 1.08rem;
+      line-height: 1.15;
+    }
+
+    .final-result {
+      font-size: 1.05rem;
+      font-weight: 900;
+      color: #243044;
+      white-space: nowrap;
+    }
+
+    .mini-panels {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(300px, 1fr));
+      gap: 10px;
+    }
+
+    .mini-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcff;
+      padding: 9px;
+      min-width: 0;
+    }
+
+    .mini-panel h3 {
+      margin: 0 0 5px;
+      font-size: 0.98rem;
+      line-height: 1.1;
+    }
+
+    .mini-panel svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 6px;
+      background: #fff;
+      border: 1px solid #e4eaf2;
+    }
+
+    .mini-panel p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+
+    .legend {
+      padding: 12px;
+    }
+
+    .legend h2 {
+      margin-bottom: 8px;
+    }
+
+    #legendSvg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .well-label {
+      font-weight: 900;
+      font-size: 24px;
+      fill: #202b3d;
+      paint-order: stroke;
+      stroke: rgba(255, 255, 255, 0.86);
+      stroke-width: 5px;
+      stroke-linejoin: round;
+    }
+
+    .well-message {
+      font-weight: 900;
+      font-size: 17px;
+      fill: #1f2937;
+    }
+
+    .well-submessage {
+      font-weight: 750;
+      font-size: 13px;
+      fill: #526173;
+    }
+
+    .antibody {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .rbc {
+      filter: drop-shadow(0 4px 3px rgba(100, 21, 29, 0.22));
+    }
+
+    .drop {
+      opacity: 0;
+    }
+
+    .has-blood .drop {
+      animation: fall 760ms ease-out forwards;
+    }
+
+    .has-blood .rbc-set {
+      animation: settle 700ms ease-out both;
+    }
+
+    .has-blood .clump-match .cell-a {
+      animation: clumpA 1150ms ease-in-out forwards;
+    }
+
+    .has-blood .clump-match .cell-b {
+      animation: clumpB 1150ms ease-in-out forwards;
+    }
+
+    .has-blood .clump-match .cell-c {
+      animation: clumpC 1150ms ease-in-out forwards;
+    }
+
+    .has-blood .clump-match .cell-d {
+      animation: clumpD 1150ms ease-in-out forwards;
+    }
+
+    .has-blood .bridge {
+      opacity: 0;
+      animation: bridgeIn 450ms ease-out 900ms forwards;
+    }
+
+    @keyframes fall {
+      0% {
+        opacity: 0;
+        transform: translateY(-62px) scale(0.7);
+      }
+      45% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(8px) scale(1);
+      }
+    }
+
+    @keyframes settle {
+      0% {
+        opacity: 0;
+        transform: translateY(-18px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes clumpA {
+      to {
+        transform: translate(18px, 18px) rotate(-8deg);
+      }
+    }
+
+    @keyframes clumpB {
+      to {
+        transform: translate(-20px, 20px) rotate(8deg);
+      }
+    }
+
+    @keyframes clumpC {
+      to {
+        transform: translate(20px, -18px) rotate(12deg);
+      }
+    }
+
+    @keyframes clumpD {
+      to {
+        transform: translate(-18px, -18px) rotate(-12deg);
+      }
+    }
+
+    @keyframes bridgeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    @media (max-width: 940px) {
+      .stage {
+        grid-template-columns: 1fr;
+      }
+
+      .control-panel {
+        display: grid;
+        grid-template-columns: minmax(170px, 230px) minmax(220px, 1fr) minmax(180px, 240px);
+        align-items: start;
+      }
+
+      .button-row {
+        align-self: stretch;
+      }
+
+      .quick-readout {
+        border-top: 0;
+        border-left: 1px solid var(--line);
+        padding-top: 0;
+        padding-left: 12px;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .app {
+        width: min(100vw - 18px, 680px);
+      }
+
+      header,
+      .explanation-head {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .status-pill,
+      .final-result {
+        width: 100%;
+        white-space: normal;
+      }
+
+      .control-panel,
+      .mini-panels {
+        grid-template-columns: 1fr;
+      }
+
+      .quick-readout {
+        border-left: 0;
+        border-top: 1px solid var(--line);
+        padding-left: 0;
+        padding-top: 10px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 1ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <p class="attribution">Animation Prompted by Jerred Seveyka for his biology class.</p>
+
+    <header>
+      <div>
+        <h1>Blood Typing by Agglutination</h1>
+        <p class="subtitle">Reagent antibodies reveal which antigens are on the red blood cells.</p>
+      </div>
+      <div class="status-pill" aria-live="polite">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span id="statusText">Ready to test</span>
+      </div>
+    </header>
+
+    <section class="stage" aria-label="Blood typing animation">
+      <div class="reaction-wrap">
+        <svg id="reactionSvg" viewBox="0 0 780 540" role="img" aria-labelledby="reactionTitle reactionDesc">
+          <title id="reactionTitle">Blood typing card with Anti-A, Anti-B, and Anti-Rh wells</title>
+          <desc id="reactionDesc">Three reagent wells show antibody-mediated agglutination after blood is added.</desc>
+        </svg>
+      </div>
+
+      <aside class="control-panel" aria-label="Controls">
+        <div class="field">
+          <label for="bloodType">Blood type sample</label>
+          <select id="bloodType">
+            <option value="A-">A−</option>
+            <option value="A+">A+</option>
+            <option value="B-">B−</option>
+            <option value="B+">B+</option>
+            <option value="AB-">AB−</option>
+            <option value="AB+">AB+</option>
+            <option value="O-">O−</option>
+            <option value="O+">O+</option>
+          </select>
+        </div>
+
+        <div class="preview-card" aria-label="Selected red blood cell antigen preview">
+          <div class="preview-title">
+            <span>Selected RBC</span>
+            <span class="preview-type" id="previewType">A−</span>
+          </div>
+          <svg id="previewSvg" viewBox="0 0 310 145" role="img" aria-label="Antigen preview"></svg>
+          <div id="previewCaption" class="preview-caption"></div>
+        </div>
+
+        <div class="button-row">
+          <button id="addBlood" class="primary" type="button">Add blood to wells</button>
+          <button id="showExplain" class="secondary" type="button">Show cell-level explanation</button>
+          <button id="reset" class="reset" type="button">Reset</button>
+        </div>
+
+        <div id="quickReadout" class="quick-readout" aria-live="polite">
+          Choose a sample, then add blood. Wells clump only when the reagent antibody finds its matching antigen.
+        </div>
+      </aside>
+    </section>
+
+    <section id="explanation" class="explanation" aria-live="polite">
+      <div class="explanation-head">
+        <h2>Cell-Level Explanation</h2>
+        <div id="finalResult" class="final-result">This sample is type A−</div>
+      </div>
+      <div id="miniPanels" class="mini-panels"></div>
+    </section>
+
+    <section class="legend" aria-label="Legend">
+      <h2>Legend</h2>
+      <svg id="legendSvg" viewBox="0 0 940 184" role="img" aria-labelledby="legendTitle legendDesc">
+        <title id="legendTitle">Antigen and antibody legend</title>
+        <desc id="legendDesc">Top row shows A, B, and Rh antigen shapes. Bottom row shows clean Y-shaped Anti-A, Anti-B, and Anti-Rh antibodies.</desc>
+      </svg>
+    </section>
+  </main>
+
+  <script>
+    const SVG_NS = "http://www.w3.org/2000/svg";
+
+    const BLOOD_TYPES = {
+      "A-": { label: "A−", A: true, B: false, Rh: false },
+      "A+": { label: "A+", A: true, B: false, Rh: true },
+      "B-": { label: "B−", A: false, B: true, Rh: false },
+      "B+": { label: "B+", A: false, B: true, Rh: true },
+      "AB-": { label: "AB−", A: true, B: true, Rh: false },
+      "AB+": { label: "AB+", A: true, B: true, Rh: true },
+      "O-": { label: "O−", A: false, B: false, Rh: false },
+      "O+": { label: "O+", A: false, B: false, Rh: true }
+    };
+
+    const REAGENTS = [
+      {
+        key: "A",
+        label: "Anti-A",
+        antigen: "A",
+        x: 235,
+        y: 135,
+        color: "#3557d6",
+        soft: "#e8edff",
+        resultY: 242,
+        interpretation: "Agglutination in Anti-A means A antigen is present."
+      },
+      {
+        key: "B",
+        label: "Anti-B",
+        antigen: "B",
+        x: 235,
+        y: 365,
+        color: "#18985a",
+        soft: "#e6f7ee",
+        resultY: 472,
+        interpretation: "Agglutination in Anti-B means B antigen is present."
+      },
+      {
+        key: "Rh",
+        label: "Anti-Rh",
+        antigen: "Rh",
+        x: 555,
+        y: 250,
+        color: "#ef8a20",
+        soft: "#fff1de",
+        resultY: 357,
+        interpretation: "Agglutination in Anti-Rh means Rh antigen is present."
+      }
+    ];
+
+    const state = {
+      selected: "A-",
+      tested: false,
+      explanationVisible: false
+    };
+
+    const reactionSvg = document.getElementById("reactionSvg");
+    const previewSvg = document.getElementById("previewSvg");
+    const legendSvg = document.getElementById("legendSvg");
+    const typeSelect = document.getElementById("bloodType");
+    const previewType = document.getElementById("previewType");
+    const previewCaption = document.getElementById("previewCaption");
+    const statusText = document.getElementById("statusText");
+    const quickReadout = document.getElementById("quickReadout");
+    const explanation = document.getElementById("explanation");
+    const finalResult = document.getElementById("finalResult");
+    const miniPanels = document.getElementById("miniPanels");
+
+    function svgEl(tag, attrs = {}, children = []) {
+      const el = document.createElementNS(SVG_NS, tag);
+      Object.entries(attrs).forEach(([key, value]) => {
+        if (key === "text") {
+          el.textContent = value;
+        } else if (key === "className") {
+          el.setAttribute("class", value);
+        } else {
+          el.setAttribute(key, value);
+        }
+      });
+      children.forEach((child) => el.appendChild(child));
+      return el;
+    }
+
+    function clearSvg(svg) {
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+    }
+
+    const ANTIGEN_GEOMETRY = {
+      A: { fill: "#3557d6", stroke: "#17348f", label: "A antigen" },
+      B: { fill: "#18985a", stroke: "#08713e", label: "B antigen" },
+      Rh: { fill: "#ef8a20", stroke: "#a94b08", label: "Rh antigen" }
+    };
+
+    function drawAntigen(x, y, type, angle = 0, scale = 1, attrs = {}) {
+      const style = ANTIGEN_GEOMETRY[type];
+      const group = svgEl("g", {
+        className: `antigen antigen-${type.toLowerCase()} ${attrs.className || ""}`.trim(),
+        transform: `translate(${x} ${y}) rotate(${angle}) scale(${scale})`,
+        opacity: attrs.opacity ?? 1
+      });
+
+      if (type === "A") {
+        group.appendChild(svgEl("polygon", {
+          points: "-6,0 6,0 0,-12",
+          fill: style.fill,
+          stroke: style.stroke,
+          "stroke-width": 1.4
+        }));
+      } else if (type === "B") {
+        group.appendChild(svgEl("path", {
+          d: "M -7,0 A 7,7 0 0 1 7,0 Z",
+          fill: style.fill,
+          stroke: style.stroke,
+          "stroke-width": 1.4
+        }));
+      } else {
+        group.appendChild(svgEl("rect", {
+          x: -3,
+          y: -12,
+          width: 6,
+          height: 12,
+          rx: 1,
+          fill: style.fill,
+          stroke: style.stroke,
+          "stroke-width": 1.4
+        }));
+      }
+
+      return group;
+    }
+
+    function drawRbc(x, y, r = 24, typeData = BLOOD_TYPES[state.selected], options = {}) {
+      const group = svgEl("g", {
+        className: `rbc ${options.className || ""}`.trim(),
+        transform: options.transform || `translate(${x} ${y})`
+      });
+      group.appendChild(svgEl("circle", {
+        cx: 0,
+        cy: 0,
+        r,
+        fill: "#dc3d3d",
+        stroke: "#9b1f2c",
+        "stroke-width": Math.max(1.3, r * 0.08)
+      }));
+      group.appendChild(svgEl("ellipse", {
+        cx: 0,
+        cy: 0,
+        rx: r * 0.58,
+        ry: r * 0.36,
+        fill: "#f36a60",
+        opacity: 0.5
+      }));
+      group.appendChild(svgEl("ellipse", {
+        cx: -r * 0.12,
+        cy: -r * 0.16,
+        rx: r * 0.31,
+        ry: r * 0.18,
+        fill: "#ff9186",
+        opacity: 0.32
+      }));
+
+      const antigenSlots = [
+        { key: "A", angle: 0, scale: r / 22 },
+        { key: "B", angle: 78, scale: r / 22 },
+        { key: "Rh", angle: -78, scale: r / 22 },
+        { key: "A", angle: -153, scale: r / 25 },
+        { key: "B", angle: 153, scale: r / 25 },
+        { key: "Rh", angle: 180, scale: r / 25 }
+      ];
+
+      antigenSlots.forEach((slot) => {
+        if (typeData[slot.key]) {
+          const radians = (slot.angle * Math.PI) / 180;
+          const baseX = Math.sin(radians) * (r + 1);
+          const baseY = -Math.cos(radians) * (r + 1);
+          group.appendChild(drawAntigen(baseX, baseY, slot.key, slot.angle, slot.scale));
+        }
+      });
+
+      return group;
+    }
+
+    function drawAntibodyTip(type, side) {
+      const style = ANTIGEN_GEOMETRY[type];
+      const group = svgEl("g", {
+        transform: `translate(${side * 18} -22) rotate(${side * 39})`
+      });
+      let d;
+      if (type === "A") {
+        d = "M -12,0 L 12,0 L 12,-14 L 4,-14 L 0,-8 L -4,-14 L -12,-14 Z";
+      } else if (type === "B") {
+        d = "M -12,0 L 12,0 L 12,-14 L 6,-14 Q 0,-5 -6,-14 L -12,-14 Z";
+      } else {
+        d = "M -12,0 L 12,0 L 12,-14 L 4,-14 L 4,-7 L -4,-7 L -4,-14 L -12,-14 Z";
+      }
+      group.appendChild(svgEl("path", {
+        className: "antibody-tip",
+        d,
+        fill: style.fill,
+        stroke: style.fill,
+        "stroke-width": 1.2,
+        "stroke-linejoin": "round"
+      }));
+      return group;
+    }
+
+    function drawAntibody(x, y, type, rotation = 0, scale = 1, options = {}) {
+      const style = ANTIGEN_GEOMETRY[type];
+      const group = svgEl("g", {
+        className: `antibody ${options.className || ""}`.trim(),
+        transform: `translate(${x} ${y}) rotate(${rotation}) scale(${scale})`,
+        fill: "none",
+        stroke: style.fill,
+        "stroke-width": options.strokeWidth || 5,
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round"
+      });
+
+      [
+        [0, 30, 0, 5],
+        [0, 5, 0, 0],
+        [0, 0, -18, -22],
+        [0, 0, 18, -22]
+      ].forEach(([x1, y1, x2, y2]) => {
+        group.appendChild(svgEl("line", { x1, y1, x2, y2 }));
+      });
+
+      group.appendChild(drawAntibodyTip(type, -1));
+      group.appendChild(drawAntibodyTip(type, 1));
+
+      return group;
+    }
+
+    function drawBridgeAntibody(x, y, type, rotate = 0, scale = 1) {
+      const group = drawAntibody(x, y, type, rotate, scale, { className: "bridge", strokeWidth: 5 });
+      group.setAttribute("opacity", "0");
+      return group;
+    }
+
+    function drawWellBase(reagent) {
+      const group = svgEl("g", { className: "well" });
+      group.appendChild(svgEl("circle", {
+        cx: reagent.x + 7,
+        cy: reagent.y + 9,
+        r: 103,
+        fill: "rgba(22, 35, 58, 0.13)"
+      }));
+      group.appendChild(svgEl("circle", {
+        cx: reagent.x,
+        cy: reagent.y,
+        r: 103,
+        fill: "#ffffff",
+        stroke: "#aebbd0",
+        "stroke-width": 5
+      }));
+      group.appendChild(svgEl("circle", {
+        cx: reagent.x,
+        cy: reagent.y,
+        r: 91,
+        fill: reagent.soft,
+        stroke: reagent.color,
+        "stroke-width": 2,
+        opacity: 0.9
+      }));
+      group.appendChild(svgEl("ellipse", {
+        cx: reagent.x - 23,
+        cy: reagent.y - 33,
+        rx: 45,
+        ry: 21,
+        fill: "#fff",
+        opacity: 0.45
+      }));
+      group.appendChild(svgEl("text", {
+        x: reagent.x - 122,
+        y: reagent.y + 8,
+        "text-anchor": "end",
+        className: "well-label",
+        text: reagent.label
+      }));
+      return group;
+    }
+
+    function drawFreeAntibodies(reagent, parent, compact = false) {
+      const points = compact
+        ? [
+            [-44, -18, -22],
+            [34, -24, 18],
+            [-12, 42, 164],
+            [48, 34, -120]
+          ]
+        : [
+            [-47, -37, -25],
+            [40, -42, 18],
+            [-54, 34, 92],
+            [13, 52, 170],
+            [58, 24, -116]
+          ];
+      points.forEach(([dx, dy, rotate], index) => {
+        parent.appendChild(drawAntibody(reagent.x + dx, reagent.y + dy, reagent.antigen, rotate, compact ? 0.56 : 0.62, {
+          className: index % 2 ? "free-result" : ""
+        }));
+      });
+    }
+
+    function drawDrop(reagent, parent) {
+      parent.appendChild(svgEl("path", {
+        className: "drop",
+        d: `M ${reagent.x - 12} ${reagent.y - 98}
+            C ${reagent.x - 30} ${reagent.y - 67}, ${reagent.x - 33} ${reagent.y - 45}, ${reagent.x} ${reagent.y - 43}
+            C ${reagent.x + 33} ${reagent.y - 45}, ${reagent.x + 30} ${reagent.y - 67}, ${reagent.x + 12} ${reagent.y - 98}
+            C ${reagent.x + 6} ${reagent.y - 109}, ${reagent.x - 6} ${reagent.y - 109}, ${reagent.x - 12} ${reagent.y - 98} Z`,
+        fill: "#d92835",
+        opacity: 0
+      }));
+    }
+
+    function drawCellsInWell(reagent, matches, parent) {
+      const sample = BLOOD_TYPES[state.selected];
+      const resultGroup = svgEl("g", {
+        className: matches ? "rbc-set clump-match" : "rbc-set no-clump"
+      });
+
+      const cells = matches
+        ? [
+            [-38, -34, "cell-a"],
+            [40, -35, "cell-b"],
+            [-37, 38, "cell-c"],
+            [38, 35, "cell-d"]
+          ]
+        : [
+            [-47, -40, "free-result"],
+            [46, -30, "free-result"],
+            [-44, 37, "free-result"],
+            [46, 38, "free-result"]
+          ];
+
+      cells.forEach(([dx, dy, cls]) => {
+        const positionedCell = svgEl("g", {
+          transform: `translate(${reagent.x + dx} ${reagent.y + dy})`
+        });
+        positionedCell.appendChild(drawRbc(0, 0, 20, sample, {
+          className: cls,
+          transform: "translate(0 0)"
+        }));
+        resultGroup.appendChild(positionedCell);
+      });
+
+      if (matches) {
+        resultGroup.appendChild(drawBridgeAntibody(reagent.x, reagent.y - 13, reagent.antigen, 90, 0.52));
+        resultGroup.appendChild(drawBridgeAntibody(reagent.x + 3, reagent.y + 18, reagent.antigen, 0, 0.52));
+        resultGroup.appendChild(drawBridgeAntibody(reagent.x - 17, reagent.y + 2, reagent.antigen, -45, 0.48));
+        resultGroup.appendChild(drawBridgeAntibody(reagent.x + 18, reagent.y + 2, reagent.antigen, 45, 0.48));
+      } else {
+        drawFreeAntibodies(reagent, resultGroup, true);
+      }
+
+      parent.appendChild(resultGroup);
+    }
+
+    function drawWellResult(reagent, matches, parent) {
+      const message = matches ? "Agglutination" : "No agglutination";
+      const submessage = matches ? "Matching antigen present" : "Matching antigen absent";
+      parent.appendChild(svgEl("rect", {
+        x: reagent.x - 90,
+        y: reagent.resultY - 23,
+        width: 180,
+        height: 45,
+        rx: 8,
+        fill: matches ? "#e7f5ed" : "#f7f0e7",
+        stroke: matches ? "#9dceb5" : "#e2c5a9",
+        "stroke-width": 1.5
+      }));
+      parent.appendChild(svgEl("text", {
+        x: reagent.x,
+        y: reagent.resultY - 5,
+        "text-anchor": "middle",
+        className: "well-message",
+        fill: matches ? "#246b45" : "#9a3412",
+        text: message
+      }));
+      parent.appendChild(svgEl("text", {
+        x: reagent.x,
+        y: reagent.resultY + 13,
+        "text-anchor": "middle",
+        className: "well-submessage",
+        text: submessage
+      }));
+    }
+
+    function renderReaction() {
+      const sample = BLOOD_TYPES[state.selected];
+      clearSvg(reactionSvg);
+      reactionSvg.classList.toggle("has-blood", state.tested);
+
+      reactionSvg.appendChild(svgEl("title", {
+        id: "reactionTitle",
+        text: "Blood typing card with Anti-A, Anti-B, and Anti-Rh wells"
+      }));
+      reactionSvg.appendChild(svgEl("desc", {
+        id: "reactionDesc",
+        text: "Three reagent wells show antibody-mediated agglutination after blood is added."
+      }));
+      reactionSvg.appendChild(svgEl("rect", {
+        x: 36,
+        y: 38,
+        width: 708,
+        height: 470,
+        rx: 22,
+        fill: "#e9eef5",
+        stroke: "#c8d3e2",
+        "stroke-width": 3
+      }));
+      reactionSvg.appendChild(svgEl("rect", {
+        x: 61,
+        y: 66,
+        width: 657,
+        height: 424,
+        rx: 18,
+        fill: "#f8fafc",
+        stroke: "#d8e0eb",
+        "stroke-width": 2
+      }));
+      reactionSvg.appendChild(svgEl("text", {
+        x: 390,
+        y: 84,
+        "text-anchor": "middle",
+        fill: "#536273",
+        "font-weight": 850,
+        "font-size": 17,
+        text: "Blood typing card: antibodies are already in each well"
+      }));
+
+      REAGENTS.forEach((reagent) => {
+        const well = drawWellBase(reagent);
+        drawFreeAntibodies(reagent, well);
+        if (state.tested) {
+          const matches = Boolean(sample[reagent.antigen]);
+          drawDrop(reagent, well);
+          drawCellsInWell(reagent, matches, well);
+          drawWellResult(reagent, matches, well);
+        } else {
+          well.appendChild(svgEl("text", {
+            x: reagent.x,
+            y: reagent.y + 5,
+            "text-anchor": "middle",
+            fill: "#536273",
+            "font-weight": 850,
+            "font-size": 15,
+            text: "reagent antibodies"
+          }));
+          well.appendChild(svgEl("text", {
+            x: reagent.x,
+            y: reagent.y + 25,
+            "text-anchor": "middle",
+            fill: "#6b7a8d",
+            "font-weight": 700,
+            "font-size": 12,
+            text: "waiting for blood"
+          }));
+        }
+        reactionSvg.appendChild(well);
+      });
+    }
+
+    function renderPreview() {
+      const sample = BLOOD_TYPES[state.selected];
+      clearSvg(previewSvg);
+      previewType.textContent = sample.label;
+      previewSvg.appendChild(svgEl("rect", {
+        x: 1,
+        y: 1,
+        width: 308,
+        height: 143,
+        rx: 8,
+        fill: "#ffffff",
+        stroke: "#e1e7ef"
+      }));
+      previewSvg.appendChild(drawRbc(92, 72, 37, sample));
+
+      const rows = [
+        ["A", sample.A, "#3557d6", 190, 42],
+        ["B", sample.B, "#18985a", 190, 72],
+        ["Rh", sample.Rh, "#ef8a20", 190, 102]
+      ];
+      rows.forEach(([key, present, color, x, y]) => {
+        previewSvg.appendChild(drawAntigen(x, y + 6, key, 0, 0.88, { opacity: present ? 1 : 0.18 }));
+        previewSvg.appendChild(svgEl("text", {
+          x: x + 22,
+          y: y + 5,
+          fill: present ? color : "#8a97a7",
+          "font-size": 15,
+          "font-weight": 850,
+          text: `${key}: ${present ? "present" : "absent"}`
+        }));
+      });
+
+      const presentNames = [];
+      if (sample.A) presentNames.push("A");
+      if (sample.B) presentNames.push("B");
+      if (sample.Rh) presentNames.push("Rh");
+      previewCaption.textContent = presentNames.length
+        ? `This sample has ${presentNames.join(", ")} antigen${presentNames.length > 1 ? "s" : ""} on its RBCs.`
+        : "This sample has no A, B, or Rh antigens on its RBCs.";
+    }
+
+    function renderReadout() {
+      const sample = BLOOD_TYPES[state.selected];
+      if (!state.tested) {
+        statusText.textContent = "Ready to test";
+        quickReadout.innerHTML = "Choose a sample, then add blood. Wells clump only when the reagent antibody finds its matching antigen.";
+        return;
+      }
+
+      const reactions = REAGENTS.map((r) => `${r.label}: ${sample[r.antigen] ? "clumps" : "no clumps"}`);
+      statusText.textContent = `Result: ${sample.label}`;
+      quickReadout.innerHTML = `<strong>Observed pattern:</strong><br>${reactions.join("<br>")}<br><strong>Interpretation:</strong> type ${sample.label}`;
+    }
+
+    function renderLegend() {
+      clearSvg(legendSvg);
+
+      legendSvg.appendChild(svgEl("title", {
+        id: "legendTitle",
+        text: "Antigen and antibody legend"
+      }));
+      legendSvg.appendChild(svgEl("desc", {
+        id: "legendDesc",
+        text: "Top row shows A, B, and Rh antigen shapes. Bottom row shows clean Y-shaped Anti-A, Anti-B, and Anti-Rh antibodies."
+      }));
+      legendSvg.appendChild(svgEl("rect", {
+        x: 1,
+        y: 1,
+        width: 938,
+        height: 182,
+        rx: 8,
+        fill: "#fbfcff",
+        stroke: "#d4dce6"
+      }));
+      legendSvg.appendChild(svgEl("text", {
+        x: 30,
+        y: 52,
+        "font-size": 20,
+        "font-weight": 900,
+        fill: "#1b2430",
+        text: "Antigens"
+      }));
+      legendSvg.appendChild(svgEl("text", {
+        x: 30,
+        y: 132,
+        "font-size": 20,
+        "font-weight": 900,
+        fill: "#1b2430",
+        text: "Antibodies"
+      }));
+
+      const legendItems = [
+        { antigen: "A", antibody: "Anti-A", x: 220, color: "#3557d6" },
+        { antigen: "B", antibody: "Anti-B", x: 430, color: "#18985a" },
+        { antigen: "Rh", antibody: "Anti-Rh", x: 650, color: "#ef8a20" }
+      ];
+
+      legendItems.forEach((item) => {
+        legendSvg.appendChild(drawAntigen(item.x, 52, item.antigen, 0, 1.45));
+        legendSvg.appendChild(svgEl("text", {
+          x: item.x,
+          y: 76,
+          "text-anchor": "middle",
+          "font-size": 17,
+          "font-weight": 900,
+          fill: "#1b2430",
+          text: `${item.antigen} antigen`
+        }));
+
+        const antibodyGroup = drawAntibody(item.x, 127, item.antigen, 0, 1.08);
+        antibodyGroup.setAttribute("id", `legend-${item.antibody.toLowerCase()}`);
+        legendSvg.appendChild(antibodyGroup);
+        legendSvg.appendChild(svgEl("text", {
+          x: item.x,
+          y: 174,
+          "text-anchor": "middle",
+          "font-size": 17,
+          "font-weight": 900,
+          fill: "#1b2430",
+          text: item.antibody
+        }));
+      });
+
+    }
+
+    function renderExplanationPanel() {
+      const sample = BLOOD_TYPES[state.selected];
+      finalResult.textContent = `This sample is type ${sample.label}`;
+      miniPanels.innerHTML = "";
+
+      REAGENTS.forEach((reagent) => {
+        const matches = Boolean(sample[reagent.antigen]);
+        const panel = document.createElement("article");
+        panel.className = "mini-panel";
+        panel.innerHTML = `<h3>${reagent.label}</h3>`;
+
+        const svg = svgEl("svg", { viewBox: "0 0 260 160", role: "img", "aria-label": `${reagent.label} cell-level explanation` });
+        svg.appendChild(svgEl("rect", { x: 0, y: 0, width: 260, height: 160, fill: matches ? reagent.soft : "#fffaf5" }));
+
+        if (matches) {
+          svg.appendChild(drawRbc(94, 82, 34, sample));
+          svg.appendChild(drawRbc(166, 82, 34, sample));
+          svg.appendChild(drawRbc(130, 106, 31, sample));
+          svg.appendChild(drawAntibody(130, 67, reagent.antigen, 90, 0.78, { strokeWidth: 5.5 }));
+          svg.appendChild(drawAntibody(129, 101, reagent.antigen, 0, 0.68, { strokeWidth: 5.5 }));
+          svg.appendChild(svgEl("text", {
+            x: 130,
+            y: 24,
+            "text-anchor": "middle",
+            fill: "#246b45",
+            "font-size": 16,
+            "font-weight": 900,
+            text: "antibodies cross-link cells"
+          }));
+        } else {
+          svg.appendChild(drawRbc(82, 88, 35, sample));
+          svg.appendChild(drawRbc(181, 88, 35, sample));
+          [
+            [129, 48, -20],
+            [132, 119, 165],
+            [210, 45, 35]
+          ].forEach(([x, y, rotate]) => {
+            svg.appendChild(drawAntibody(x, y, reagent.antigen, rotate, 0.72, { strokeWidth: 5.5 }));
+          });
+          svg.appendChild(svgEl("text", {
+            x: 130,
+            y: 24,
+            "text-anchor": "middle",
+            fill: "#9a3412",
+            "font-size": 16,
+            "font-weight": 900,
+            text: "antibodies stay unattached"
+          }));
+        }
+
+        panel.appendChild(svg);
+        const p = document.createElement("p");
+        p.innerHTML = `${reagent.interpretation}<br><strong>${matches ? "This well clumps, so the antigen is present." : "This well does not clump, so that antigen is absent."}</strong>`;
+        panel.appendChild(p);
+        miniPanels.appendChild(panel);
+      });
+    }
+
+    function setExplanationVisible(visible) {
+      state.explanationVisible = visible;
+      explanation.classList.toggle("visible", visible);
+      if (visible) renderExplanationPanel();
+    }
+
+    function resetReaction({ keepExplanation = false } = {}) {
+      state.tested = false;
+      if (!keepExplanation) setExplanationVisible(false);
+      renderReaction();
+      renderReadout();
+    }
+
+    function runTest() {
+      state.tested = true;
+      renderReaction();
+      renderReadout();
+      if (state.explanationVisible) renderExplanationPanel();
+    }
+
+    typeSelect.addEventListener("change", () => {
+      state.selected = typeSelect.value;
+      renderPreview();
+      resetReaction();
+    });
+
+    document.getElementById("addBlood").addEventListener("click", () => {
+      runTest();
+    });
+
+    document.getElementById("showExplain").addEventListener("click", () => {
+      if (!state.tested) runTest();
+      setExplanationVisible(true);
+      explanation.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+
+    document.getElementById("reset").addEventListener("click", () => {
+      resetReaction();
+    });
+
+    renderLegend();
+    renderPreview();
+    renderReaction();
+    renderReadout();
+  </script>
+</body>
+</html>

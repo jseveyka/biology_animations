@@ -1,0 +1,1393 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Histone Modification and DNA Compression</title>
+  <style>
+.animation-credit {
+  width: 100%;
+  text-align: center;
+  font-weight: bold;
+  font-size: 16px;
+  padding: 8px 0;
+  background: #f3f4f6;
+  color: #111827;
+  border-bottom: 1px solid #d1d5db;
+  box-sizing: border-box;
+}
+    :root {
+      --page: #f4f8fb;
+      --panel: #ffffff;
+      --ink: #17324d;
+      --muted: #5f7285;
+      --line: #cddce8;
+      --dna: #1f78d1;
+      --dna-light: #9bd5ff;
+      --histone: #f0a24b;
+      --histone-dark: #b96b2c;
+      --tail: #c66b2b;
+      --acetyl: #ffd44a;
+      --methyl: #40c463;
+      --hat: #18a999;
+      --hdac: #e76f51;
+      --demethylase: #7f56d9;
+      --repressor: #5b2a86;
+      --button: #eef5fb;
+      --button-hover: #ddebf6;
+      --active: #2364aa;
+      --shadow: 0 16px 40px rgba(26, 61, 92, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(64, 196, 99, 0.10), transparent 34rem),
+        radial-gradient(circle at top right, rgba(31, 120, 209, 0.10), transparent 30rem),
+        var(--page);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .app {
+      width: min(1180px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 22px 0 30px;
+    }
+
+    h1 {
+      margin: 0 0 18px;
+      text-align: center;
+      font-size: clamp(1.8rem, 3.2vw, 3rem);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .animation-shell {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .animation-pane {
+      width: 100%;
+      aspect-ratio: 16 / 8.6;
+      min-height: 380px;
+      display: block;
+      background: #fbfdff;
+    }
+
+    .control-panel {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) minmax(260px, 1.15fr);
+      gap: 16px;
+      padding: 16px;
+      border-top: 1px solid var(--line);
+      background: #ffffff;
+    }
+
+    .control-block {
+      min-width: 0;
+    }
+
+    .control-title {
+      margin: 0 0 8px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .method-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    button {
+      min-height: 44px;
+      border: 1px solid #b7cbdb;
+      border-radius: 8px;
+      background: var(--button);
+      color: var(--ink);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 160ms ease, color 160ms ease, border-color 160ms ease, transform 160ms ease;
+    }
+
+    button:hover:not(:disabled),
+    button:focus-visible {
+      background: var(--button-hover);
+      outline: 3px solid rgba(35, 100, 170, 0.22);
+      outline-offset: 1px;
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    button:disabled {
+      opacity: 0.48;
+      cursor: not-allowed;
+    }
+
+    .method-button {
+      padding: 10px 12px;
+      text-align: left;
+      line-height: 1.15;
+    }
+
+    .method-button.active {
+      background: var(--active);
+      border-color: var(--active);
+      color: white;
+    }
+
+    .transport-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .transport-grid button {
+      padding: 8px 10px;
+      white-space: normal;
+    }
+
+    .caption-card {
+      min-height: 104px;
+      border: 1px solid #cfe0ec;
+      border-radius: 8px;
+      background: #f7fbff;
+      padding: 12px 14px;
+    }
+
+    .step-line {
+      margin: 0 0 6px;
+      color: #315d85;
+      font-size: 0.95rem;
+      font-weight: 800;
+    }
+
+    .caption-text {
+      margin: 0;
+      font-size: clamp(1rem, 1.4vw, 1.12rem);
+      line-height: 1.45;
+    }
+
+    .legend {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(160px, 1fr));
+      gap: 8px 12px;
+      padding-top: 2px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      gap: 8px;
+      color: #28465f;
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .legend-swatch {
+      width: 28px;
+      height: 18px;
+      flex: 0 0 auto;
+      border-radius: 8px;
+      border: 2px solid rgba(23, 50, 77, 0.18);
+      background: #ddd;
+      position: relative;
+    }
+
+    .legend-swatch.dna {
+      background: linear-gradient(#9bd5ff 0 42%, #1f78d1 42% 62%, #9bd5ff 62%);
+    }
+
+    .legend-swatch.histone {
+      border-radius: 50%;
+      background: var(--histone);
+    }
+
+    .legend-swatch.tail {
+      width: 34px;
+      height: 16px;
+      border: 0;
+      background: transparent;
+    }
+
+    .legend-swatch.tail::before {
+      content: "";
+      position: absolute;
+      left: 2px;
+      right: 2px;
+      top: 8px;
+      border-top: 4px solid var(--tail);
+      border-radius: 999px;
+      transform: rotate(-18deg);
+    }
+
+    .legend-swatch.ac {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--acetyl);
+    }
+
+    .legend-swatch.me {
+      width: 0;
+      height: 0;
+      border-left: 13px solid transparent;
+      border-right: 13px solid transparent;
+      border-bottom: 23px solid var(--methyl);
+      background: transparent;
+      border-top: 0;
+      border-radius: 0;
+    }
+
+    .legend-swatch.hat {
+      background: var(--hat);
+    }
+
+    .legend-swatch.hdac {
+      background: var(--hdac);
+    }
+
+    .legend-swatch.repressor {
+      background: var(--repressor);
+    }
+
+    .scene-label {
+      font-size: 16px;
+      font-weight: 800;
+      fill: #23435f;
+    }
+
+    .small-label {
+      font-size: 13px;
+      font-weight: 800;
+      fill: #23435f;
+    }
+
+    @media (max-width: 830px) {
+      .app {
+        width: min(100% - 18px, 1180px);
+        padding-top: 14px;
+      }
+
+      .animation-pane {
+        min-height: 330px;
+      }
+
+      .control-panel {
+        grid-template-columns: 1fr;
+        padding: 12px;
+      }
+
+      .legend {
+        grid-template-columns: repeat(2, minmax(150px, 1fr));
+      }
+    }
+
+    @media (max-width: 540px) {
+      .method-grid,
+      .transport-grid,
+      .legend {
+        grid-template-columns: 1fr;
+      }
+
+      .animation-pane {
+        min-height: 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="animation-credit">
+  Animation Prompted by Jerred Seveyka for his biology class
+</div>
+  <main class="app">
+    <h1>Histone Modification and DNA Compression</h1>
+
+    <section class="animation-shell" aria-label="Histone modification animation">
+      <svg id="animationSvg" class="animation-pane" viewBox="0 0 1000 540" role="img" aria-labelledby="svgTitle svgDesc">
+        <title id="svgTitle">Animated chromatin model</title>
+        <desc id="svgDesc">A simplified model showing DNA wrapped around histones, with modifications that compress or decompress chromatin.</desc>
+        <defs>
+          <filter id="softShadow" x="-25%" y="-25%" width="150%" height="150%">
+            <feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#17324d" flood-opacity="0.16"></feDropShadow>
+          </filter>
+          <marker id="arrowHead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#597c9a"></path>
+          </marker>
+        </defs>
+        <g id="sceneLayer"></g>
+      </svg>
+
+      <div class="control-panel">
+        <div class="control-block">
+          <p class="control-title">Modification</p>
+          <div class="method-grid" role="group" aria-label="Choose histone modification">
+            <button class="method-button active" type="button" data-method="acetylation">Histone acetylation</button>
+            <button class="method-button" type="button" data-method="deacetylation">Histone deacetylation</button>
+            <button class="method-button" type="button" data-method="methylation">Histone methylation</button>
+            <button class="method-button" type="button" data-method="demethylation">Histone demethylation</button>
+          </div>
+        </div>
+
+        <div class="control-block">
+          <p class="control-title">Steps</p>
+          <div class="transport-grid" role="group" aria-label="Animation controls">
+            <button id="playPauseButton" type="button">Play</button>
+            <button id="resetButton" type="button">Reset</button>
+            <button id="previousButton" type="button">Previous Step</button>
+            <button id="nextButton" type="button">Next Step</button>
+          </div>
+          <div class="caption-card" aria-live="polite">
+            <p id="stepLine" class="step-line">Step 1 of 5</p>
+            <p id="captionText" class="caption-text"></p>
+          </div>
+        </div>
+
+        <div class="legend" aria-label="Legend">
+          <div class="legend-item"><span class="legend-swatch dna"></span>DNA</div>
+          <div class="legend-item"><span class="legend-swatch histone"></span>Histone core</div>
+          <div class="legend-item"><span class="legend-swatch tail"></span>Histone tail</div>
+          <div class="legend-item"><span class="legend-swatch ac"></span>Acetyl group, Ac</div>
+          <div class="legend-item"><span class="legend-swatch me"></span>Methyl group, Me</div>
+          <div class="legend-item"><span class="legend-swatch hat"></span>HAT enzyme</div>
+          <div class="legend-item"><span class="legend-swatch hdac"></span>HDAC or demethylase</div>
+          <div class="legend-item"><span class="legend-swatch repressor"></span>Repressor complex</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const svgNamespace = "http://www.w3.org/2000/svg";
+    const sceneLayer = document.getElementById("sceneLayer");
+    const captionText = document.getElementById("captionText");
+    const stepLine = document.getElementById("stepLine");
+    const playPauseButton = document.getElementById("playPauseButton");
+    const resetButton = document.getElementById("resetButton");
+    const previousButton = document.getElementById("previousButton");
+    const nextButton = document.getElementById("nextButton");
+    const methodButtons = Array.from(document.querySelectorAll(".method-button"));
+
+    const colors = {
+      dna: "#1f78d1",
+      dnaLight: "#9bd5ff",
+      histone: "#f0a24b",
+      histoneDark: "#b96b2c",
+      tail: "#c66b2b",
+      acetyl: "#ffd44a",
+      acetylStroke: "#b98a00",
+      methyl: "#40c463",
+      methylStroke: "#197a34",
+      hat: "#18a999",
+      hdac: "#e76f51",
+      demethylase: "#7f56d9",
+      repressor: "#5b2a86",
+      label: "#23435f",
+      guide: "#597c9a"
+    };
+
+    const scenes = {
+      acetylation: {
+        title: "Histone acetylation",
+        steps: [
+          {
+            caption: "DNA is wrapped around histones in a moderately compressed chromatin fiber.",
+            state: baseState({ compression: 0.62 })
+          },
+          {
+            caption: "HAT approaches histone tails.",
+            state: baseState({ compression: 0.62, enzymeKind: "HAT", enzymeLevel: 1, enzymeProgress: 1 })
+          },
+          {
+            caption: "Histone acetyltransferase adds acetyl groups to histone tails.",
+            state: baseState({ compression: 0.62, acetylLevel: 1, enzymeKind: "HAT", enzymeLevel: 1, enzymeProgress: 1 })
+          },
+          {
+            caption: "The added acetyl groups are shown as yellow Ac circles while histones separate.",
+            state: baseState({ compression: 0.34, acetylLevel: 1, enzymeKind: "HAT", enzymeLevel: 0.35, enzymeProgress: 1 })
+          },
+          {
+            caption: "Histone acetyltransferase adds acetyl groups to histone tails. In this simplified model, acetylation causes histones to separate and DNA to become less tightly wound.",
+            state: baseState({ compression: 0.18, acetylLevel: 1 })
+          }
+        ]
+      },
+      deacetylation: {
+        title: "Histone deacetylation",
+        steps: [
+          {
+            caption: "Relaxed DNA has acetylated histone tails.",
+            state: baseState({ compression: 0.18, acetylLevel: 1 })
+          },
+          {
+            caption: "HDAC approaches the acetylated histone tails.",
+            state: baseState({ compression: 0.18, acetylLevel: 1, enzymeKind: "HDAC", enzymeLevel: 1, enzymeProgress: 1 })
+          },
+          {
+            caption: "HDAC removes acetyl groups. Some Ac labels fade as they are carried away.",
+            state: baseState({ compression: 0.18, acetylLevel: 0, acCarryLevel: 1, enzymeKind: "HDAC", enzymeLevel: 1, enzymeProgress: 1 })
+          },
+          {
+            caption: "Without acetyl groups in this simplified model, histones pull closer together.",
+            state: baseState({ compression: 0.58, enzymeKind: "HDAC", enzymeLevel: 0.35, enzymeProgress: 1 })
+          },
+          {
+            caption: "Histone deacetylase removes acetyl groups from histone tails. In this simplified model, deacetylation causes tighter DNA wrapping and chromatin compression.",
+            state: baseState({ compression: 0.88 })
+          }
+        ]
+      },
+      methylation: {
+        title: "Histone methylation",
+        steps: [
+          {
+            caption: "Chromatin begins in a moderately open state.",
+            state: baseState({ compression: 0.36 })
+          },
+          {
+            caption: "Methyl groups are added to histone tails.",
+            state: baseState({ compression: 0.36, methylLevel: 1 })
+          },
+          {
+            caption: "Repressor complex proteins are recruited toward the methylated histone tails.",
+            state: baseState({ compression: 0.36, methylLevel: 1, repressorLevel: 1, repressorApproach: 0.45 })
+          },
+          {
+            caption: "Repressor complex proteins bind near methyl groups.",
+            state: baseState({ compression: 0.36, methylLevel: 1, repressorLevel: 1, repressorApproach: 1 })
+          },
+          {
+            caption: "Histone methylation can recruit repressor complex proteins. In this simplified model, the recruited repressors pull chromatin into a compressed state.",
+            state: baseState({ compression: 0.86, methylLevel: 1, repressorLevel: 1, repressorApproach: 1 })
+          }
+        ]
+      },
+      demethylation: {
+        title: "Histone demethylation",
+        steps: [
+          {
+            caption: "Chromatin begins compressed with methyl groups and bound repressor complexes.",
+            state: baseState({ compression: 0.86, methylLevel: 1, repressorLevel: 1, repressorApproach: 1 })
+          },
+          {
+            caption: "Demethylase removes methyl groups from histone tails.",
+            state: baseState({ compression: 0.86, methylLevel: 0, meCarryLevel: 1, repressorLevel: 1, repressorApproach: 1, enzymeKind: "demethylase", enzymeLevel: 1, enzymeProgress: 1 })
+          },
+          {
+            caption: "Repressor complexes detach and float away after methyl groups are removed.",
+            state: baseState({ compression: 0.86, repressorLevel: 1, repressorApproach: 1, repressorDetach: 1, enzymeKind: "demethylase", enzymeLevel: 0.45, enzymeProgress: 1 })
+          },
+          {
+            caption: "Histones separate from each other as repression is released in this simplified model.",
+            state: baseState({ compression: 0.42, repressorLevel: 0.35, repressorApproach: 1, repressorDetach: 1 })
+          },
+          {
+            caption: "Histone demethylation removes methyl groups. In this simplified model, repressor complexes detach and the DNA becomes less compressed.",
+            state: baseState({ compression: 0.18 })
+          }
+        ]
+      }
+    };
+
+    let selectedSceneKey = "acetylation";
+    let currentStepIndex = 0;
+    let currentState = cloneState(scenes[selectedSceneKey].steps[0].state);
+    let startState = cloneState(currentState);
+    let targetState = cloneState(currentState);
+    let transitionStartTime = 0;
+    let transitionFrame = null;
+    let isTransitioning = false;
+    let isPlaying = false;
+    let playTimer = null;
+
+    function baseState(overrides) {
+      return Object.assign({
+        compression: 0.5,
+        acetylLevel: 0,
+        methylLevel: 0,
+        acCarryLevel: 0,
+        meCarryLevel: 0,
+        enzymeKind: "",
+        enzymeLevel: 0,
+        enzymeProgress: 0,
+        repressorLevel: 0,
+        repressorApproach: 0,
+        repressorDetach: 0
+      }, overrides);
+    }
+
+    function cloneState(state) {
+      return Object.assign({}, state);
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function lerp(start, end, amount) {
+      return start + (end - start) * amount;
+    }
+
+    function easeInOut(amount) {
+      return amount < 0.5
+        ? 4 * amount * amount * amount
+        : 1 - Math.pow(-2 * amount + 2, 3) / 2;
+    }
+
+    function interpolateState(fromState, toState, amount) {
+      const mixed = {};
+      const numericKeys = [
+        "compression",
+        "acetylLevel",
+        "methylLevel",
+        "acCarryLevel",
+        "meCarryLevel",
+        "enzymeLevel",
+        "enzymeProgress",
+        "repressorLevel",
+        "repressorApproach",
+        "repressorDetach"
+      ];
+
+      numericKeys.forEach((key) => {
+        mixed[key] = lerp(fromState[key] || 0, toState[key] || 0, amount);
+      });
+
+      mixed.enzymeKind = toState.enzymeKind || fromState.enzymeKind || "";
+      return mixed;
+    }
+
+    function createSvgElement(name, attributes, parent) {
+      const element = document.createElementNS(svgNamespace, name);
+      Object.entries(attributes || {}).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          element.setAttribute(key, value);
+        }
+      });
+      if (parent) {
+        parent.appendChild(element);
+      }
+      return element;
+    }
+
+    function drawText(parent, text, x, y, options) {
+      const attrs = Object.assign({
+        x,
+        y,
+        "text-anchor": "middle",
+        "dominant-baseline": "middle"
+      }, options || {});
+      const element = createSvgElement("text", attrs, parent);
+      element.textContent = text;
+      return element;
+    }
+
+    function roundedRect(parent, x, y, width, height, radius, fill, stroke, opacity) {
+      return createSvgElement("rect", {
+        x,
+        y,
+        width,
+        height,
+        rx: radius,
+        ry: radius,
+        fill,
+        stroke,
+        "stroke-width": stroke ? 2 : 0,
+        opacity: opacity === undefined ? 1 : opacity
+      }, parent);
+    }
+
+    function pathFromPoints(points) {
+      if (!points.length) return "";
+      return points.map((point, index) => {
+        const command = index === 0 ? "M" : "L";
+        return `${command} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
+      }).join(" ");
+    }
+
+    function buildChromatinLayout(compression) {
+      const count = 5;
+      const span = lerp(800, 530, compression);
+      const startX = 500 - span / 2;
+      const spacing = span / (count - 1);
+      const looseWave = 1 - compression;
+
+      return Array.from({ length: count }, (_, index) => ({
+        x: startX + spacing * index,
+        y: 286 + Math.sin(index * 0.95) * 9 * looseWave,
+        r: 42,
+        index
+      }));
+    }
+
+    function loopRadii(compression) {
+      return {
+        rx: lerp(67, 51, compression),
+        ry: lerp(53, 43, compression)
+      };
+    }
+
+    function loopEntry(core, compression) {
+      const radii = loopRadii(compression);
+      return { x: core.x - radii.rx, y: core.y };
+    }
+
+    function loopExit(core, compression) {
+      const radii = loopRadii(compression);
+      return { x: core.x + radii.rx, y: core.y };
+    }
+
+    function buildConnector(start, end, compression) {
+      const points = [];
+      const amplitude = lerp(23, 5, compression);
+      const sag = lerp(13, 2, compression);
+      const segmentCount = 20;
+      for (let index = 0; index <= segmentCount; index += 1) {
+        const t = index / segmentCount;
+        points.push({
+          x: lerp(start.x, end.x, t),
+          y: lerp(start.y, end.y, t) + Math.sin(t * Math.PI * 2) * amplitude + Math.sin(t * Math.PI) * sag
+        });
+      }
+      return points;
+    }
+
+    function buildLoop(core, compression) {
+      const points = [];
+      const radii = loopRadii(compression);
+      const startAngle = Math.PI;
+      const turns = lerp(0.66, 1.22, compression);
+      const endAngle = startAngle + Math.PI * 2 * turns;
+      const segmentCount = 60;
+
+      for (let index = 0; index <= segmentCount; index += 1) {
+        const t = index / segmentCount;
+        const angle = lerp(startAngle, endAngle, t);
+        points.push({
+          x: core.x + Math.cos(angle) * radii.rx,
+          y: core.y + Math.sin(angle) * radii.ry
+        });
+      }
+
+      points.push(loopExit(core, compression));
+      return points;
+    }
+
+    function buildDnaPoints(cores, compression) {
+      const points = [];
+      let previousExit = {
+        x: loopEntry(cores[0], compression).x - 82,
+        y: loopEntry(cores[0], compression).y + lerp(26, 5, compression)
+      };
+
+      cores.forEach((core) => {
+        const entry = loopEntry(core, compression);
+        points.push(...buildConnector(previousExit, entry, compression));
+        points.push(...buildLoop(core, compression));
+        previousExit = loopExit(core, compression);
+      });
+
+      points.push(...buildConnector(previousExit, {
+        x: previousExit.x + 82,
+        y: previousExit.y - lerp(25, 5, compression)
+      }, compression));
+
+      return points;
+    }
+
+    function getTailData(cores, compression) {
+      const lengthBoost = lerp(12, 0, compression);
+      return cores.map((core, index) => {
+        const leftStart = {
+          x: core.x - core.r * 0.45,
+          y: core.y - core.r * 0.80
+        };
+        const rightStart = {
+          x: core.x + core.r * 0.45,
+          y: core.y - core.r * 0.80
+        };
+        const bottomStart = {
+          x: core.x,
+          y: core.y + core.r * 0.82
+        };
+
+        return {
+          index,
+          left: {
+            start: leftStart,
+            control: { x: core.x - 34, y: core.y - 67 - lengthBoost },
+            end: { x: core.x - 52 - lengthBoost, y: core.y - 72 - lengthBoost }
+          },
+          right: {
+            start: rightStart,
+            control: { x: core.x + 34, y: core.y - 67 - lengthBoost },
+            end: { x: core.x + 52 + lengthBoost, y: core.y - 72 - lengthBoost }
+          },
+          bottom: {
+            start: bottomStart,
+            control: { x: core.x + (index % 2 ? -20 : 20), y: core.y + 60 + lengthBoost },
+            end: { x: core.x + (index % 2 ? -45 : 45), y: core.y + 62 + lengthBoost * 0.5 }
+          }
+        };
+      });
+    }
+
+    function drawBackground(parent) {
+      roundedRect(parent, 24, 24, 952, 492, 8, "#ffffff", "#d9e7f1", 1);
+      createSvgElement("path", {
+        d: "M 52 430 C 165 394, 246 474, 374 438 S 612 414, 748 446 S 890 428, 946 398",
+        fill: "none",
+        stroke: "#e8f2f9",
+        "stroke-width": 18,
+        "stroke-linecap": "round"
+      }, parent);
+    }
+
+    function drawDna(parent, cores, compression) {
+      const dnaPoints = buildDnaPoints(cores, compression);
+      const dnaPath = pathFromPoints(dnaPoints);
+
+      createSvgElement("path", {
+        d: dnaPath,
+        fill: "none",
+        stroke: colors.dnaLight,
+        "stroke-width": 22,
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round",
+        opacity: 0.95
+      }, parent);
+
+      createSvgElement("path", {
+        d: dnaPath,
+        fill: "none",
+        stroke: colors.dna,
+        "stroke-width": 8,
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round"
+      }, parent);
+
+      createSvgElement("path", {
+        d: dnaPath,
+        fill: "none",
+        stroke: "#ffffff",
+        "stroke-width": 3,
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round",
+        "stroke-dasharray": "7 18",
+        opacity: 0.9
+      }, parent);
+    }
+
+    function drawHistonesAndTails(parent, cores, compression) {
+      const tails = getTailData(cores, compression);
+
+      tails.forEach((tailSet) => {
+        ["left", "right", "bottom"].forEach((side) => {
+          const tail = tailSet[side];
+          createSvgElement("path", {
+            d: `M ${tail.start.x} ${tail.start.y} Q ${tail.control.x} ${tail.control.y} ${tail.end.x} ${tail.end.y}`,
+            fill: "none",
+            stroke: colors.tail,
+            "stroke-width": side === "bottom" ? 4 : 5,
+            "stroke-linecap": "round",
+            opacity: side === "bottom" ? 0.72 : 1
+          }, parent);
+        });
+      });
+
+      cores.forEach((core) => {
+        createSvgElement("circle", {
+          cx: core.x,
+          cy: core.y,
+          r: core.r + 3,
+          fill: "#ffffff",
+          opacity: 0.85
+        }, parent);
+
+        createSvgElement("circle", {
+          cx: core.x,
+          cy: core.y,
+          r: core.r,
+          fill: colors.histone,
+          stroke: colors.histoneDark,
+          "stroke-width": 3,
+          filter: "url(#softShadow)"
+        }, parent);
+
+        const lobeAngles = [0, Math.PI / 2, Math.PI, Math.PI * 1.5];
+        lobeAngles.forEach((angle) => {
+          createSvgElement("circle", {
+            cx: core.x + Math.cos(angle) * 15,
+            cy: core.y + Math.sin(angle) * 15,
+            r: 15,
+            fill: "#f7bd70",
+            stroke: "#d9893e",
+            "stroke-width": 1.5,
+            opacity: 0.85
+          }, parent);
+        });
+      });
+
+      return tails;
+    }
+
+    function modifierTargets(tails) {
+      return tails.map((tailSet) => tailSet.right.end);
+    }
+
+    function drawAcetylGroups(parent, targets, level) {
+      const opacity = clamp(level, 0, 1);
+      if (opacity <= 0.01) return;
+
+      targets.forEach((target, index) => {
+        const scale = 0.72 + opacity * 0.28;
+        const group = createSvgElement("g", {
+          transform: `translate(${target.x} ${target.y}) scale(${scale})`,
+          opacity
+        }, parent);
+
+        createSvgElement("circle", {
+          cx: 0,
+          cy: 0,
+          r: 18,
+          fill: colors.acetyl,
+          stroke: colors.acetylStroke,
+          "stroke-width": 2
+        }, group);
+        drawText(group, "Ac", 0, 1, {
+          "font-size": 14,
+          "font-weight": 800,
+          fill: "#5f4300"
+        });
+
+        if (index === 0) {
+          createSvgElement("path", {
+            d: `M ${target.x + 10} ${target.y - 14} C ${target.x + 44} ${target.y - 38}, ${target.x + 64} ${target.y - 34}, ${target.x + 86} ${target.y - 52}`,
+            fill: "none",
+            stroke: "#d0a21a",
+            "stroke-width": 2,
+            "stroke-dasharray": "4 5",
+            opacity: 0.48
+          }, parent);
+        }
+      });
+    }
+
+    function drawMethylGroups(parent, targets, level) {
+      const opacity = clamp(level, 0, 1);
+      if (opacity <= 0.01) return;
+
+      targets.forEach((target) => {
+        const scale = 0.72 + opacity * 0.28;
+        const group = createSvgElement("g", {
+          transform: `translate(${target.x} ${target.y}) scale(${scale})`,
+          opacity
+        }, parent);
+
+        createSvgElement("polygon", {
+          points: "0,-19 18,14 -18,14",
+          fill: colors.methyl,
+          stroke: colors.methylStroke,
+          "stroke-width": 2,
+          "stroke-linejoin": "round"
+        }, group);
+        drawText(group, "Me", 0, 5, {
+          "font-size": 13,
+          "font-weight": 800,
+          fill: "#083d18"
+        });
+      });
+    }
+
+    function drawCarriedAcetyl(parent, x, y, level) {
+      const opacity = clamp(level, 0, 1);
+      if (opacity <= 0.01) return;
+
+      const group = createSvgElement("g", {
+        transform: `translate(${x} ${y})`,
+        opacity
+      }, parent);
+      createSvgElement("circle", {
+        cx: 0,
+        cy: 0,
+        r: 16,
+        fill: colors.acetyl,
+        stroke: colors.acetylStroke,
+        "stroke-width": 2
+      }, group);
+      drawText(group, "Ac", 0, 1, {
+        "font-size": 13,
+        "font-weight": 800,
+        fill: "#5f4300"
+      });
+    }
+
+    function drawCarriedMethyl(parent, x, y, level) {
+      const opacity = clamp(level, 0, 1);
+      if (opacity <= 0.01) return;
+
+      const group = createSvgElement("g", {
+        transform: `translate(${x} ${y})`,
+        opacity
+      }, parent);
+      createSvgElement("polygon", {
+        points: "0,-17 16,12 -16,12",
+        fill: colors.methyl,
+        stroke: colors.methylStroke,
+        "stroke-width": 2,
+        "stroke-linejoin": "round"
+      }, group);
+      drawText(group, "Me", 0, 4, {
+        "font-size": 12,
+        "font-weight": 800,
+        fill: "#083d18"
+      });
+    }
+
+    function drawEnzyme(parent, tails, state, compression) {
+      if (!state.enzymeKind || state.enzymeLevel <= 0.01) return;
+
+      const enzymeKind = state.enzymeKind;
+      const targets = modifierTargets(tails);
+      let start;
+      let target;
+      let fill;
+      let label;
+      let width;
+
+      if (enzymeKind === "HAT") {
+        start = { x: 126, y: 114 };
+        target = { x: targets[1].x - 4, y: targets[1].y - 58 };
+        fill = colors.hat;
+        label = "HAT";
+        width = 116;
+      } else if (enzymeKind === "HDAC") {
+        start = { x: 858, y: 114 };
+        target = { x: targets[3].x + 4, y: targets[3].y - 58 };
+        fill = colors.hdac;
+        label = "HDAC";
+        width = 128;
+      } else {
+        start = { x: 155, y: 438 };
+        target = { x: targets[2].x - 6, y: targets[2].y + 72 };
+        fill = colors.demethylase;
+        label = "demethylase";
+        width = 156;
+      }
+
+      const progress = clamp(state.enzymeProgress, 0, 1);
+      const position = {
+        x: lerp(start.x, target.x, progress),
+        y: lerp(start.y, target.y, progress)
+      };
+      const opacity = clamp(state.enzymeLevel, 0, 1);
+
+      createSvgElement("path", {
+        d: `M ${start.x} ${start.y} C ${lerp(start.x, position.x, 0.35)} ${start.y - 34}, ${lerp(start.x, position.x, 0.7)} ${position.y + 32}, ${position.x} ${position.y}`,
+        fill: "none",
+        stroke: colors.guide,
+        "stroke-width": 3,
+        "stroke-dasharray": "8 8",
+        "marker-end": "url(#arrowHead)",
+        opacity: opacity * 0.72
+      }, parent);
+
+      const group = createSvgElement("g", {
+        opacity,
+        transform: `translate(${position.x} ${position.y})`
+      }, parent);
+      roundedRect(group, -width / 2, -24, width, 48, 8, fill, "#ffffff", 1);
+      createSvgElement("rect", {
+        x: -width / 2,
+        y: -24,
+        width,
+        height: 48,
+        rx: 8,
+        ry: 8,
+        fill: "none",
+        stroke: "rgba(23, 50, 77, 0.22)",
+        "stroke-width": 2
+      }, group);
+      drawText(group, label, 0, 1, {
+        "font-size": enzymeKind === "demethylase" ? 16 : 21,
+        "font-weight": 900,
+        fill: "#ffffff"
+      });
+
+      if (state.acCarryLevel > 0.01) {
+        drawCarriedAcetyl(parent, position.x + width / 2 - 14, position.y - 31, state.acCarryLevel);
+      }
+      if (state.meCarryLevel > 0.01) {
+        drawCarriedMethyl(parent, position.x + width / 2 - 14, position.y - 31, state.meCarryLevel);
+      }
+
+      if (enzymeKind === "HAT") {
+        drawText(parent, "Histone acetyltransferase", position.x, position.y + 46, {
+          "font-size": 14,
+          "font-weight": 800,
+          fill: colors.label,
+          opacity
+        });
+      }
+
+      if (enzymeKind === "HDAC") {
+        drawText(parent, "Histone deacetylase", position.x, position.y + 46, {
+          "font-size": 14,
+          "font-weight": 800,
+          fill: colors.label,
+          opacity
+        });
+      }
+    }
+
+    function drawRepressors(parent, tails, state) {
+      const level = clamp(state.repressorLevel, 0, 1);
+      if (level <= 0.01) return;
+
+      const targets = modifierTargets(tails);
+      const boundTargets = [targets[1], targets[2], targets[3]];
+      const approach = clamp(state.repressorApproach, 0, 1);
+      const detach = clamp(state.repressorDetach, 0, 1);
+
+      boundTargets.forEach((target, index) => {
+        const arrivalStart = {
+          x: target.x + [-70, 0, 70][index],
+          y: 96 + index * 14
+        };
+        const bound = {
+          x: target.x + 8,
+          y: target.y - 50
+        };
+        const away = {
+          x: target.x + [-94, 0, 94][index],
+          y: 94 + index * 18
+        };
+
+        const docked = {
+          x: lerp(arrivalStart.x, bound.x, approach),
+          y: lerp(arrivalStart.y, bound.y, approach)
+        };
+        const position = {
+          x: lerp(docked.x, away.x, detach),
+          y: lerp(docked.y, away.y, detach)
+        };
+        const opacity = level * (detach > 0 ? lerp(1, 0.72, detach) : 1);
+
+        if (approach < 0.95 && detach < 0.05) {
+          createSvgElement("path", {
+            d: `M ${arrivalStart.x} ${arrivalStart.y} C ${arrivalStart.x} ${arrivalStart.y + 52}, ${bound.x} ${bound.y - 62}, ${position.x} ${position.y}`,
+            fill: "none",
+            stroke: colors.repressor,
+            "stroke-width": 3,
+            "stroke-dasharray": "7 7",
+            "marker-end": "url(#arrowHead)",
+            opacity: 0.46 * opacity
+          }, parent);
+        }
+
+        const group = createSvgElement("g", {
+          transform: `translate(${position.x} ${position.y})`,
+          opacity
+        }, parent);
+
+        createSvgElement("path", {
+          d: "M -48 -8 C -50 -28, -25 -34, -12 -22 C 0 -43, 35 -32, 32 -10 C 56 -6, 50 25, 25 25 L -28 25 C -55 25, -63 0, -48 -8 Z",
+          fill: colors.repressor,
+          stroke: "#37125f",
+          "stroke-width": 2,
+          filter: "url(#softShadow)"
+        }, group);
+        drawText(group, "repressor", 0, -2, {
+          "font-size": 13,
+          "font-weight": 900,
+          fill: "#ffffff"
+        });
+        drawText(group, "complex", 0, 14, {
+          "font-size": 12,
+          "font-weight": 900,
+          fill: "#ffffff"
+        });
+      });
+    }
+
+    function drawStatusBadge(parent, compression) {
+      let label = "Moderately open chromatin";
+      if (compression > 0.72) label = "Compressed chromatin";
+      if (compression < 0.32) label = "Relaxed chromatin";
+
+      roundedRect(parent, 365, 40, 270, 38, 8, "#edf7ff", "#c7ddeb", 1);
+      drawText(parent, label, 500, 60, {
+        "font-size": 17,
+        "font-weight": 900,
+        fill: colors.label
+      });
+    }
+
+    function drawCompressionMeter(parent, compression) {
+      const x1 = 332;
+      const x2 = 668;
+      const y = 486;
+      createSvgElement("line", {
+        x1,
+        y1: y,
+        x2,
+        y2: y,
+        stroke: "#bdd4e5",
+        "stroke-width": 8,
+        "stroke-linecap": "round"
+      }, parent);
+      createSvgElement("line", {
+        x1,
+        y1: y,
+        x2: lerp(x1, x2, compression),
+        y2: y,
+        stroke: "#2364aa",
+        "stroke-width": 8,
+        "stroke-linecap": "round"
+      }, parent);
+      createSvgElement("circle", {
+        cx: lerp(x1, x2, compression),
+        cy: y,
+        r: 13,
+        fill: "#ffffff",
+        stroke: "#2364aa",
+        "stroke-width": 4
+      }, parent);
+      drawText(parent, "open", x1 - 42, y + 1, {
+        "font-size": 14,
+        "font-weight": 800,
+        fill: colors.label
+      });
+      drawText(parent, "compressed", x2 + 74, y + 1, {
+        "font-size": 14,
+        "font-weight": 800,
+        fill: colors.label
+      });
+    }
+
+    function drawCallout(parent, text, labelPoint, targetPoint, anchor) {
+      createSvgElement("path", {
+        d: `M ${labelPoint.x} ${labelPoint.y + 8} C ${lerp(labelPoint.x, targetPoint.x, 0.45)} ${labelPoint.y + 8}, ${lerp(labelPoint.x, targetPoint.x, 0.65)} ${targetPoint.y - 6}, ${targetPoint.x} ${targetPoint.y}`,
+        fill: "none",
+        stroke: "#93a9bb",
+        "stroke-width": 2,
+        "stroke-dasharray": "3 5"
+      }, parent);
+      drawText(parent, text, labelPoint.x, labelPoint.y, {
+        "text-anchor": anchor || "middle",
+        "font-size": 16,
+        "font-weight": 900,
+        fill: colors.label
+      });
+    }
+
+    function drawSceneLabels(parent, cores, tails, compression) {
+      drawCallout(parent, "DNA", { x: 98, y: 205 }, {
+        x: loopEntry(cores[0], compression).x - 35,
+        y: loopEntry(cores[0], compression).y + 8
+      }, "middle");
+
+      drawCallout(parent, "histone core", { x: 135, y: 372 }, {
+        x: cores[0].x - 25,
+        y: cores[0].y + 24
+      }, "middle");
+
+      const lastTail = tails[tails.length - 1].right.end;
+      drawCallout(parent, "histone tails", { x: 865, y: 188 }, {
+        x: lastTail.x,
+        y: lastTail.y
+      }, "middle");
+    }
+
+    function render(state) {
+      sceneLayer.replaceChildren();
+      const compression = clamp(state.compression, 0, 1);
+      const cores = buildChromatinLayout(compression);
+      const sceneGroup = createSvgElement("g", {}, sceneLayer);
+
+      drawBackground(sceneGroup);
+      drawStatusBadge(sceneGroup, compression);
+      drawDna(sceneGroup, cores, compression);
+      const tails = drawHistonesAndTails(sceneGroup, cores, compression);
+      const targets = modifierTargets(tails);
+
+      drawAcetylGroups(sceneGroup, targets, state.acetylLevel);
+      drawMethylGroups(sceneGroup, targets, state.methylLevel);
+      drawRepressors(sceneGroup, tails, state);
+      drawEnzyme(sceneGroup, tails, state, compression);
+      drawSceneLabels(sceneGroup, cores, tails, compression);
+      drawCompressionMeter(sceneGroup, compression);
+    }
+
+    function updateInterface() {
+      const scene = scenes[selectedSceneKey];
+      const stepCount = scene.steps.length;
+      methodButtons.forEach((button) => {
+        const isActive = button.dataset.method === selectedSceneKey;
+        button.classList.toggle("active", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
+      });
+
+      previousButton.disabled = currentStepIndex === 0;
+      nextButton.disabled = currentStepIndex === stepCount - 1;
+      playPauseButton.textContent = isPlaying ? "Pause" : "Play";
+      stepLine.textContent = `${scene.title} - Step ${currentStepIndex + 1} of ${stepCount}`;
+      captionText.textContent = scene.steps[currentStepIndex].caption;
+    }
+
+    function cancelTransition() {
+      if (transitionFrame !== null) {
+        cancelAnimationFrame(transitionFrame);
+        transitionFrame = null;
+      }
+      isTransitioning = false;
+    }
+
+    function clearPlayTimer() {
+      if (playTimer !== null) {
+        clearTimeout(playTimer);
+        playTimer = null;
+      }
+    }
+
+    function setPlaying(value) {
+      isPlaying = value;
+      if (!isPlaying) {
+        clearPlayTimer();
+      }
+      updateInterface();
+    }
+
+    function goToStep(stepIndex, animate) {
+      const scene = scenes[selectedSceneKey];
+      const clampedStep = clamp(stepIndex, 0, scene.steps.length - 1);
+      currentStepIndex = clampedStep;
+      startState = cloneState(currentState);
+      targetState = cloneState(scene.steps[currentStepIndex].state);
+      updateInterface();
+
+      cancelTransition();
+
+      if (!animate) {
+        currentState = cloneState(targetState);
+        render(currentState);
+        if (isPlaying) scheduleNextStep();
+        return;
+      }
+
+      transitionStartTime = performance.now();
+      isTransitioning = true;
+
+      function step(now) {
+        const elapsed = now - transitionStartTime;
+        const progress = clamp(elapsed / 900, 0, 1);
+        const eased = easeInOut(progress);
+        currentState = interpolateState(startState, targetState, eased);
+        render(currentState);
+
+        if (progress < 1) {
+          transitionFrame = requestAnimationFrame(step);
+        } else {
+          currentState = cloneState(targetState);
+          isTransitioning = false;
+          transitionFrame = null;
+          render(currentState);
+          if (isPlaying) {
+            scheduleNextStep();
+          }
+        }
+      }
+
+      transitionFrame = requestAnimationFrame(step);
+    }
+
+    function scheduleNextStep() {
+      clearPlayTimer();
+      const scene = scenes[selectedSceneKey];
+      if (currentStepIndex >= scene.steps.length - 1) {
+        setPlaying(false);
+        return;
+      }
+      playTimer = setTimeout(() => {
+        goToStep(currentStepIndex + 1, true);
+      }, isTransitioning ? 1100 : 1250);
+    }
+
+    function resetCurrentScene() {
+      setPlaying(false);
+      goToStep(0, true);
+    }
+
+    function selectScene(sceneKey) {
+      if (!scenes[sceneKey]) return;
+      selectedSceneKey = sceneKey;
+      setPlaying(false);
+      currentStepIndex = 0;
+      currentState = cloneState(scenes[selectedSceneKey].steps[0].state);
+      targetState = cloneState(currentState);
+      startState = cloneState(currentState);
+      cancelTransition();
+      render(currentState);
+      updateInterface();
+    }
+
+    methodButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        selectScene(button.dataset.method);
+      });
+    });
+
+    playPauseButton.addEventListener("click", () => {
+      if (isPlaying) {
+        setPlaying(false);
+        return;
+      }
+
+      const scene = scenes[selectedSceneKey];
+      if (currentStepIndex >= scene.steps.length - 1) {
+        goToStep(0, true);
+      }
+      setPlaying(true);
+      scheduleNextStep();
+    });
+
+    resetButton.addEventListener("click", resetCurrentScene);
+
+    previousButton.addEventListener("click", () => {
+      setPlaying(false);
+      goToStep(currentStepIndex - 1, true);
+    });
+
+    nextButton.addEventListener("click", () => {
+      setPlaying(false);
+      goToStep(currentStepIndex + 1, true);
+    });
+
+    window.addEventListener("resize", () => {
+      render(currentState);
+    });
+
+    render(currentState);
+    updateInterface();
+  </script>
+</body>
+</html>

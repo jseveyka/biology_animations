@@ -1,0 +1,1119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ocean Acidification and Calcification</title>
+  <style>
+    :root {
+      --ink: #17313a;
+      --muted: #52676d;
+      --panel: #ffffff;
+      --panel-line: #bfd4d2;
+      --button: #17656f;
+      --button-hover: #0f5159;
+      --co2: #4f555b;
+      --hydrogen: #e8506d;
+      --carbonate: #3aa85b;
+      --shadow: 0 12px 30px rgba(24, 54, 61, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      background: #eef7f5;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .attribution {
+      margin: 0;
+      padding: 12px 16px 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 520px);
+      gap: 16px;
+      align-items: start;
+      padding: 18px 20px 12px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(1.65rem, 2.3vw, 2.45rem);
+      line-height: 1.1;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.45;
+    }
+
+    .summary-box {
+      border: 1px solid var(--panel-line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: var(--shadow);
+      padding: 12px 14px;
+      font-size: 0.98rem;
+      line-height: 1.45;
+    }
+
+    .workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      gap: 16px;
+      min-height: 0;
+      padding: 0 16px 16px;
+    }
+
+    .stage-panel,
+    .side-panel {
+      border: 1px solid var(--panel-line);
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .stage-panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .scene-wrap {
+      flex: 1;
+      min-height: 500px;
+      background: #dff4f6;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 500px;
+    }
+
+    .region-label {
+      fill: #18323b;
+      font-size: 25px;
+      font-weight: 700;
+    }
+
+    .small-region-label {
+      fill: #31535b;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .thin-label {
+      fill: #31535b;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .process-arrow {
+      stroke: #26525b;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      fill: none;
+      opacity: 0.78;
+    }
+
+    .soft-arrow {
+      stroke: rgba(38, 82, 91, 0.5);
+      stroke-width: 1.8;
+      stroke-dasharray: 6 8;
+    }
+
+    .svg-note {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: #17313a;
+      background: rgba(255, 255, 255, 0.86);
+      border: 1px solid rgba(101, 145, 150, 0.4);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 16px;
+      line-height: 1.42;
+      word-spacing: normal;
+      white-space: normal;
+      box-shadow: 0 8px 20px rgba(20, 54, 60, 0.12);
+    }
+
+    .svg-note.warning {
+      border-color: rgba(232, 80, 109, 0.4);
+      background: rgba(255, 247, 249, 0.9);
+    }
+
+    .svg-note-text {
+      display: block;
+      width: 100%;
+      line-height: 1.42;
+      word-spacing: normal;
+      white-space: normal;
+    }
+
+    .svg-note .chem {
+      display: inline-block;
+      white-space: nowrap;
+      line-height: 1;
+      vertical-align: baseline;
+      margin: 0 0.12em;
+    }
+
+    .svg-note .chem sub,
+    .svg-note .chem sup {
+      position: static;
+      top: auto;
+      bottom: auto;
+      font-size: 0.7em;
+      line-height: 0;
+    }
+
+    .svg-note .chem sub { vertical-align: sub; }
+    .svg-note .chem sup { vertical-align: super; }
+
+    .svg-molecule-label {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #122830;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .small-molecule .svg-molecule-label,
+    .wide-molecule .svg-molecule-label { font-size: 13px; }
+
+    .organism-skeleton,
+    .organism-tip {
+      transition: fill 180ms linear, stroke 180ms linear;
+    }
+
+    sub,
+    sup {
+      position: relative;
+      vertical-align: baseline;
+      font-size: 0.72em;
+      line-height: 0;
+    }
+
+    sup { top: -0.5em; }
+    sub { bottom: -0.24em; }
+
+    .explain-panel {
+      border-top: 1px solid var(--panel-line);
+      background: #fbfffd;
+      padding: 12px 14px 14px;
+    }
+
+    .stage-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .scene-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      border-radius: 8px;
+      padding: 6px 10px;
+      color: #fff;
+      background: #17656f;
+      font-size: 0.9rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .equation {
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      text-align: right;
+      color: #1f4048;
+      font-size: clamp(1rem, 1.5vw, 1.32rem);
+      font-weight: 800;
+    }
+
+    .caption {
+      color: var(--ink);
+      font-size: 1.03rem;
+      line-height: 1.38;
+    }
+
+    .side-panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .panel-section {
+      padding: 14px;
+      border-bottom: 1px solid var(--panel-line);
+    }
+
+    .panel-section:last-child { border-bottom: 0; }
+
+    .panel-section h2 {
+      margin: 0 0 12px;
+      font-size: 1.05rem;
+    }
+
+    .range-row {
+      display: grid;
+      gap: 7px;
+      margin-bottom: 14px;
+    }
+
+    label {
+      font-size: 0.96rem;
+      font-weight: 700;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #17656f;
+    }
+
+    output {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    #resetButton { grid-column: 1 / -1; }
+
+    button {
+      min-height: 42px;
+      border: 0;
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: #fff;
+      background: var(--button);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover { background: var(--button-hover); }
+
+    button:focus-visible,
+    input[type="range"]:focus-visible {
+      outline: 3px solid #f2b34d;
+      outline-offset: 2px;
+    }
+
+    .status-list {
+      display: grid;
+      gap: 11px;
+    }
+
+    .ph-indicator {
+      display: grid;
+      gap: 7px;
+      margin-bottom: 4px;
+      padding: 11px;
+      border: 1px solid var(--panel-line);
+      border-radius: 8px;
+      background: #f8fbfb;
+    }
+
+    .ph-heading,
+    .ph-labels {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .ph-heading {
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .ph-value {
+      color: #17313a;
+      font-size: 1.15rem;
+      font-weight: 800;
+    }
+
+    .ph-scale {
+      position: relative;
+      height: 18px;
+      margin: 5px 8px 1px;
+      border: 1px solid rgba(23, 49, 58, 0.28);
+      border-radius: 999px;
+      background: linear-gradient(90deg, #d84f67 0%, #f0bd55 48%, #2e8bc0 100%);
+    }
+
+    .ph-marker {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 6px;
+      height: 28px;
+      border: 2px solid #fff;
+      border-radius: 4px;
+      background: #17313a;
+      box-shadow: 0 1px 5px rgba(23, 49, 58, 0.55);
+      transform: translate(-50%, -50%);
+      transition: left 180ms linear, background-color 180ms linear;
+    }
+
+    .ph-labels {
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .ph-middle { text-align: center; }
+    .ph-high { text-align: right; }
+
+    .ph-description {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.3;
+      text-align: center;
+    }
+
+    .status-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .status-label {
+      font-size: 0.93rem;
+      font-weight: 700;
+    }
+
+    .status-value {
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    .meter {
+      grid-column: 1 / -1;
+      height: 9px;
+      overflow: hidden;
+      border-radius: 8px;
+      background: #e8efef;
+    }
+
+    .meter-fill {
+      height: 100%;
+      width: 50%;
+      border-radius: inherit;
+      transition: width 180ms linear;
+    }
+
+    .meter-fill.co2 { background: var(--co2); }
+    .meter-fill.h { background: var(--hydrogen); }
+    .meter-fill.carbonate { background: var(--carbonate); }
+    .meter-fill.calcification { background: #c8ad71; }
+
+    @media (max-width: 980px) {
+      header, .workspace { grid-template-columns: 1fr; }
+      .workspace { padding: 0 12px 12px; }
+      .scene-wrap, svg { min-height: 430px; }
+      .side-panel {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .panel-section {
+        border-bottom: 0;
+        border-right: 1px solid var(--panel-line);
+      }
+      .panel-section:last-child { border-right: 0; }
+    }
+
+    @media (max-width: 720px) {
+      header { padding: 14px 12px 10px; }
+      .side-panel { display: flex; }
+      .panel-section {
+        border-right: 0;
+        border-bottom: 1px solid var(--panel-line);
+      }
+      .stage-row {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .equation {
+        justify-content: flex-start;
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <p class="attribution">Animation Prompted by Jerred Seveyka for his biology class.</p>
+    <header>
+      <div>
+        <h1>Ocean Acidification and Calcification</h1>
+        <p class="subtitle">A simplified, interactive model of how atmospheric carbon dioxide changes seawater chemistry and shell-building.</p>
+      </div>
+      <div class="summary-box">
+        When more <strong>CO<sub>2</sub></strong> dissolves in seawater, more <strong>H<sup>+</sup></strong> forms.
+        <strong>H<sup>+</sup></strong> reacts with carbonate, reducing <strong>CO<sub>3</sub><sup>2&minus;</sup></strong> availability.
+        With less carbonate available, organisms have a harder time forming <strong>CaCO<sub>3</sub></strong> shells and skeletons.
+        This model shows that <strong>CO<sub>2</sub></strong> does not directly dissolve shells here; it lowers carbonate availability.
+        Bicarbonate can still matter biologically, but this pathway depends on available <strong>CO<sub>3</sub><sup>2&minus;</sup></strong>.
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="stage-panel" aria-label="Ocean acidification animation">
+        <div class="scene-wrap">
+          <svg id="scene" viewBox="0 0 1000 650" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="sceneTitle sceneDesc">
+            <title id="sceneTitle">Ocean acidification and calcification animation</title>
+            <desc id="sceneDesc">Atmospheric carbon dioxide enters the ocean, reacts with water, forms acid, releases hydrogen ions, reduces carbonate, and slows calcium carbonate formation.</desc>
+            <defs>
+              <linearGradient id="skyGradient" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#d8f2ff"></stop>
+                <stop offset="100%" stop-color="#f7fdff"></stop>
+              </linearGradient>
+              <linearGradient id="oceanGradient" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#96dfd9"></stop>
+                <stop offset="100%" stop-color="#2a8896"></stop>
+              </linearGradient>
+              <marker id="arrowHead" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L8,4.5 L0,9 Z" fill="#26525b"></path>
+              </marker>
+              <marker id="softArrowHead" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L8,4.5 L0,9 Z" fill="#26525b" opacity="0.55"></path>
+              </marker>
+            </defs>
+
+            <rect x="0" y="0" width="1000" height="165" fill="url(#skyGradient)"></rect>
+            <rect x="0" y="150" width="1000" height="500" fill="url(#oceanGradient)"></rect>
+            <path d="M0,150 C70,135 125,166 200,150 C275,134 338,164 410,150 C495,134 560,166 640,150 C725,132 795,166 880,150 C930,140 965,144 1000,151 L1000,182 L0,182 Z" fill="#f7fffd" opacity="0.54"></path>
+            <path d="M0,151 C70,136 125,166 200,151 C275,135 338,164 410,151 C495,135 560,166 640,151 C725,133 795,166 880,151 C930,141 965,144 1000,151" fill="none" stroke="#fff" stroke-width="5" opacity="0.9"></path>
+
+            <text x="34" y="42" class="region-label">Atmosphere</text>
+            <text x="34" y="195" class="region-label">Ocean water</text>
+            <text x="720" y="440" class="small-region-label">Calcifying organism</text>
+
+            <g aria-hidden="true">
+              <rect x="66" y="94" width="88" height="48" rx="4" fill="#7d8b92"></rect>
+              <rect x="86" y="67" width="20" height="75" fill="#66777f"></rect>
+              <rect x="119" y="78" width="19" height="64" fill="#66777f"></rect>
+              <circle cx="96" cy="58" r="15" fill="#d8dfe2" opacity="0.86"></circle>
+              <circle cx="122" cy="48" r="20" fill="#d8dfe2" opacity="0.74"></circle>
+              <circle cx="151" cy="58" r="15" fill="#d8dfe2" opacity="0.66"></circle>
+              <text x="62" y="157" class="thin-label">greenhouse gas emissions</text>
+            </g>
+
+            <g aria-hidden="true">
+              <ellipse cx="805" cy="595" rx="125" ry="28" fill="#c4b28f" opacity="0.78"></ellipse>
+              <g id="calcifyingOrganism">
+                <path class="organism-skeleton" d="M777,584 C778,548 792,536 805,511" fill="none" stroke-width="20" stroke-linecap="round"></path>
+                <path class="organism-skeleton" d="M813,581 C812,543 828,526 849,506" fill="none" stroke-width="18" stroke-linecap="round"></path>
+                <path class="organism-skeleton" d="M748,584 C747,552 730,532 703,513" fill="none" stroke-width="17" stroke-linecap="round"></path>
+                <path class="organism-skeleton" d="M806,528 C784,506 772,489 768,466" fill="none" stroke-width="14" stroke-linecap="round"></path>
+                <path class="organism-skeleton" d="M835,526 C858,505 880,493 905,488" fill="none" stroke-width="13" stroke-linecap="round"></path>
+                <circle class="organism-tip" cx="768" cy="466" r="18" stroke-width="3"></circle>
+                <circle class="organism-tip" cx="905" cy="488" r="17" stroke-width="3"></circle>
+                <circle class="organism-tip" cx="703" cy="513" r="18" stroke-width="3"></circle>
+                <circle class="organism-tip" cx="849" cy="506" r="18" stroke-width="3"></circle>
+                <circle class="organism-tip" cx="805" cy="511" r="21" stroke-width="3"></circle>
+              </g>
+            </g>
+
+            <g id="dynamicLayer"></g>
+          </svg>
+        </div>
+
+        <div class="explain-panel" aria-live="polite">
+          <div class="stage-row">
+            <span id="sceneBadge" class="scene-badge">Scene 1 of 5</span>
+            <div id="equation" class="equation"></div>
+          </div>
+          <div id="caption" class="caption"></div>
+        </div>
+      </section>
+
+      <aside class="side-panel" aria-label="Animation controls and chemistry status">
+        <section class="panel-section">
+          <h2>Controls</h2>
+          <div class="range-row">
+            <label for="co2Slider">Atmospheric <span>CO<sub>2</sub></span> level</label>
+            <input id="co2Slider" type="range" min="0" max="100" value="50">
+            <output id="sliderReadout" for="co2Slider">Moderate <span>CO<sub>2</sub></span></output>
+          </div>
+          <div class="button-grid">
+            <button id="playPauseButton" type="button">Pause</button>
+            <button id="stepButton" type="button">Step Forward</button>
+            <button id="resetButton" type="button">Reset</button>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h2>Status</h2>
+          <div class="status-list">
+            <div class="ph-indicator" aria-label="Live ocean pH indicator">
+              <div class="ph-heading">
+                <span>Ocean pH</span>
+                <output id="phValue" class="ph-value">8.00</output>
+              </div>
+              <div class="ph-scale" aria-hidden="true">
+                <span id="phMarker" class="ph-marker"></span>
+              </div>
+              <div class="ph-labels" aria-hidden="true">
+                <span>7.7<br>More acidic</span>
+                <span class="ph-middle">8.0</span>
+                <span class="ph-high">8.3<br>More alkaline</span>
+              </div>
+              <p id="phDescription" class="ph-description">Higher H<sup>+</sup> lowers pH.</p>
+            </div>
+            <div class="status-row">
+              <span class="status-label">Relative <span>CO<sub>2</sub></span></span>
+              <span id="co2Value" class="status-value">100%</span>
+              <div class="meter"><div id="co2Meter" class="meter-fill co2"></div></div>
+            </div>
+            <div class="status-row">
+              <span class="status-label">Relative <span>H<sup>+</sup></span></span>
+              <span id="hValue" class="status-value">100%</span>
+              <div class="meter"><div id="hMeter" class="meter-fill h"></div></div>
+            </div>
+            <div class="status-row">
+              <span class="status-label">Relative <span>CO<sub>3</sub><sup>2&minus;</sup></span> availability</span>
+              <span id="carbonateValue" class="status-value">64%</span>
+              <div class="meter"><div id="carbonateMeter" class="meter-fill carbonate"></div></div>
+            </div>
+            <div class="status-row">
+              <span class="status-label">Calcification rate</span>
+              <span id="calcificationValue" class="status-value">57%</span>
+              <div class="meter"><div id="calcificationMeter" class="meter-fill calcification"></div></div>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    const CHEM = {
+      co2: "CO<sub>2</sub>",
+      h2o: "H<sub>2</sub>O",
+      acid: "H<sub>2</sub>CO<sub>3</sub>",
+      h: "H<sup>+</sup>",
+      bicarbonate: "HCO<sub>3</sub><sup>&minus;</sup>",
+      carbonate: "CO<sub>3</sub><sup>2&minus;</sup>",
+      calcium: "Ca<sup>2+</sup>",
+      calcite: "CaCO<sub>3</sub>"
+    };
+
+    const COLORS = {
+      co2: "#4f555b",
+      water: "#3c92d0",
+      acid: "#f2b34d",
+      hydrogen: "#e8506d",
+      bicarbonate: "#9b79d7",
+      carbonate: "#3aa85b",
+      calcium: "#2f76d2",
+      calcite: "#f8f2df"
+    };
+
+    const stageText = [
+      {
+        badge: "Scene 1 of 5",
+        equation: `${CHEM.co2} in air &rarr; dissolved ${CHEM.co2} in seawater`,
+        caption: `More atmospheric ${CHEM.co2} dissolves into seawater.`
+      },
+      {
+        badge: "Scene 2 of 5",
+        equation: `${CHEM.co2} + ${CHEM.h2o} &#8652; ${CHEM.acid}`,
+        caption: `Dissolved ${CHEM.co2} reacts with water to form carbonic acid.`
+      },
+      {
+        badge: "Scene 3 of 5",
+        equation: `${CHEM.acid} &#8652; ${CHEM.h} + ${CHEM.bicarbonate}`,
+        caption: `Carbonic acid releases ${CHEM.h}, lowering ocean pH.`
+      },
+      {
+        badge: "Scene 4 of 5",
+        equation: `${CHEM.calcium} + ${CHEM.carbonate} &rarr; ${CHEM.calcite}`,
+        caption: `Calcifying organisms use calcium and carbonate to build calcium carbonate.`
+      },
+      {
+        badge: "Scene 5 of 5",
+        equation: `${CHEM.h} + ${CHEM.carbonate} &rarr; ${CHEM.bicarbonate}`,
+        caption: `Extra ${CHEM.h} binds carbonate, converting it to bicarbonate and leaving less carbonate for ${CHEM.calcite} formation.`
+      }
+    ];
+
+    const dynamicLayer = document.getElementById("dynamicLayer");
+    const slider = document.getElementById("co2Slider");
+    const sliderReadout = document.getElementById("sliderReadout");
+    const playPauseButton = document.getElementById("playPauseButton");
+    const stepButton = document.getElementById("stepButton");
+    const resetButton = document.getElementById("resetButton");
+    const sceneBadge = document.getElementById("sceneBadge");
+    const equation = document.getElementById("equation");
+    const caption = document.getElementById("caption");
+    const calcifyingOrganism = document.getElementById("calcifyingOrganism");
+    const organismSkeleton = calcifyingOrganism.querySelectorAll(".organism-skeleton");
+    const organismTips = calcifyingOrganism.querySelectorAll(".organism-tip");
+
+    const statusEls = {
+      co2Value: document.getElementById("co2Value"),
+      co2Meter: document.getElementById("co2Meter"),
+      hValue: document.getElementById("hValue"),
+      hMeter: document.getElementById("hMeter"),
+      carbonateValue: document.getElementById("carbonateValue"),
+      carbonateMeter: document.getElementById("carbonateMeter"),
+      calcificationValue: document.getElementById("calcificationValue"),
+      calcificationMeter: document.getElementById("calcificationMeter"),
+      phValue: document.getElementById("phValue"),
+      phMarker: document.getElementById("phMarker"),
+      phDescription: document.getElementById("phDescription")
+    };
+
+    let currentStage = 1;
+    let animationTime = 0;
+    let stageStartedAt = 0;
+    let lastFrameAt = null;
+    let isPlaying = true;
+    let chemistry = {};
+    const stageDuration = 7.5;
+
+    function seededRandom(seed) {
+      let value = seed % 2147483647;
+      return function random() {
+        value = value * 16807 % 2147483647;
+        return (value - 1) / 2147483646;
+      };
+    }
+
+    function makePool(count, xMin, xMax, yMin, yMax, seed) {
+      const random = seededRandom(seed);
+      return Array.from({ length: count }, () => ({
+        x: xMin + random() * (xMax - xMin),
+        y: yMin + random() * (yMax - yMin),
+        phase: random(),
+        speed: 0.45 + random() * 0.8,
+        amp: 5 + random() * 17
+      }));
+    }
+
+    const pools = {
+      atmosphere: makePool(24, 220, 930, 34, 122, 11),
+      dissolved: makePool(18, 95, 640, 205, 390, 23),
+      water: makePool(9, 145, 610, 225, 430, 31),
+      acid: makePool(12, 210, 650, 235, 430, 41),
+      hydrogen: makePool(19, 130, 670, 250, 515, 53),
+      bicarbonate: makePool(16, 190, 690, 260, 510, 67),
+      carbonate: makePool(17, 125, 650, 390, 565, 79),
+      calcium: makePool(14, 115, 620, 385, 560, 83),
+      calcite: makePool(22, 700, 905, 468, 588, 97),
+      removal: makePool(10, 170, 625, 330, 520, 101)
+    };
+
+    function updateChemistryModel() {
+      const co2Factor = Number(slider.value) / 100;
+      const hFactor = Math.pow(co2Factor, 0.82);
+      const carbonateAvailability = Math.round(100 - 72 * co2Factor);
+      const calcificationRate = Math.round(96 - 78 * co2Factor);
+      const pH = 8.3 - 0.6 * hFactor;
+
+      chemistry = {
+        co2Factor,
+        relativeCo2: Math.round(40 + 160 * co2Factor),
+        relativeH: Math.round(24 + 186 * hFactor),
+        pH,
+        carbonateAvailability,
+        calcificationRate,
+        atmosphericCount: Math.round(6 + 14 * co2Factor),
+        dissolvingCount: Math.round(2 + 4 * co2Factor),
+        dissolvedCount: Math.round(2 + 5 * co2Factor),
+        acidCount: Math.round(1 + 3 * co2Factor),
+        hCount: Math.round(2 + 5 * hFactor),
+        bicarbonateCount: Math.round(2 + 4 * co2Factor),
+        carbonateCount: Math.max(3, Math.round(9 * carbonateAvailability / 100)),
+        calcPairs: Math.max(2, Math.round(2 + 5 * (calcificationRate / 100))),
+        calciteCount: Math.max(3, Math.round(3 + 10 * (calcificationRate / 100)))
+      };
+
+      return chemistry;
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function format(value) {
+      return Number(value).toFixed(1);
+    }
+
+    function loop01(value) {
+      return value - Math.floor(value);
+    }
+
+    function easeInOut(t) {
+      const clamped = clamp(t, 0, 1);
+      return clamped * clamped * (3 - 2 * clamped);
+    }
+
+    function lerp(start, end, t) {
+      return start + (end - start) * t;
+    }
+
+    function mixColor(start, end, amount) {
+      const from = start.match(/[a-f\d]{2}/gi).map(value => parseInt(value, 16));
+      const to = end.match(/[a-f\d]{2}/gi).map(value => parseInt(value, 16));
+      const channels = from.map((value, index) => Math.round(lerp(value, to[index], amount)));
+      return `rgb(${channels.join(", ")})`;
+    }
+
+    function updateCalcifyingOrganism() {
+      const calcFraction = chemistry.calcificationRate / 100;
+      const acidityFraction = clamp((chemistry.relativeH - 24) / (210 - 24), 0, 1);
+      const alkalinityFraction = 1 - acidityFraction;
+      const visualCalcification = clamp(calcFraction * 0.7 + alkalinityFraction * 0.3, 0, 1);
+      const response = easeInOut(visualCalcification);
+      const scale = lerp(0.72, 1.18, response);
+      const skeletonColor = mixColor("#a7535e", "#fffef7", response);
+      const tipColor = mixColor("#b33f55", "#fffdf3", response);
+      const edgeColor = mixColor("#7f3040", "#d7cfba", response);
+
+      calcifyingOrganism.setAttribute("transform", `translate(805 535) scale(${scale.toFixed(3)}) translate(-805 -535)`);
+      organismSkeleton.forEach(part => part.setAttribute("stroke", skeletonColor));
+      organismTips.forEach(part => {
+        part.setAttribute("fill", tipColor);
+        part.setAttribute("stroke", edgeColor);
+      });
+    }
+
+    function stageProgress() {
+      return clamp((animationTime - stageStartedAt) / stageDuration, 0, 1);
+    }
+
+    function molecule(x, y, r, label, fill, stroke, className = "", opacity = 1) {
+      const width = Math.max(38, r * 4.3);
+      const height = Math.max(24, r * 2.35);
+      return `
+        <g class="molecule ${className}" opacity="${format(opacity)}" transform="translate(${format(x)} ${format(y)})">
+          <circle cx="0" cy="0" r="${format(r)}" fill="${fill}" stroke="${stroke}" stroke-width="2"></circle>
+          <foreignObject x="${format(-width / 2)}" y="${format(-height / 2)}" width="${format(width)}" height="${format(height)}">
+            <div xmlns="http://www.w3.org/1999/xhtml" class="svg-molecule-label">${label}</div>
+          </foreignObject>
+        </g>`;
+    }
+
+    function keepChemistryInline(html) {
+      return Object.values(CHEM)
+        .sort((a, b) => b.length - a.length)
+        .reduce(
+          (content, formula) => content.split(formula).join(`<span class="chem">${formula}</span>`),
+          html
+        );
+    }
+
+    function labelBox(x, y, width, height, html, className = "") {
+      const formattedHtml = keepChemistryInline(html);
+      return `
+        <foreignObject x="${format(x)}" y="${format(y)}" width="${format(width)}" height="${format(height)}">
+          <div xmlns="http://www.w3.org/1999/xhtml" class="svg-note ${className}"><span class="svg-note-text">${formattedHtml}</span></div>
+        </foreignObject>`;
+    }
+
+    function arrow(x1, y1, x2, y2, className = "process-arrow", marker = "arrowHead", opacity = 1) {
+      return `<line x1="${format(x1)}" y1="${format(y1)}" x2="${format(x2)}" y2="${format(y2)}" class="${className}" marker-end="url(#${marker})" opacity="${format(opacity)}"></line>`;
+    }
+
+    function drawAtmosphere(parts) {
+      const visibleCount = chemistry.atmosphericCount;
+      const enteringCount = chemistry.dissolvingCount;
+      for (let i = 0; i < visibleCount; i += 1) {
+        const p = pools.atmosphere[i];
+        let x = p.x + Math.sin(animationTime * p.speed + p.phase * 6.28) * p.amp;
+        let y = p.y + Math.cos(animationTime * 0.75 + p.phase * 7.2) * 4;
+        let opacity = 0.95;
+        if (i < enteringCount) {
+          const cycle = loop01(animationTime * (0.09 + chemistry.co2Factor * 0.16) + p.phase);
+          const drop = easeInOut(cycle);
+          y = lerp(p.y, 215, drop);
+          x += Math.sin(cycle * Math.PI) * 28;
+          opacity = cycle > 0.86 ? 0.45 : 0.98;
+        }
+        parts.push(molecule(x, y, 18, CHEM.co2, COLORS.co2, "#2b3034", "wide-molecule", opacity));
+      }
+
+      if (currentStage === 1) {
+        const arrowCount = Math.round(3 + 4 * chemistry.co2Factor);
+        for (let i = 0; i < arrowCount; i += 1) {
+          const x = 285 + i * 68;
+          parts.push(arrow(x, 118, x + 8, 174, "process-arrow soft-arrow", "softArrowHead", 0.45));
+        }
+        parts.push(labelBox(318, 68, 320, 72, `More atmospheric ${CHEM.co2}<br>dissolves into seawater.`));
+      }
+    }
+
+    function drawCarbonicAcidFormation(parts) {
+      const p = easeInOut(stageProgress());
+      const co2X = lerp(300, 445, Math.min(1, p * 1.35));
+      const waterX = lerp(610, 515, Math.min(1, p * 1.35));
+      const acidOpacity = clamp((p - 0.38) / 0.45, 0, 1);
+      parts.push(arrow(365, 270, 455, 270, "process-arrow soft-arrow", "softArrowHead", 0.45));
+      parts.push(arrow(575, 270, 520, 270, "process-arrow soft-arrow", "softArrowHead", 0.45));
+      if (p < 0.72) {
+        parts.push(molecule(co2X, 270, 20, CHEM.co2, COLORS.co2, "#2b3034", "wide-molecule", 1 - acidOpacity * 0.45));
+        parts.push(molecule(waterX, 270, 21, CHEM.h2o, COLORS.water, "#1e5d8c", "wide-molecule", 1 - acidOpacity * 0.45));
+      }
+      parts.push(molecule(488, 270, 27, CHEM.acid, COLORS.acid, "#b0731e", "wide-molecule", acidOpacity));
+      parts.push(labelBox(310, 314, 400, 70, `${CHEM.co2} combines with ${CHEM.h2o} to form ${CHEM.acid}.`));
+    }
+
+    function drawDissociation(parts) {
+      const p = easeInOut(stageProgress());
+      const acidOpacity = 1 - clamp((p - 0.2) / 0.6, 0, 0.85);
+      const hX = lerp(485, 382, p);
+      const hY = lerp(328, 362, p);
+      const bX = lerp(485, 606, p);
+      const bY = lerp(328, 362, p);
+      parts.push(molecule(485, 328, 27, CHEM.acid, COLORS.acid, "#b0731e", "wide-molecule", acidOpacity));
+      parts.push(arrow(465, 342, hX + 10, hY - 3, "process-arrow soft-arrow", "softArrowHead", 0.35 + p * 0.4));
+      parts.push(arrow(510, 342, bX - 12, bY - 3, "process-arrow soft-arrow", "softArrowHead", 0.35 + p * 0.4));
+      parts.push(molecule(hX, hY, 14, CHEM.h, COLORS.hydrogen, "#ad2842", "small-molecule", 0.25 + p * 0.75));
+      parts.push(molecule(bX, bY, 24, CHEM.bicarbonate, COLORS.bicarbonate, "#6a47a6", "wide-molecule", 0.25 + p * 0.75));
+      parts.push(labelBox(315, 396, 400, 70, `${CHEM.h} particles increase as ${CHEM.co2} increases.`, "warning"));
+    }
+
+    function drawBackgroundOceanChemistry(parts) {
+      for (let i = 0; i < chemistry.dissolvedCount; i += 1) {
+        const p = pools.dissolved[i];
+        const x = p.x + Math.sin(animationTime * p.speed + p.phase * 6.28) * 8;
+        const y = p.y + Math.cos(animationTime * 0.65 + p.phase * 8) * 6;
+        parts.push(molecule(x, y, 17, CHEM.co2, COLORS.co2, "#2b3034", "wide-molecule", 0.82));
+      }
+
+      const waterVisible = currentStage >= 2 ? 4 : 2;
+      for (let i = 0; i < waterVisible; i += 1) {
+        const p = pools.water[i];
+        const x = p.x + Math.sin(animationTime * p.speed + p.phase * 6.28) * 7;
+        const y = p.y + Math.cos(animationTime * 0.6 + p.phase * 5.9) * 6;
+        parts.push(molecule(x, y, 18, CHEM.h2o, COLORS.water, "#1e5d8c", "wide-molecule", 0.72));
+      }
+
+      if (currentStage >= 2) {
+        for (let i = 0; i < chemistry.acidCount; i += 1) {
+          const p = pools.acid[i];
+          const x = p.x + Math.sin(animationTime * p.speed + p.phase * 6.28) * 8;
+          const y = p.y + Math.cos(animationTime * 0.54 + p.phase * 6.4) * 6;
+          parts.push(molecule(x, y, 24, CHEM.acid, COLORS.acid, "#b0731e", "wide-molecule", currentStage === 2 ? 0.76 : 0.62));
+        }
+      }
+
+      if (currentStage >= 3) {
+        for (let i = 0; i < chemistry.hCount; i += 1) {
+          const p = pools.hydrogen[i];
+          const x = p.x + Math.sin(animationTime * (p.speed + 0.45) + p.phase * 6.28) * (9 + chemistry.co2Factor * 9);
+          const y = p.y + Math.cos(animationTime * (p.speed + 0.2) + p.phase * 7.6) * 8;
+          parts.push(molecule(x, y, 12, CHEM.h, COLORS.hydrogen, "#ad2842", "small-molecule", 0.88));
+        }
+        for (let i = 0; i < chemistry.bicarbonateCount; i += 1) {
+          const p = pools.bicarbonate[i];
+          const x = p.x + Math.sin(animationTime * p.speed + p.phase * 6.28) * 7;
+          const y = p.y + Math.cos(animationTime * 0.57 + p.phase * 7) * 6;
+          parts.push(molecule(x, y, 22, CHEM.bicarbonate, COLORS.bicarbonate, "#6a47a6", "wide-molecule", 0.7));
+        }
+      }
+    }
+
+    function drawAvailableCarbonate(parts) {
+      if (currentStage < 4) return;
+      for (let i = 0; i < chemistry.carbonateCount; i += 1) {
+        const p = pools.carbonate[i];
+        const x = p.x + Math.sin(animationTime * p.speed + p.phase * 6.28) * 7;
+        const y = p.y + Math.cos(animationTime * 0.6 + p.phase * 7.3) * 6;
+        parts.push(molecule(x, y, 22, CHEM.carbonate, COLORS.carbonate, "#1f6f38", "wide-molecule", currentStage === 5 ? 0.72 : 0.9));
+      }
+    }
+
+    function drawCalcification(parts) {
+      if (currentStage < 4) return;
+      const calcFraction = chemistry.calcificationRate / 100;
+      const speed = 0.07 + calcFraction * 0.33;
+      const targetBase = { x: 805, y: 528 };
+      for (let i = 0; i < chemistry.calcPairs; i += 1) {
+        const caStart = pools.calcium[i];
+        const co3Start = pools.carbonate[(i + 3) % pools.carbonate.length];
+        const cycle = loop01(animationTime * speed + caStart.phase);
+        const move = easeInOut(Math.min(1, cycle / 0.74));
+        const targetX = targetBase.x + Math.sin(i * 1.7) * 74;
+        const targetY = targetBase.y + Math.cos(i * 1.2) * 46;
+        if (cycle < 0.74) {
+          parts.push(molecule(lerp(caStart.x, targetX - 12, move), lerp(caStart.y, targetY, move), 18, CHEM.calcium, COLORS.calcium, "#1e4d92", "wide-molecule", 0.92));
+          parts.push(molecule(lerp(co3Start.x, targetX + 12, move), lerp(co3Start.y, targetY + 4, move), 21, CHEM.carbonate, COLORS.carbonate, "#1f6f38", "wide-molecule", 0.9));
+        } else {
+          const glow = 0.7 + Math.sin(animationTime * 7 + i) * 0.2;
+          parts.push(molecule(targetX, targetY, 20, CHEM.calcite, COLORS.calcite, "#b9aa82", "wide-molecule", glow));
+        }
+      }
+      for (let i = 0; i < chemistry.calciteCount; i += 1) {
+        const p = pools.calcite[i];
+        const wobble = Math.sin(animationTime * 1.1 + p.phase * 6.28) * 1.5;
+        parts.push(`<circle cx="${format(p.x)}" cy="${format(p.y + wobble)}" r="${format(5 + (i % 3))}" fill="${COLORS.calcite}" stroke="#b9aa82" stroke-width="1.5" opacity="0.92"></circle>`);
+      }
+      if (currentStage === 4) {
+        parts.push(arrow(596, 492, 735, 520, "process-arrow", "arrowHead", 0.72));
+        parts.push(labelBox(390, 500, 310, 116, `${CHEM.calcium} and ${CHEM.carbonate} are taken up by calcifying organisms, producing more calcium carbonate for their structure.`));
+      }
+    }
+
+    function drawCarbonateRemoval(parts) {
+      if (currentStage !== 5) return;
+      const removalCount = Math.round(2 + 3 * chemistry.co2Factor);
+      for (let i = 0; i < removalCount; i += 1) {
+        const p = pools.removal[i];
+        const target = pools.carbonate[(i + 5) % pools.carbonate.length];
+        const cycle = loop01(animationTime * (0.16 + chemistry.co2Factor * 0.28) + p.phase);
+        const move = easeInOut(Math.min(1, cycle / 0.68));
+        const x = lerp(p.x, target.x, move);
+        const y = lerp(p.y, target.y, move);
+        if (cycle < 0.68) {
+          parts.push(molecule(x, y, 12, CHEM.h, COLORS.hydrogen, "#ad2842", "small-molecule", 0.96));
+          if (i < chemistry.carbonateCount) {
+            parts.push(molecule(target.x, target.y, 21, CHEM.carbonate, COLORS.carbonate, "#1f6f38", "wide-molecule", 0.55));
+          }
+        } else {
+          parts.push(molecule(target.x, target.y, 23, CHEM.bicarbonate, COLORS.bicarbonate, "#6a47a6", "wide-molecule", 0.95));
+        }
+      }
+      parts.push(arrow(396, 446, 515, 484, "process-arrow", "arrowHead", 0.74));
+      parts.push(labelBox(198, 448, 320, 132, `Extra ${CHEM.h} binds to ${CHEM.carbonate}, forming ${CHEM.bicarbonate}, leaving less ${CHEM.carbonate} to bind to ${CHEM.calcium} for ${CHEM.calcite} production.`, "warning"));
+    }
+
+    function drawOceanChemistry(parts) {
+      drawBackgroundOceanChemistry(parts);
+      if (currentStage === 2) drawCarbonicAcidFormation(parts);
+      if (currentStage === 3) drawDissociation(parts);
+      drawAvailableCarbonate(parts);
+      drawCarbonateRemoval(parts);
+    }
+
+    function updateStatusPanel() {
+      statusEls.co2Value.textContent = `${chemistry.relativeCo2}%`;
+      statusEls.hValue.textContent = `${chemistry.relativeH}%`;
+      statusEls.carbonateValue.textContent = `${chemistry.carbonateAvailability}%`;
+      statusEls.calcificationValue.textContent = `${chemistry.calcificationRate}%`;
+      statusEls.phValue.textContent = chemistry.pH.toFixed(2);
+      statusEls.co2Meter.style.width = `${clamp(chemistry.relativeCo2 / 2, 0, 100)}%`;
+      statusEls.hMeter.style.width = `${clamp(chemistry.relativeH / 2.1, 0, 100)}%`;
+      statusEls.carbonateMeter.style.width = `${chemistry.carbonateAvailability}%`;
+      statusEls.calcificationMeter.style.width = `${chemistry.calcificationRate}%`;
+
+      const phPosition = clamp((chemistry.pH - 7.7) / (8.3 - 7.7), 0, 1);
+      statusEls.phMarker.style.left = `${phPosition * 100}%`;
+      statusEls.phMarker.style.backgroundColor = mixColor("#9f2941", "#165f91", phPosition);
+      statusEls.phDescription.innerHTML = chemistry.pH < 7.9
+        ? `Higher ${CHEM.co2} and ${CHEM.h}: lower pH, more acidic.`
+        : chemistry.pH > 8.1
+          ? `Lower ${CHEM.co2} and ${CHEM.h}: higher pH, more alkaline.`
+          : `${CHEM.co2} and ${CHEM.h} continuously shift ocean pH.`;
+      const levelText = chemistry.co2Factor < 0.34 ? "Low" : chemistry.co2Factor > 0.66 ? "High" : "Moderate";
+      sliderReadout.innerHTML = `${levelText} ${CHEM.co2}`;
+    }
+
+    function updateStageText() {
+      const text = stageText[currentStage - 1];
+      sceneBadge.textContent = text.badge;
+      equation.innerHTML = text.equation;
+      caption.innerHTML = text.caption;
+    }
+
+    function drawScene() {
+      updateChemistryModel();
+      updateCalcifyingOrganism();
+      const parts = [];
+      drawAtmosphere(parts);
+      drawOceanChemistry(parts);
+      drawCalcification(parts);
+      dynamicLayer.innerHTML = parts.join("");
+      updateStatusPanel();
+      updateStageText();
+    }
+
+    function advanceStage() {
+      currentStage = currentStage === 5 ? 1 : currentStage + 1;
+      stageStartedAt = animationTime;
+      drawScene();
+    }
+
+    function resetAnimation() {
+      slider.value = 50;
+      currentStage = 1;
+      animationTime = 0;
+      stageStartedAt = 0;
+      lastFrameAt = null;
+      isPlaying = true;
+      playPauseButton.textContent = "Pause";
+      drawScene();
+    }
+
+    function animationLoop(timestamp) {
+      if (lastFrameAt === null) lastFrameAt = timestamp;
+      const delta = Math.min(0.05, (timestamp - lastFrameAt) / 1000);
+      lastFrameAt = timestamp;
+      if (isPlaying) {
+        animationTime += delta;
+        if (animationTime - stageStartedAt >= stageDuration) advanceStage();
+      }
+      drawScene();
+      requestAnimationFrame(animationLoop);
+    }
+
+    playPauseButton.addEventListener("click", () => {
+      isPlaying = !isPlaying;
+      playPauseButton.textContent = isPlaying ? "Pause" : "Play";
+    });
+    stepButton.addEventListener("click", advanceStage);
+    resetButton.addEventListener("click", resetAnimation);
+    slider.addEventListener("input", drawScene);
+
+    resetAnimation();
+    requestAnimationFrame(animationLoop);
+  </script>
+</body>
+</html>

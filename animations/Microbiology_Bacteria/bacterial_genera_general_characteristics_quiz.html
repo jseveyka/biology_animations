@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bacterial Genera General Characteristics Quiz</title>
+  <style>
+    :root {
+      --ink: #20242c;
+      --muted: #596172;
+      --line: #d7dde7;
+      --panel: #ffffff;
+      --page: #f4f7fb;
+      --accent: #2457a6;
+      --accent-dark: #183f7d;
+      --correct: #e4f6e8;
+      --correct-border: #81c995;
+      --incorrect: #fff0dc;
+      --incorrect-border: #f4b35e;
+      --gold: #f3b61f;
+      --shadow: 0 14px 40px rgba(31, 45, 75, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--page);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 18px;
+      line-height: 1.45;
+    }
+
+    .page {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 44px;
+    }
+
+    .attribution {
+      margin: 0 0 10px;
+      font-size: clamp(1.2rem, 1.1rem + 0.6vw, 1.8rem);
+      font-weight: 800;
+      color: #15233b;
+    }
+
+    h1 {
+      margin: 0 0 22px;
+      font-size: clamp(2rem, 1.7rem + 1.4vw, 3.3rem);
+      line-height: 1.08;
+      color: #13203a;
+    }
+
+    .toolbar,
+    .random-card,
+    .score-strip {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      padding: 14px;
+      border-radius: 8px;
+      margin-bottom: 18px;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #ffffff;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 700;
+      min-height: 46px;
+      padding: 10px 16px;
+      transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+    }
+
+    button:hover,
+    button:focus-visible {
+      background: var(--accent-dark);
+      box-shadow: 0 8px 20px rgba(36, 87, 166, 0.25);
+      outline: none;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    .secondary-button {
+      background: #4b596d;
+    }
+
+    .secondary-button:hover,
+    .secondary-button:focus-visible {
+      background: #344053;
+      box-shadow: 0 8px 20px rgba(75, 89, 109, 0.25);
+    }
+
+    .score-strip {
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 18px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .random-card {
+      display: none;
+      position: relative;
+      overflow: hidden;
+      border-radius: 8px;
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+
+    .random-card.is-visible {
+      display: block;
+    }
+
+    .random-topline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 18px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .random-label {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .random-genus {
+      margin: 2px 0 0;
+      font-size: clamp(1.8rem, 1.5rem + 1vw, 2.8rem);
+      font-weight: 800;
+      color: #15233b;
+    }
+
+    .random-controls {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(190px, 1fr));
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 6px;
+      color: #344053;
+      font-size: 0.95rem;
+      font-weight: 800;
+    }
+
+    select {
+      width: 100%;
+      min-height: 46px;
+      border: 2px solid #c7cfdb;
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--ink);
+      font: inherit;
+      padding: 8px 38px 8px 10px;
+    }
+
+    select:focus {
+      border-color: var(--accent);
+      outline: 3px solid rgba(36, 87, 166, 0.18);
+    }
+
+    .random-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .random-feedback {
+      min-height: 32px;
+      margin: 12px 0 0;
+      font-weight: 800;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      box-shadow: var(--shadow);
+    }
+
+    table {
+      width: 100%;
+      min-width: 940px;
+      border-collapse: collapse;
+    }
+
+    caption {
+      height: 1px;
+      overflow: hidden;
+      position: absolute;
+      width: 1px;
+    }
+
+    th,
+    td {
+      padding: 12px;
+      text-align: left;
+      vertical-align: middle;
+      border-bottom: 1px solid var(--line);
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #dfe8f5;
+      color: #17253d;
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    tbody tr:nth-child(even) {
+      background: #f8fafd;
+    }
+
+    tbody tr.correct-row {
+      background: var(--correct);
+      outline: 2px solid var(--correct-border);
+      outline-offset: -2px;
+    }
+
+    tbody tr.incorrect-row {
+      background: var(--incorrect);
+      outline: 2px solid var(--incorrect-border);
+      outline-offset: -2px;
+    }
+
+    .genus {
+      min-width: 160px;
+      font-weight: 800;
+      color: #182943;
+    }
+
+    .feedback-cell {
+      min-width: 260px;
+      color: #243145;
+      font-weight: 800;
+    }
+
+    .answer-note {
+      display: block;
+      margin-top: 5px;
+      color: #315b31;
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
+
+    .correct-text {
+      color: #176334;
+    }
+
+    .needs-work-text {
+      color: #8a4c05;
+    }
+
+    .star {
+      position: fixed;
+      left: var(--x);
+      top: var(--y);
+      z-index: 50;
+      width: var(--size);
+      height: var(--size);
+      pointer-events: none;
+      background: var(--gold);
+      clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 56%, 79% 91%, 50% 70%, 21% 91%, 32% 56%, 2% 35%, 39% 35%);
+      filter: drop-shadow(0 2px 2px rgba(100, 72, 0, 0.28));
+      animation: star-burst 850ms ease-out forwards;
+    }
+
+    @keyframes star-burst {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.35) rotate(0deg);
+      }
+
+      18% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.05) rotate(var(--rot));
+      }
+    }
+
+    @media (max-width: 780px) {
+      body {
+        font-size: 16px;
+      }
+
+      .page {
+        width: min(100% - 20px, 1180px);
+        padding-top: 18px;
+      }
+
+      .toolbar {
+        align-items: stretch;
+      }
+
+      .toolbar button,
+      .random-actions button {
+        flex: 1 1 180px;
+      }
+
+      .random-controls {
+        grid-template-columns: 1fr;
+      }
+
+      th,
+      td {
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <p class="attribution"><strong>Animation Prompted by Jerred Seveyka for his biology class.</strong></p>
+    <h1>Bacterial Genera General Characteristics Quiz</h1>
+
+    <section class="toolbar" aria-label="Quiz controls">
+      <button type="button" id="checkAllButton">Check Entire Table</button>
+      <button type="button" id="resetButton" class="secondary-button">Reset Table</button>
+      <button type="button" id="randomButton">Random Practice</button>
+      <button type="button" id="revealButton" class="secondary-button">Reveal Answers</button>
+    </section>
+
+    <div class="score-strip" id="scoreStrip" aria-live="polite">Choose answers, then check a row or the whole table.</div>
+
+    <section class="random-card" id="randomCard" aria-label="Random practice panel">
+      <div class="random-topline">
+        <div>
+          <p class="random-label">Random practice genus</p>
+          <p class="random-genus" id="randomGenus">Press Random Practice</p>
+        </div>
+      </div>
+
+      <div class="random-controls">
+        <div class="field">
+          <label for="randomGram">Gram nature</label>
+          <select id="randomGram"></select>
+        </div>
+        <div class="field">
+          <label for="randomMorphology">Morphology</label>
+          <select id="randomMorphology"></select>
+        </div>
+        <div class="field">
+          <label for="randomOxygen">Oxygen requirement</label>
+          <select id="randomOxygen"></select>
+        </div>
+      </div>
+
+      <div class="random-actions">
+        <button type="button" id="checkRandomButton">Check Random Answer</button>
+        <button type="button" id="nextRandomButton" class="secondary-button">Next Random Genus</button>
+      </div>
+      <p class="random-feedback" id="randomFeedback" aria-live="polite"></p>
+    </section>
+
+    <section class="table-wrap" aria-label="Bacterial genera quiz table">
+      <table>
+        <caption>Bacterial genera general characteristics quiz</caption>
+        <thead>
+          <tr>
+            <th scope="col">Genus</th>
+            <th scope="col">Gram nature</th>
+            <th scope="col">Morphology</th>
+            <th scope="col">Oxygen requirement</th>
+            <th scope="col">Check</th>
+            <th scope="col">Feedback</th>
+          </tr>
+        </thead>
+        <tbody id="quizBody"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script>
+    const quizData = [
+      { genus: "Neisseria", gram: "Gram -", morphology: "coccus", oxygen: "obligate aerobe" },
+      { genus: "Chlamydia", gram: "Gram -", morphology: "coccus", oxygen: "obligate aerobe" },
+      { genus: "Pseudomonas", gram: "Gram -", morphology: "bacillus", oxygen: "obligate aerobe" },
+      { genus: "Vibrio", gram: "Gram -", morphology: "bent rod", oxygen: "facultative anaerobe" },
+      { genus: "Escherichia", gram: "Gram -", morphology: "bacillus", oxygen: "facultative anaerobe" },
+      { genus: "Shigella", gram: "Gram -", morphology: "bacillus", oxygen: "facultative anaerobe" },
+      { genus: "Salmonella", gram: "Gram -", morphology: "bacillus", oxygen: "facultative anaerobe" },
+      { genus: "Spirochetes", gram: "Gram -", morphology: "spiral", oxygen: "Wide spectrum of oxygen use" },
+      { genus: "Clostridium", gram: "Gram +", morphology: "bacillus", oxygen: "obligate anaerobe" },
+      { genus: "Bacillus", gram: "Gram +", morphology: "bacillus", oxygen: "obligate aerobe" },
+      { genus: "Mycobacteria", gram: "Gram +", morphology: "bacillus", oxygen: "obligate aerobe" },
+      { genus: "Listeria", gram: "Gram +", morphology: "bacillus", oxygen: "facultative anaerobe" },
+      { genus: "Streptococcus", gram: "Gram +", morphology: "coccus", oxygen: "facultative anaerobe" },
+      { genus: "Staphylococcus", gram: "Gram +", morphology: "coccus", oxygen: "facultative anaerobe" }
+    ];
+
+    const gramOptions = ["Gram +", "Gram -"];
+    const morphologyOptions = ["coccus", "bacillus", "bent rod", "spiral"];
+    const oxygenOptions = [
+      "obligate aerobe",
+      "facultative anaerobe",
+      "obligate anaerobe",
+      "Wide spectrum of oxygen use"
+    ];
+
+    const fieldLabels = {
+      gram: "Gram nature",
+      morphology: "morphology",
+      oxygen: "oxygen requirement"
+    };
+
+    const optionSets = {
+      gram: shuffle(gramOptions),
+      morphology: shuffle(morphologyOptions),
+      oxygen: shuffle(oxygenOptions)
+    };
+
+    const quizBody = document.getElementById("quizBody");
+    const scoreStrip = document.getElementById("scoreStrip");
+    const randomCard = document.getElementById("randomCard");
+    const randomGenus = document.getElementById("randomGenus");
+    const randomFeedback = document.getElementById("randomFeedback");
+    const revealButton = document.getElementById("revealButton");
+    const randomSelects = {
+      gram: document.getElementById("randomGram"),
+      morphology: document.getElementById("randomMorphology"),
+      oxygen: document.getElementById("randomOxygen")
+    };
+
+    let answersRevealed = false;
+    let savedSelections = null;
+    let currentRandomIndex = -1;
+
+    buildTable();
+    buildSelect(randomSelects.gram, optionSets.gram);
+    buildSelect(randomSelects.morphology, optionSets.morphology);
+    buildSelect(randomSelects.oxygen, optionSets.oxygen);
+
+    document.getElementById("checkAllButton").addEventListener("click", checkEntireTable);
+    document.getElementById("resetButton").addEventListener("click", resetTable);
+    document.getElementById("randomButton").addEventListener("click", showRandomPractice);
+    document.getElementById("revealButton").addEventListener("click", toggleAnswers);
+    document.getElementById("checkRandomButton").addEventListener("click", checkRandomAnswer);
+    document.getElementById("nextRandomButton").addEventListener("click", chooseRandomGenus);
+
+    function buildTable() {
+      const fragment = document.createDocumentFragment();
+
+      quizData.forEach((item, index) => {
+        const row = document.createElement("tr");
+        row.dataset.index = String(index);
+
+        const genusCell = document.createElement("th");
+        genusCell.scope = "row";
+        genusCell.className = "genus";
+        genusCell.textContent = item.genus;
+        row.appendChild(genusCell);
+
+        ["gram", "morphology", "oxygen"].forEach((field) => {
+          const cell = document.createElement("td");
+          const select = document.createElement("select");
+          select.dataset.field = field;
+          select.setAttribute("aria-label", item.genus + " " + fieldLabels[field]);
+          buildSelect(select, optionSets[field]);
+          cell.appendChild(select);
+          row.appendChild(cell);
+        });
+
+        const actionCell = document.createElement("td");
+        const checkButton = document.createElement("button");
+        checkButton.type = "button";
+        checkButton.textContent = "Check Row";
+        checkButton.addEventListener("click", () => checkRow(row, true));
+        actionCell.appendChild(checkButton);
+        row.appendChild(actionCell);
+
+        const feedbackCell = document.createElement("td");
+        feedbackCell.className = "feedback-cell";
+        feedbackCell.setAttribute("aria-live", "polite");
+        row.appendChild(feedbackCell);
+
+        fragment.appendChild(row);
+      });
+
+      quizBody.appendChild(fragment);
+    }
+
+    function buildSelect(select, options) {
+      select.innerHTML = "";
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "Choose...";
+      select.appendChild(placeholder);
+
+      options.forEach((optionText) => {
+        const option = document.createElement("option");
+        option.value = optionText;
+        option.textContent = optionText;
+        select.appendChild(option);
+      });
+    }
+
+    function checkRow(row, animate) {
+      const index = Number(row.dataset.index);
+      const result = evaluateSelection(index, getRowSelections(row));
+      const feedbackCell = row.querySelector(".feedback-cell");
+
+      row.classList.toggle("correct-row", result.correct);
+      row.classList.toggle("incorrect-row", !result.correct);
+
+      if (result.correct) {
+        feedbackCell.innerHTML = '<span class="correct-text">Correct!</span>';
+        if (animate) {
+          burstFromElement(row, 12);
+        }
+      } else {
+        feedbackCell.innerHTML = '<span class="needs-work-text">' + result.message + "</span>";
+      }
+
+      return result.correct;
+    }
+
+    function checkEntireTable() {
+      hideAnswersIfNeeded();
+      const rows = Array.from(quizBody.querySelectorAll("tr"));
+      let correctCount = 0;
+
+      rows.forEach((row, index) => {
+        const isCorrect = checkRow(row, false);
+        if (isCorrect) {
+          correctCount += 1;
+          window.setTimeout(() => burstFromElement(row, 8), index * 90);
+        }
+      });
+
+      scoreStrip.textContent = correctCount + " / " + quizData.length + " correct.";
+
+      if (correctCount === quizData.length) {
+        scoreStrip.textContent = "Perfect: " + correctCount + " / " + quizData.length + " correct!";
+        window.setTimeout(() => burstFromElement(scoreStrip, 34), 300);
+      }
+    }
+
+    function resetTable() {
+      answersRevealed = false;
+      savedSelections = null;
+      revealButton.textContent = "Reveal Answers";
+
+      quizBody.querySelectorAll("tr").forEach((row) => {
+        row.classList.remove("correct-row", "incorrect-row");
+        row.querySelectorAll("select").forEach((select) => {
+          select.value = "";
+          select.disabled = false;
+        });
+        row.querySelector(".feedback-cell").textContent = "";
+      });
+
+      scoreStrip.textContent = "Table reset. Choose answers, then check a row or the whole table.";
+    }
+
+    function showRandomPractice() {
+      randomCard.classList.add("is-visible");
+      chooseRandomGenus();
+      randomCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    function chooseRandomGenus() {
+      let nextIndex = currentRandomIndex;
+
+      if (quizData.length > 1) {
+        while (nextIndex === currentRandomIndex) {
+          nextIndex = Math.floor(Math.random() * quizData.length);
+        }
+      } else {
+        nextIndex = 0;
+      }
+
+      currentRandomIndex = nextIndex;
+      randomGenus.textContent = quizData[currentRandomIndex].genus;
+      randomFeedback.textContent = "";
+      randomFeedback.className = "random-feedback";
+
+      Object.values(randomSelects).forEach((select) => {
+        select.value = "";
+      });
+    }
+
+    function checkRandomAnswer() {
+      if (currentRandomIndex < 0) {
+        showRandomPractice();
+        return;
+      }
+
+      const result = evaluateSelection(currentRandomIndex, {
+        gram: randomSelects.gram.value,
+        morphology: randomSelects.morphology.value,
+        oxygen: randomSelects.oxygen.value
+      });
+
+      if (result.correct) {
+        randomFeedback.textContent = "Correct!";
+        randomFeedback.className = "random-feedback correct-text";
+        burstFromElement(randomCard, 16);
+      } else {
+        randomFeedback.textContent = result.message;
+        randomFeedback.className = "random-feedback needs-work-text";
+      }
+    }
+
+    function toggleAnswers() {
+      if (answersRevealed) {
+        restoreSelections();
+        scoreStrip.textContent = "Answers hidden. Your previous selections are restored.";
+        revealButton.textContent = "Reveal Answers";
+        answersRevealed = false;
+        return;
+      }
+
+      savedSelections = Array.from(quizBody.querySelectorAll("tr")).map((row) => getRowSelections(row));
+
+      quizBody.querySelectorAll("tr").forEach((row) => {
+        const index = Number(row.dataset.index);
+        const item = quizData[index];
+        setRowSelections(row, item);
+        row.classList.remove("incorrect-row");
+        row.classList.add("correct-row");
+        row.querySelector(".feedback-cell").innerHTML =
+          '<span class="correct-text">Study mode answer shown.</span>' +
+          '<span class="answer-note">' +
+          item.gram + " | " + item.morphology + " | " + item.oxygen +
+          "</span>";
+      });
+
+      scoreStrip.textContent = "Study mode: correct answers are revealed.";
+      revealButton.textContent = "Hide Answers";
+      answersRevealed = true;
+    }
+
+    function hideAnswersIfNeeded() {
+      if (answersRevealed) {
+        restoreSelections();
+        revealButton.textContent = "Reveal Answers";
+        answersRevealed = false;
+      }
+    }
+
+    function restoreSelections() {
+      const rows = Array.from(quizBody.querySelectorAll("tr"));
+
+      rows.forEach((row, index) => {
+        const saved = savedSelections ? savedSelections[index] : { gram: "", morphology: "", oxygen: "" };
+        setRowSelections(row, saved);
+        row.classList.remove("correct-row", "incorrect-row");
+        row.querySelector(".feedback-cell").textContent = "";
+      });
+
+      savedSelections = null;
+    }
+
+    function getRowSelections(row) {
+      const selections = {};
+      row.querySelectorAll("select").forEach((select) => {
+        selections[select.dataset.field] = select.value;
+      });
+      return selections;
+    }
+
+    function setRowSelections(row, values) {
+      row.querySelectorAll("select").forEach((select) => {
+        select.value = values[select.dataset.field] || "";
+      });
+    }
+
+    function evaluateSelection(index, selections) {
+      const item = quizData[index];
+      const missedFields = ["gram", "morphology", "oxygen"].filter((field) => selections[field] !== item[field]);
+
+      if (missedFields.length === 0) {
+        return { correct: true, message: "Correct!" };
+      }
+
+      return {
+        correct: false,
+        message: "Check " + makeReadableList(missedFields.map((field) => fieldLabels[field])) + "."
+      };
+    }
+
+    function makeReadableList(items) {
+      if (items.length === 1) {
+        return items[0];
+      }
+
+      if (items.length === 2) {
+        return items[0] + " and " + items[1];
+      }
+
+      return items.slice(0, -1).join(", ") + ", and " + items[items.length - 1];
+    }
+
+    function burstFromElement(element, count) {
+      const rect = element.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+
+      for (let i = 0; i < count; i += 1) {
+        window.setTimeout(() => createStar(x, y), i * 18);
+      }
+    }
+
+    function createStar(x, y) {
+      const star = document.createElement("span");
+      const angle = Math.random() * Math.PI * 2;
+      const distance = 44 + Math.random() * 72;
+      const size = 13 + Math.random() * 13;
+
+      star.className = "star";
+      star.style.setProperty("--x", x + "px");
+      star.style.setProperty("--y", y + "px");
+      star.style.setProperty("--tx", Math.cos(angle) * distance + "px");
+      star.style.setProperty("--ty", Math.sin(angle) * distance + "px");
+      star.style.setProperty("--rot", Math.round(Math.random() * 280 - 140) + "deg");
+      star.style.setProperty("--size", size + "px");
+      document.body.appendChild(star);
+      star.addEventListener("animationend", () => star.remove(), { once: true });
+    }
+
+    function shuffle(items) {
+      const array = items.slice();
+
+      for (let i = array.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+      }
+
+      return array;
+    }
+  </script>
+</body>
+</html>
