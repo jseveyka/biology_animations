@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Muscles, Joints, and Torque</title>
+  <style>
+.animation-credit {
+  width: 100%;
+  text-align: center;
+  font-weight: bold;
+  font-size: 16px;
+  padding: 8px 0;
+  background: #f3f4f6;
+  color: #111827;
+  border-bottom: 1px solid #d1d5db;
+  box-sizing: border-box;
+}
+    :root {
+      --bg: #f6f4ee;
+      --surface: #fffdf8;
+      --surface-strong: #ffffff;
+      --ink: #222832;
+      --muted: #65727f;
+      --line: #ddd6c8;
+      --bone: #efe8d8;
+      --bone-edge: #bdb5a5;
+      --muscle: #db4f68;
+      --muscle-soft: #f6a0aa;
+      --load: #276fbc;
+      --effort: #cc334c;
+      --fulcrum: #f7c948;
+      --fulcrum-edge: #a77200;
+      --bracket: #45505c;
+      --accent: #267c75;
+      --shadow: 0 18px 38px rgba(39, 43, 49, 0.12);
+      color-scheme: light;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.05) 280px),
+        var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    main {
+      width: min(1280px, calc(100vw - 20px));
+      margin: 0 auto 0 12px;
+      padding: 14px 0 22px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.45rem, 2.4vw, 2.25rem);
+      line-height: 1.05;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 720px;
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.45;
+    }
+
+    .mode-switch {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(150px, 1fr));
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.74);
+      box-shadow: 0 8px 24px rgba(52, 61, 70, 0.08);
+    }
+
+    .mode-switch button {
+      min-height: 44px;
+      border: 0;
+      border-radius: 6px;
+      padding: 9px 12px;
+      color: var(--ink);
+      background: transparent;
+      font: inherit;
+      font-weight: 680;
+      cursor: pointer;
+      transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .mode-switch button[aria-pressed="true"] {
+      color: #ffffff;
+      background: var(--accent);
+      box-shadow: 0 8px 18px rgba(38, 124, 117, 0.22);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(520px, 1fr) 332px;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .animation-panel,
+    .control-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .animation-panel {
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .svg-wrap {
+      width: 100%;
+      aspect-ratio: 16 / 8.75;
+      min-height: 412px;
+      background:
+        linear-gradient(90deg, rgba(69, 80, 92, 0.045) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(69, 80, 92, 0.045) 1px, transparent 1px),
+        #fffefa;
+      background-size: 44px 44px;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .control-panel {
+      display: flex;
+      flex-direction: column;
+      padding: 12px;
+      gap: 12px;
+    }
+
+    .control-panel h2 {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.2;
+    }
+
+    .controls {
+      display: grid;
+      gap: 14px;
+    }
+
+    .control {
+      display: grid;
+      gap: 7px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(221, 214, 200, 0.72);
+    }
+
+    .control:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .control label {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 0.93rem;
+      font-weight: 720;
+    }
+
+    output {
+      min-width: 78px;
+      text-align: right;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      font-weight: 760;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .range-meta {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 0.72fr;
+      gap: 8px;
+    }
+
+    .action-btn {
+      min-height: 44px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font: inherit;
+      font-weight: 760;
+      cursor: pointer;
+      transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
+    }
+
+    .action-btn:active {
+      transform: translateY(1px);
+    }
+
+    .run-btn {
+      color: #ffffff;
+      background: var(--ink);
+      box-shadow: 0 10px 22px rgba(34, 40, 50, 0.18);
+    }
+
+    .reset-btn {
+      color: var(--ink);
+      background: #ffffff;
+      border-color: var(--line);
+    }
+
+    .results {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-strong);
+    }
+
+    .result-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .result-row strong {
+      color: var(--ink);
+      font-size: 1rem;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .formula {
+      margin-top: 4px;
+      padding: 10px;
+      border: 1px solid rgba(38, 124, 117, 0.28);
+      border-radius: 8px;
+      background: rgba(38, 124, 117, 0.08);
+      color: #1d5550;
+      font-size: 0.9rem;
+      line-height: 1.35;
+      font-weight: 700;
+      transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .formula.is-hot {
+      border-color: rgba(204, 51, 76, 0.62);
+      background: rgba(204, 51, 76, 0.1);
+      box-shadow: 0 0 0 4px rgba(204, 51, 76, 0.09);
+    }
+
+    .note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.91rem;
+      line-height: 1.42;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .svg-label {
+      fill: var(--ink);
+      font-size: 22px;
+      font-weight: 820;
+      paint-order: stroke;
+      stroke: #fffefa;
+      stroke-width: 4px;
+      stroke-linejoin: round;
+    }
+
+    .svg-label.small {
+      font-size: 20px;
+      font-weight: 820;
+    }
+
+    .svg-label.tiny {
+      font-size: 18px;
+      font-weight: 820;
+    }
+
+    .lever-label,
+    .fulcrum-label {
+      font-size: 22px;
+    }
+
+    .arrow-label {
+      font-size: 20px;
+      font-weight: 840;
+      paint-order: stroke;
+      stroke: #fffefa;
+      stroke-width: 6px;
+      stroke-linejoin: round;
+    }
+
+    .bone {
+      stroke: var(--bone-edge);
+      fill: var(--bone);
+    }
+
+    .moment-bracket {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 8 7;
+    }
+
+    .bracket-tick {
+      stroke-linecap: round;
+    }
+
+    .pulse {
+      animation: bracketPulse 900ms ease-out both;
+    }
+
+    .pulse .moment-bracket,
+    .pulse .bracket-tick {
+      animation: bracketPulse 900ms ease-out both;
+    }
+
+    @keyframes bracketPulse {
+      0% {
+        opacity: 0.55;
+        stroke-width: 3;
+      }
+      35% {
+        opacity: 1;
+        stroke-width: 6;
+      }
+      100% {
+        opacity: 0.88;
+        stroke-width: 3;
+      }
+    }
+
+    @media (max-width: 560px) {
+      main {
+        width: min(100vw - 20px, 900px);
+        margin: 0 auto;
+        padding-top: 16px;
+      }
+
+      .topbar {
+        display: grid;
+        align-items: stretch;
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .control-panel {
+        order: 2;
+      }
+    }
+
+    @media (max-width: 620px) {
+      main {
+        width: min(100vw - 12px, 620px);
+      }
+
+      .topbar {
+        margin-bottom: 10px;
+      }
+
+      .mode-switch {
+        grid-template-columns: 1fr;
+      }
+
+      .svg-wrap {
+        min-height: 360px;
+        aspect-ratio: 1 / 0.82;
+      }
+      .actions {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="animation-credit">
+  Animation Prompted by Jerred Seveyka for his biology class
+</div>
+  <main>
+    <header class="topbar">
+      <div>
+        <h1>Muscles, Joints, and Torque</h1>
+        <p class="subtitle">A simplified anatomy lever model showing how load, moment arms, and muscle insertion distance change the force a muscle must produce.</p>
+      </div>
+      <div class="mode-switch" aria-label="Select anatomical model">
+        <button id="modeArm" type="button" aria-pressed="true">Arm: elbow flexion</button>
+        <button id="modeLeg" type="button" aria-pressed="false">Leg: calf raise</button>
+      </div>
+    </header>
+
+    <section class="workspace">
+      <article class="animation-panel" aria-label="Torque animation">
+        <h2 class="sr-only" id="modelTitle">Arm: elbow flexion</h2>
+        <p class="sr-only" id="modelCaption">Elbow fulcrum, load at the hand, muscle effort near the elbow.</p>
+        <div class="svg-wrap">
+          <svg id="scene" viewBox="0 0 900 540" role="img" aria-labelledby="modelTitle modelCaption"></svg>
+        </div>
+      </article>
+
+      <aside class="control-panel" aria-label="Controls and results">
+        <h2 id="controlsTitle">Model controls</h2>
+        <div class="controls" id="controls"></div>
+
+        <div class="actions">
+          <button class="action-btn run-btn" id="runAnimation" type="button">Run animation</button>
+          <button class="action-btn reset-btn" id="resetModel" type="button">Reset</button>
+        </div>
+
+        <section class="results" aria-label="Live calculation results">
+          <div class="result-row"><span>Load force</span><strong id="loadForceResult">22 lb</strong></div>
+          <div class="result-row"><span>Load moment arm</span><strong id="loadArmResult">1.15 ft</strong></div>
+          <div class="result-row"><span>Effort moment arm</span><strong id="effortArmResult">0.13 ft</strong></div>
+          <div class="result-row"><span>Required muscle force</span><strong id="effortForceResult">193 lb</strong></div>
+          <div class="result-row"><span>Mechanical advantage</span><strong id="maResult">0.11</strong></div>
+          <div class="formula" id="formula">
+            Effort force &times; effort moment arm = load force &times; load moment arm
+          </div>
+          <p class="note" id="teachingNote">Because the muscle inserts close to the fulcrum, it must generate a much larger force than the load.</p>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const GRAVITY = 9.8;
+    const CM_PER_FOOT = 30.48;
+    const NEWTON_TO_POUND_FORCE = 0.2248089431;
+
+    const defaults = {
+      arm: {
+        forearmLength: 35,
+        loadKg: 10,
+        loadMomentArm: 100,
+        effortMomentArm: 4
+      },
+      leg: {
+        footLength: 26,
+        loadKg: 70,
+        loadMomentArm: 12,
+        effortMomentArm: 6
+      }
+    };
+
+    const state = {
+      mode: "arm",
+      arm: { ...defaults.arm },
+      leg: { ...defaults.leg }
+    };
+
+    const animation = {
+      active: false,
+      progress: 1,
+      frame: 0,
+      pulse: false
+    };
+
+    const scene = document.getElementById("scene");
+    const controls = document.getElementById("controls");
+    const modelTitle = document.getElementById("modelTitle");
+    const modelCaption = document.getElementById("modelCaption");
+    const formula = document.getElementById("formula");
+
+    function trimNumber(value, decimals = 2) {
+      const rounded = Number(value.toFixed(decimals));
+      return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(decimals).replace(/0+$/, "").replace(/\.$/, "");
+    }
+
+    const fmt = {
+      force: (newtons) => `${Math.round(newtons * NEWTON_TO_POUND_FORCE).toLocaleString()} lb`,
+      loadFromKg: (kg) => `${Math.round(kg * GRAVITY * NEWTON_TO_POUND_FORCE).toLocaleString()} lb`,
+      feet: (centimeters) => `${trimNumber(centimeters / CM_PER_FOOT, 2)} ft`,
+      percent: (value) => `${trimNumber(value, 0)}%`,
+      torque: (newtons, centimeters) => {
+        const footPounds = newtons * NEWTON_TO_POUND_FORCE * (centimeters / CM_PER_FOOT);
+        return `${trimNumber(footPounds, 1)} ft·lb`;
+      },
+      ratio: (value) => value.toFixed(2)
+    };
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    function legLoadMax() {
+      return Math.max(8, Math.floor(state.leg.footLength * 0.76));
+    }
+
+    function sanitizeState() {
+      state.arm.forearmLength = clamp(state.arm.forearmLength, 25, 45);
+      state.arm.loadKg = clamp(state.arm.loadKg, 1, 30);
+      state.arm.loadMomentArm = clamp(state.arm.loadMomentArm, 0, 100);
+      state.arm.effortMomentArm = clamp(state.arm.effortMomentArm, 2, 8);
+
+      state.leg.footLength = clamp(state.leg.footLength, 18, 32);
+      state.leg.loadKg = clamp(state.leg.loadKg, 30, 150);
+      state.leg.effortMomentArm = clamp(state.leg.effortMomentArm, 4, 12);
+    }
+
+    function getControlDefs() {
+      if (state.mode === "arm") {
+        return [
+          {
+            key: "forearmLength",
+            id: "forearmLength",
+            label: "Forearm length",
+            min: 25,
+            max: 45,
+            step: 1,
+            readout: fmt.feet
+          },
+          {
+            key: "loadKg",
+            id: "armLoadKg",
+            label: "Load",
+            min: 1,
+            max: 30,
+            step: 1,
+            readout: fmt.loadFromKg
+          },
+          {
+            key: "loadMomentArm",
+            id: "armLoadPlacement",
+            label: "Load position from insertion to hand",
+            min: 0,
+            max: 100,
+            step: 1,
+            readout: fmt.percent
+          },
+          {
+            key: "effortMomentArm",
+            id: "armInsertion",
+            label: "Muscle insertion from elbow",
+            min: 2,
+            max: 8,
+            step: 0.5,
+            readout: fmt.feet
+          }
+        ];
+      }
+
+      return [
+        {
+          key: "footLength",
+          id: "footLength",
+          label: "Foot length",
+          min: 18,
+          max: 32,
+          step: 1,
+          readout: fmt.feet
+        },
+        {
+          key: "loadKg",
+          id: "legLoadKg",
+          label: "Body load",
+          min: 30,
+          max: 150,
+          step: 1,
+          readout: fmt.loadFromKg
+        },
+        {
+          key: "effortMomentArm",
+          id: "achillesArm",
+          label: "Calcaneus length",
+          min: 4,
+          max: 12,
+          step: 0.5,
+          readout: fmt.feet
+        }
+      ];
+    }
+
+    function renderControls() {
+      controls.innerHTML = getControlDefs().map((def) => `
+        <div class="control">
+          <label for="${def.id}">
+            <span>${def.label}</span>
+            <output id="${def.id}Out"></output>
+          </label>
+          <input
+            id="${def.id}"
+            data-key="${def.key}"
+            type="range"
+            min="${def.min}"
+            max="${def.max}"
+            step="${def.step}"
+            value="${state[state.mode][def.key]}"
+          />
+          <div class="range-meta">
+            <span id="${def.id}Min"></span>
+            <span id="${def.id}Max"></span>
+          </div>
+        </div>
+      `).join("");
+      syncControls();
+    }
+
+    function syncControls() {
+      getControlDefs().forEach((def) => {
+        const input = document.getElementById(def.id);
+        const output = document.getElementById(`${def.id}Out`);
+        const minLabel = document.getElementById(`${def.id}Min`);
+        const maxLabel = document.getElementById(`${def.id}Max`);
+        if (!input) return;
+
+        input.min = def.min;
+        input.max = def.max;
+        input.step = def.step;
+        input.value = state[state.mode][def.key];
+        output.textContent = def.readout(state[state.mode][def.key]);
+        input.setAttribute("aria-valuetext", output.textContent);
+        minLabel.textContent = def.readout(def.min);
+        maxLabel.textContent = def.readout(def.max);
+      });
+    }
+
+    function getMetrics() {
+      const values = state[state.mode];
+      const loadForce = values.loadKg * GRAVITY;
+      let effortArm = values.effortMomentArm;
+      let loadArm;
+
+      if (state.mode === "arm") {
+        loadArm = effortArm + (values.loadMomentArm / 100) * (values.forearmLength - effortArm);
+      } else {
+        loadArm = values.footLength * 0.85;
+        effortArm = values.effortMomentArm + loadArm;
+      }
+
+      // Torque balance:
+      // effort force * effort moment arm = load force * load moment arm.
+      // Distances can stay in centimeters here because both moment arms use
+      // the same unit, so the cm units cancel in the force ratio.
+      const effortForce = (loadForce * loadArm) / effortArm;
+      const mechanicalAdvantage = effortArm / loadArm;
+      const loadTorque = loadForce * loadArm;
+
+      return {
+        ...values,
+        loadForce,
+        loadArm,
+        effortArm,
+        effortForce,
+        loadTorque,
+        mechanicalAdvantage
+      };
+    }
+
+    function arrowLength(force, capForce) {
+      const scaled = 34 + Math.sqrt(Math.max(force, 0) / capForce) * 120;
+      return clamp(scaled, 0, 132);
+    }
+
+    function svgText(x, y, text, className = "svg-label", anchor = "middle") {
+      return `<text x="${x}" y="${y}" text-anchor="${anchor}" class="${className}">${text}</text>`;
+    }
+
+    function arrow(x1, y1, x2, y2, color, label, labelX, labelY, labelAnchor = "start") {
+      const hasLength = Math.hypot(x2 - x1, y2 - y1) > 1;
+      return `
+        <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
+          stroke="${color}" stroke-width="8" stroke-linecap="round"
+          ${hasLength ? `marker-end="url(#arrow-${color.slice(1)})"` : ""}></line>
+        <text x="${labelX}" y="${labelY}" text-anchor="${labelAnchor}" class="arrow-label" fill="${color}">${label}</text>
+      `;
+    }
+
+    function bracket(x1, x2, y, label, color, labelOffset = 0) {
+      const mid = (x1 + x2) / 2;
+      const pulseClass = animation.pulse ? " pulse" : "";
+      const left = Math.min(x1, x2);
+      const right = Math.max(x1, x2);
+      return `
+        <g class="${pulseClass.trim()}">
+          <line class="moment-bracket" x1="${left}" y1="${y}" x2="${right}" y2="${y}" stroke="${color}" stroke-width="3"></line>
+          <line class="bracket-tick" x1="${left}" y1="${y - 13}" x2="${left}" y2="${y + 13}" stroke="${color}" stroke-width="3"></line>
+          <line class="bracket-tick" x1="${right}" y1="${y - 13}" x2="${right}" y2="${y + 13}" stroke="${color}" stroke-width="3"></line>
+          <text x="${mid + labelOffset}" y="${y - 18}" text-anchor="middle" class="svg-label small lever-label" fill="${color}">${label}</text>
+        </g>
+      `;
+    }
+
+    function defs() {
+      return `
+        <defs>
+          <marker id="arrow-276fbc" markerWidth="42" markerHeight="30" refX="34" refY="12" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L36,12 L0,24 Z" fill="#276fbc"></path>
+          </marker>
+          <marker id="arrow-cc334c" markerWidth="42" markerHeight="30" refX="34" refY="12" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L36,12 L0,24 Z" fill="#cc334c"></path>
+          </marker>
+          <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="8" stdDeviation="5" flood-color="#2b3038" flood-opacity="0.14"></feDropShadow>
+          </filter>
+        </defs>
+      `;
+    }
+
+    function renderArm(metrics, progress) {
+      const elbow = { x: 172, y: 282 };
+      const pxPerCm = Math.min(12.2, 560 / metrics.forearmLength);
+      const forearmEndX = elbow.x + metrics.forearmLength * pxPerCm;
+      const loadX = elbow.x + metrics.loadArm * pxPerCm;
+      const insertionX = elbow.x + metrics.effortArm * pxPerCm;
+      const loadTipY = elbow.y;
+      const effortBaseY = 274;
+      const loadLen = arrowLength(metrics.loadForce, 300) * progress;
+      const effortLen = arrowLength(metrics.effortForce, 9000) * progress;
+      const loadLabel = fmt.force(metrics.loadForce * progress);
+      const effortLabel = fmt.force(metrics.effortForce * progress);
+      const muscleTopY = 112;
+      const muscleLowY = 242;
+      const muscleX = elbow.x + 56;
+      const loadCircleX = loadX;
+      const loadCircleRadius = 10 + Math.sqrt((metrics.loadKg - 1) / 29) * 20;
+      const effortLabelX = Math.max(insertionX + 56, muscleX + 74);
+      const effortLabelY = Math.max(82, effortBaseY - effortLen - 10);
+
+      return `
+        ${defs()}
+        <rect x="0" y="0" width="900" height="540" fill="transparent"></rect>
+
+        <g aria-label="Arm bones">
+          <line x1="${elbow.x}" y1="${muscleTopY - 18}" x2="${elbow.x}" y2="${elbow.y}" stroke="#bdb5a5" stroke-width="34" stroke-linecap="round"></line>
+          <line x1="${elbow.x}" y1="${muscleTopY - 18}" x2="${elbow.x}" y2="${elbow.y}" stroke="#efe8d8" stroke-width="26" stroke-linecap="round"></line>
+          <line x1="${elbow.x + 4}" y1="${elbow.y}" x2="${forearmEndX}" y2="${elbow.y}" stroke="#bdb5a5" stroke-width="24" stroke-linecap="round"></line>
+          <line x1="${elbow.x + 4}" y1="${elbow.y}" x2="${forearmEndX}" y2="${elbow.y}" stroke="#efe8d8" stroke-width="17" stroke-linecap="round"></line>
+          <circle cx="${elbow.x}" cy="${elbow.y}" r="23" fill="#efe8d8" stroke="#bdb5a5" stroke-width="4"></circle>
+        </g>
+
+        <g aria-label="Arm muscle belly and tendon">
+          <path d="
+            M ${muscleX - 12} ${muscleTopY}
+            C ${muscleX - 38} 145, ${muscleX - 38} 195, ${muscleX - 9} ${muscleLowY}
+            C ${muscleX - 3} ${muscleLowY + 9}, ${muscleX + 7} ${muscleLowY + 9}, ${muscleX + 12} ${muscleLowY}
+            C ${muscleX + 30} 198, ${muscleX + 24} 145, ${muscleX + 8} ${muscleTopY}
+            C ${muscleX + 3} ${muscleTopY - 8}, ${muscleX - 7} ${muscleTopY - 8}, ${muscleX - 12} ${muscleTopY}
+            Z"
+            fill="#f6a0aa" stroke="#cc334c" stroke-width="3" opacity="0.96"></path>
+          <path d="M ${muscleX + 1} ${muscleLowY + 4} C ${muscleX + 4} 258, ${insertionX + 8} 262, ${insertionX} ${effortBaseY}"
+            fill="none" stroke="#cc334c" stroke-width="7" stroke-linecap="round"></path>
+          <circle cx="${insertionX}" cy="${effortBaseY}" r="7" fill="#cc334c"></circle>
+        </g>
+
+        <g aria-label="Fulcrum marker">
+          <polygon points="${elbow.x - 26},${elbow.y + 88} ${elbow.x + 26},${elbow.y + 88} ${elbow.x},${elbow.y + 38}"
+            fill="#f7c948" stroke="#a77200" stroke-width="3" filter="url(#softShadow)"></polygon>
+          ${svgText(elbow.x, elbow.y + 190, "Fulcrum", "svg-label small fulcrum-label")}
+        </g>
+
+        ${bracket(elbow.x, loadX, 432, `Load moment arm: ${fmt.feet(metrics.loadArm)}`, "#276fbc")}
+        ${bracket(elbow.x, insertionX, 386, `Effort moment arm: ${fmt.feet(metrics.effortArm)}`, "#cc334c", 42)}
+
+        <circle cx="${loadCircleX}" cy="${elbow.y}" r="${loadCircleRadius}" fill="#454a52" stroke="#2f3339" stroke-width="3"></circle>
+
+        <g aria-label="Force arrows">
+          ${arrow(loadX, loadTipY - loadLen, loadX, loadTipY, "#276fbc", `Load ${loadLabel}`, loadX + 16, Math.max(86, loadTipY - loadLen / 2), "start")}
+          ${arrow(insertionX, effortBaseY, insertionX, effortBaseY - effortLen, "#cc334c", `Muscle effort ${effortLabel}`, effortLabelX, effortLabelY, "start")}
+        </g>
+
+        <g aria-label="Anatomy labels">
+          ${svgText(elbow.x - 42, 112, "Humerus", "svg-label small", "end")}
+          ${svgText(loadX, loadTipY + 33, "Load", "svg-label small")}
+        </g>
+      `;
+    }
+
+    function renderLeg(metrics, progress) {
+      const boneX = 388;
+      const pxPerCm = Math.min(11.2, 500 / (metrics.footLength + metrics.effortMomentArm));
+      const rightFootSpan = metrics.footLength * pxPerCm;
+      const calcaneusSpan = metrics.effortMomentArm * pxPerCm;
+      const footStartX = boneX - calcaneusSpan;
+      const toeX = boneX + rightFootSpan;
+      const ball = { x: toeX - rightFootSpan * 0.15, y: 344 };
+      const loadX = boneX;
+      const effortX = footStartX;
+      const ankleY = 292;
+      const footY = 330;
+      const effortBaseY = 324;
+      const loadLen = arrowLength(metrics.loadForce, 1500) * progress;
+      const effortLen = arrowLength(metrics.effortForce, 9000) * progress;
+      const loadLabel = fmt.force(metrics.loadForce * progress);
+      const effortLabel = fmt.force(metrics.effortForce * progress);
+      const loadCircleY = 108;
+      const loadCircleRadius = 15 + Math.sqrt((metrics.loadKg - 30) / 120) * 23;
+      const calfX = footStartX;
+      const calfTopY = 112;
+      const calfBottomY = 246;
+      const effortLabelX = effortX - 30;
+      const effortLabelY = Math.max(82, effortBaseY - effortLen - 10);
+
+      return `
+        ${defs()}
+        <rect x="0" y="0" width="900" height="540" fill="transparent"></rect>
+
+        <g aria-label="Single solid foot bone">
+          <path d="M ${footStartX} ${footY - 2} C ${boneX + 34} ${footY - 2}, ${ball.x - 34} ${footY - 2}, ${ball.x} ${ball.y} C ${ball.x + 18} ${ball.y + 8}, ${toeX - 28} ${footY + 2}, ${toeX} ${footY + 2}"
+            fill="none" stroke="#bdb5a5" stroke-width="38" stroke-linecap="round"></path>
+          <path d="M ${footStartX} ${footY - 2} C ${boneX + 34} ${footY - 2}, ${ball.x - 34} ${footY - 2}, ${ball.x} ${ball.y} C ${ball.x + 18} ${ball.y + 8}, ${toeX - 28} ${footY + 2}, ${toeX} ${footY + 2}"
+            fill="none" stroke="#efe8d8" stroke-width="29" stroke-linecap="round"></path>
+          <circle cx="${footStartX}" cy="${footY}" r="22" fill="#efe8d8" stroke="#bdb5a5" stroke-width="4"></circle>
+          <path d="M ${ball.x - 19} ${ball.y + 12} C ${ball.x - 8} ${ball.y + 26}, ${ball.x + 12} ${ball.y + 24}, ${ball.x + 23} ${ball.y + 8}"
+            fill="none" stroke="#bdb5a5" stroke-width="5" stroke-linecap="round"></path>
+        </g>
+
+        <g aria-label="Single calf bone">
+          <line x1="${boneX}" y1="108" x2="${boneX}" y2="${ankleY}" stroke="#bdb5a5" stroke-width="31" stroke-linecap="round"></line>
+          <line x1="${boneX}" y1="108" x2="${boneX}" y2="${ankleY}" stroke="#efe8d8" stroke-width="23" stroke-linecap="round"></line>
+          <circle cx="${boneX}" cy="${ankleY}" r="20" fill="#efe8d8" stroke="#bdb5a5" stroke-width="4"></circle>
+        </g>
+
+        <circle cx="${boneX}" cy="${loadCircleY}" r="${loadCircleRadius}" fill="#8b5a2b" stroke="#5d3719" stroke-width="3"></circle>
+
+        <g aria-label="Calf muscle and tendon">
+          <path d="
+            M ${calfX - 18} ${calfTopY}
+            C ${calfX - 34} 144, ${calfX - 34} 210, ${calfX - 12} ${calfBottomY}
+            C ${calfX - 5} ${calfBottomY + 10}, ${calfX + 7} ${calfBottomY + 10}, ${calfX + 14} ${calfBottomY}
+            C ${calfX + 30} 208, ${calfX + 26} 144, ${calfX + 12} ${calfTopY}
+            C ${calfX + 5} ${calfTopY - 8}, ${calfX - 10} ${calfTopY - 8}, ${calfX - 18} ${calfTopY}
+            Z"
+            fill="#f6a0aa" stroke="#cc334c" stroke-width="3" opacity="0.96"></path>
+          <path d="M ${calfX} ${(calfTopY + calfBottomY) / 2} L ${footStartX} ${effortBaseY}"
+            fill="none" stroke="#cc334c" stroke-width="7" stroke-linecap="round"></path>
+          <circle cx="${effortX}" cy="${effortBaseY}" r="7" fill="#cc334c"></circle>
+        </g>
+
+        <g aria-label="Fulcrum marker">
+          <polygon points="${ball.x - 28},${ball.y + 74} ${ball.x + 28},${ball.y + 74} ${ball.x},${ball.y + 24}"
+            fill="#f7c948" stroke="#a77200" stroke-width="3" filter="url(#softShadow)"></polygon>
+          ${svgText(ball.x, ball.y + 145, "Fulcrum", "svg-label small fulcrum-label")}
+        </g>
+
+        ${bracket(loadX, ball.x, 462, `Load moment arm: ${fmt.feet(metrics.loadArm)}`, "#276fbc")}
+        ${bracket(effortX, ball.x, 414, `Effort moment arm: ${fmt.feet(metrics.effortArm)}`, "#cc334c")}
+
+        <g aria-label="Force arrows">
+          ${arrow(loadX, loadCircleY - loadLen * 0.55, loadX, loadCircleY + loadLen * 0.55, "#276fbc", `Load ${loadLabel}`, loadX - 18, Math.max(72, loadCircleY - loadLen * 0.45), "end")}
+          ${arrow(effortX, effortBaseY, effortX, effortBaseY - effortLen, "#cc334c", `Muscle effort ${effortLabel}`, effortLabelX, effortLabelY, "end")}
+        </g>
+
+        <g aria-label="Anatomy labels">
+          ${svgText(toeX - 12, footY + 50, "Foot", "svg-label small", "end")}
+        </g>
+      `;
+    }
+
+    function renderResults(metrics, progress) {
+      const displayedEffort = metrics.effortForce * progress;
+      document.getElementById("loadForceResult").textContent = fmt.force(metrics.loadForce);
+      document.getElementById("loadArmResult").textContent = fmt.feet(metrics.loadArm);
+      document.getElementById("effortArmResult").textContent = fmt.feet(metrics.effortArm);
+      document.getElementById("effortForceResult").textContent = fmt.force(displayedEffort);
+      document.getElementById("maResult").textContent = fmt.ratio(metrics.mechanicalAdvantage);
+
+      formula.classList.toggle("is-hot", animation.active);
+      formula.innerHTML = `
+        Load torque = ${fmt.force(metrics.loadForce)} &times; ${fmt.feet(metrics.loadArm)} = ${fmt.torque(metrics.loadForce, metrics.loadArm)}<br>
+        Effort force = ${fmt.torque(metrics.loadForce, metrics.loadArm)} / ${fmt.feet(metrics.effortArm)}
+        = ${fmt.force(displayedEffort)}
+      `;
+
+      const forceRatio = metrics.effortForce / metrics.loadForce;
+      const note = document.getElementById("teachingNote");
+      if (forceRatio >= 3) {
+        note.textContent = "Because the muscle inserts close to the fulcrum, it must generate a much larger force than the load.";
+      } else if (forceRatio >= 1.2) {
+        note.textContent = "The muscle still works harder than the load because its effort moment arm is shorter than the load moment arm.";
+      } else {
+        note.textContent = "When the effort moment arm approaches or exceeds the load moment arm, the required muscle force drops.";
+      }
+    }
+
+    function renderScene() {
+      sanitizeState();
+      const metrics = getMetrics();
+      const progress = animation.active ? animation.progress : 1;
+      scene.innerHTML = state.mode === "arm"
+        ? renderArm(metrics, progress)
+        : renderLeg(metrics, progress);
+
+      renderResults(metrics, progress);
+      syncControls();
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      animation.active = false;
+      animation.progress = 1;
+      animation.pulse = false;
+
+      document.getElementById("modeArm").setAttribute("aria-pressed", mode === "arm");
+      document.getElementById("modeLeg").setAttribute("aria-pressed", mode === "leg");
+
+      if (mode === "arm") {
+        modelTitle.textContent = "Arm: elbow flexion";
+        modelCaption.textContent = "Elbow fulcrum, load at the hand, muscle effort near the elbow.";
+      } else {
+        modelTitle.textContent = "Leg: calf raise";
+        modelCaption.textContent = "Ball of foot fulcrum, body weight near the ankle, Achilles effort at the heel.";
+      }
+
+      renderControls();
+      renderScene();
+    }
+
+    function runAnimation() {
+      cancelAnimationFrame(animation.frame);
+      const start = performance.now();
+      animation.active = true;
+      animation.progress = 0;
+      animation.pulse = true;
+      renderScene();
+
+      function tick(now) {
+        const elapsed = now - start;
+        const raw = clamp(elapsed / 1250, 0, 1);
+        animation.progress = easeOutCubic(raw);
+        animation.pulse = elapsed < 950;
+        renderScene();
+
+        if (raw < 1) {
+          animation.frame = requestAnimationFrame(tick);
+        } else {
+          animation.active = false;
+          animation.progress = 1;
+          animation.pulse = false;
+          renderScene();
+        }
+      }
+
+      animation.frame = requestAnimationFrame(tick);
+    }
+
+    function resetModel() {
+      state[state.mode] = { ...defaults[state.mode] };
+      animation.active = false;
+      animation.progress = 1;
+      animation.pulse = false;
+      cancelAnimationFrame(animation.frame);
+      renderControls();
+      renderScene();
+    }
+
+    controls.addEventListener("input", (event) => {
+      const input = event.target.closest("input[type='range']");
+      if (!input) return;
+
+      state[state.mode][input.dataset.key] = Number(input.value);
+      animation.active = false;
+      animation.progress = 1;
+      animation.pulse = false;
+      cancelAnimationFrame(animation.frame);
+      renderScene();
+    });
+
+    document.getElementById("modeArm").addEventListener("click", () => setMode("arm"));
+    document.getElementById("modeLeg").addEventListener("click", () => setMode("leg"));
+    document.getElementById("runAnimation").addEventListener("click", runAnimation);
+    document.getElementById("resetModel").addEventListener("click", resetModel);
+
+    setMode("arm");
+  </script>
+</body>
+</html>

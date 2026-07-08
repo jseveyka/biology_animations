@@ -1,0 +1,1823 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Life Cycle of Ulva: Alternation of Generations</title>
+  <style>
+    :root {
+      --ink: #17323a;
+      --muted: #4c6970;
+      --panel: rgba(255, 255, 255, 0.88);
+      --panel-strong: #ffffff;
+      --teal: #0c8391;
+      --deep-teal: #065764;
+      --green: #33a853;
+      --green-dark: #17763c;
+      --lime: #9bd04d;
+      --gold: #f3b51b;
+      --gold-dark: #9a6a00;
+      --blue: #2b76d2;
+      --coral: #e05b52;
+      --sand: #e7d6a1;
+      --shadow: 0 18px 40px rgba(10, 53, 64, 0.18);
+      --radius: 8px;
+      --motion-speed: 1;
+      color-scheme: light;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+    }
+
+    body {
+      min-height: 100%;
+      margin: 0;
+      color: var(--ink);
+      font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+      letter-spacing: 0;
+      background:
+        radial-gradient(circle at 12% 16%, rgba(255, 244, 194, 0.55), transparent 18rem),
+        radial-gradient(circle at 90% 10%, rgba(58, 174, 189, 0.35), transparent 18rem),
+        linear-gradient(180deg, #e9fbff 0%, #bdebf0 36%, #7ccfd0 100%);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      color: var(--ink);
+      background: #ffffff;
+      box-shadow: inset 0 0 0 1px rgba(18, 79, 90, 0.18), 0 4px 12px rgba(14, 70, 82, 0.10);
+      cursor: pointer;
+      font-weight: 700;
+      min-height: 42px;
+      padding: 0.62rem 0.88rem;
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: inset 0 0 0 1px rgba(18, 79, 90, 0.28), 0 7px 18px rgba(14, 70, 82, 0.16);
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    .stage:focus-visible {
+      outline: 3px solid rgba(243, 181, 27, 0.92);
+      outline-offset: 3px;
+    }
+
+    button[aria-pressed="true"] {
+      color: #052b31;
+      background: #ffe08a;
+      box-shadow: inset 0 0 0 2px rgba(154, 106, 0, 0.42), 0 7px 18px rgba(154, 106, 0, 0.16);
+    }
+
+    button.primary {
+      color: #ffffff;
+      background: var(--deep-teal);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22), 0 8px 20px rgba(6, 87, 100, 0.28);
+    }
+
+    button.secondary {
+      background: #eef9fb;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    .app {
+      width: min(1500px, 100%);
+      margin: 0 auto;
+      padding: 1.2rem;
+    }
+
+    .hero {
+      text-align: center;
+      margin: 0 auto 0.9rem;
+      padding: 0.2rem 0.75rem 0;
+    }
+
+    h1 {
+      margin: 0;
+      color: #083d48;
+      font-size: clamp(1.45rem, 2.8vw, 2.45rem);
+      line-height: 1.08;
+      text-wrap: balance;
+    }
+
+    .attribution {
+      margin: 0.45rem 0 0;
+      color: #224d56;
+      font-size: clamp(1rem, 1.7vw, 1.28rem);
+      font-weight: 700;
+    }
+
+    .learning-shell {
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.50);
+      box-shadow: var(--shadow);
+      padding: 1rem;
+      backdrop-filter: blur(5px);
+    }
+
+    .controls,
+    .toggles {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 0.65rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .click-hint {
+      width: fit-content;
+      max-width: 100%;
+      margin: 0 auto 0.85rem;
+      padding: 0.62rem 0.9rem;
+      border-radius: 8px;
+      color: #063e49;
+      background: rgba(255, 255, 255, 0.82);
+      box-shadow: inset 0 0 0 1px rgba(12, 131, 145, 0.18);
+      font-size: 1.08rem;
+      font-weight: 850;
+      text-align: center;
+    }
+
+    .stage-info-panel {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 0.8rem;
+      align-items: center;
+      margin: 0 0 0.85rem;
+      padding: 0.9rem;
+      border-radius: 8px;
+      color: #17323a;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: inset 0 0 0 1px rgba(12, 131, 145, 0.18);
+    }
+
+    .stage-info-panel h2 {
+      margin: 0;
+      color: #063e49;
+      font-size: 1.22rem;
+      line-height: 1.15;
+    }
+
+    .stage-info-panel p {
+      margin: 0.25rem 0 0;
+      color: #1d4650;
+      font-size: 1rem;
+      line-height: 1.42;
+      font-weight: 650;
+    }
+
+    .speed-control {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      min-height: 42px;
+      padding: 0.35rem 0.75rem;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: inset 0 0 0 1px rgba(18, 79, 90, 0.14);
+      font-weight: 700;
+    }
+
+    .speed-control input {
+      width: min(230px, 42vw);
+      accent-color: var(--deep-teal);
+    }
+
+    .diagram-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.85rem;
+      align-items: stretch;
+    }
+
+    .diagram-card,
+    .key-card,
+    .summary-card,
+    .quiz-panel,
+    .accuracy-note {
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: inset 0 0 0 1px rgba(18, 79, 90, 0.14);
+    }
+
+    .diagram-card {
+      position: relative;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .diagram-card svg {
+      display: block;
+      width: 100%;
+      height: min(70vh, 820px);
+      min-height: 520px;
+      background:
+        radial-gradient(circle at 48% 38%, rgba(255, 255, 255, 0.35), transparent 20rem),
+        linear-gradient(180deg, rgba(199, 243, 249, 0.94), rgba(113, 202, 205, 0.92));
+    }
+
+    .key-card {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .key-card h2,
+    .quiz-panel h2 {
+      margin: 0;
+      color: #063e49;
+      font-size: 1.22rem;
+      line-height: 1.15;
+    }
+
+    .key-list {
+      display: grid;
+      gap: 0.6rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      font-size: 1rem;
+      line-height: 1.32;
+      font-weight: 650;
+    }
+
+    .key-list li {
+      display: grid;
+      grid-template-columns: 2.4rem 1fr;
+      align-items: center;
+      gap: 0.55rem;
+      min-height: 2.3rem;
+    }
+
+    .key-token {
+      display: inline-grid;
+      place-items: center;
+      min-width: 2.35rem;
+      height: 2.1rem;
+      border-radius: 8px;
+      color: #ffffff;
+      font-weight: 900;
+    }
+
+    .token-n {
+      background: var(--gold);
+      color: #3c2a00;
+    }
+
+    .token-2n {
+      background: var(--blue);
+    }
+
+    .token-process {
+      background: var(--green-dark);
+    }
+
+    .token-fusion {
+      background: var(--coral);
+    }
+
+    .progress-readout {
+      margin-top: auto;
+      padding: 0.78rem;
+      border-radius: 8px;
+      color: #063e49;
+      background: #e8fbff;
+      box-shadow: inset 0 0 0 1px rgba(12, 131, 145, 0.18);
+      font-weight: 750;
+      line-height: 1.35;
+    }
+
+    .quiz-panel {
+      margin-top: 0.85rem;
+      padding: 1rem;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 0.8rem;
+      align-items: center;
+    }
+
+    .quiz-question {
+      margin: 0.25rem 0 0;
+      color: #17323a;
+      font-size: 1.12rem;
+      font-weight: 750;
+    }
+
+    .quiz-feedback {
+      min-height: 1.6rem;
+      color: #244f58;
+      font-weight: 700;
+    }
+
+    .accuracy-note {
+      margin-top: 0.85rem;
+      padding: 0.8rem 0.95rem;
+      color: #244f58;
+      font-size: 1rem;
+      line-height: 1.35;
+      font-weight: 650;
+    }
+
+    .summary-card {
+      margin-top: 0.85rem;
+      padding: 1rem 1.1rem;
+      color: #14333b;
+      font-size: 1.05rem;
+      line-height: 1.48;
+      font-weight: 650;
+    }
+
+    .summary-card p {
+      margin: 0;
+    }
+
+    .comparison-panel {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      padding: 1rem;
+      background: rgba(6, 45, 54, 0.42);
+    }
+
+    .comparison-content {
+      width: min(920px, 96vw);
+      max-height: min(760px, 92vh);
+      overflow: auto;
+      border-radius: 8px;
+      background: var(--panel-strong);
+      box-shadow: 0 22px 60px rgba(3, 33, 39, 0.30);
+      padding: 1.1rem;
+    }
+
+    .comparison-content {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .comparison-message {
+      grid-column: 1 / -1;
+      margin: 0;
+      color: #063e49;
+      font-size: 1.35rem;
+      line-height: 1.25;
+      text-align: center;
+      font-weight: 850;
+    }
+
+    .mini-generation {
+      border-radius: 8px;
+      background: #eef9fb;
+      padding: 0.8rem;
+      box-shadow: inset 0 0 0 1px rgba(12, 131, 145, 0.18);
+      text-align: center;
+    }
+
+    .mini-generation svg {
+      width: 100%;
+      height: 230px;
+    }
+
+    .mini-generation h3 {
+      margin: 0.25rem 0 0;
+      color: #063e49;
+      font-size: 1.15rem;
+    }
+
+    .comparison-close,
+    .modal-close {
+      justify-self: center;
+      grid-column: 1 / -1;
+    }
+
+    .modal-tag {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      min-height: 2.1rem;
+      border-radius: 8px;
+      padding: 0.35rem 0.65rem;
+      color: #ffffff;
+      background: var(--deep-teal);
+      font-weight: 850;
+    }
+
+    /* SVG scene styles. The stage groups are clickable and can be edited independently. */
+    .water-wave {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.52);
+      stroke-width: 3;
+      stroke-linecap: round;
+    }
+
+    .sand-floor {
+      fill: rgba(231, 214, 161, 0.70);
+    }
+
+    .rock {
+      fill: #8b8c83;
+      stroke: #5e6767;
+      stroke-width: 3;
+    }
+
+    .cycle-arrow {
+      fill: none;
+      stroke: rgba(7, 78, 91, 0.38);
+      stroke-width: 8;
+      stroke-linecap: round;
+      marker-end: url("#arrowHead");
+      transition: stroke 200ms ease, stroke-width 200ms ease, opacity 200ms ease;
+    }
+
+    .cycle-arrow.is-active,
+    .app.highlight-meiosis #arrow-meiosis,
+    .app.highlight-fertilization #arrow-fertilization {
+      stroke: var(--coral);
+      stroke-width: 12;
+      opacity: 1;
+      filter: url("#softGlow");
+    }
+
+    .stage {
+      cursor: pointer;
+      transition: opacity 220ms ease;
+    }
+
+    .stage .stage-halo {
+      opacity: 0;
+      fill: rgba(255, 224, 138, 0.44);
+      stroke: rgba(224, 91, 82, 0.75);
+      stroke-width: 4;
+      transition: opacity 220ms ease;
+    }
+
+    .stage.is-active .stage-halo,
+    .stage:hover .stage-halo,
+    .app.highlight-meiosis [data-stage="meiosis"] .stage-halo,
+    .app.highlight-fertilization [data-stage="fertilization"] .stage-halo {
+      opacity: 1;
+    }
+
+    .blade {
+      fill: url("#bladeGradient");
+      stroke: var(--green-dark);
+      stroke-width: 4;
+      filter: url("#bladeShadow");
+    }
+
+    .blade-line {
+      fill: none;
+      stroke: rgba(10, 104, 58, 0.62);
+      stroke-width: 2.5;
+      stroke-linecap: round;
+    }
+
+    .holdfast {
+      fill: #2f7c3f;
+      stroke: #166134;
+      stroke-width: 2.5;
+    }
+
+    .juvenile-blade {
+      fill: #79c94d;
+      stroke: var(--green-dark);
+      stroke-width: 3;
+    }
+
+    .badge-circle {
+      stroke: #ffffff;
+      stroke-width: 4;
+      filter: url("#badgeShadow");
+    }
+
+    .callout-line {
+      fill: none;
+      stroke: rgba(8, 61, 72, 0.42);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-dasharray: 5 5;
+    }
+
+    .badge-2n .badge-circle {
+      fill: var(--blue);
+    }
+
+    .badge-n .badge-circle {
+      fill: var(--gold);
+    }
+
+    .badge-text {
+      font-size: 25px;
+      font-weight: 900;
+      text-anchor: middle;
+      dominant-baseline: central;
+      fill: #ffffff;
+    }
+
+    .badge-n .badge-text {
+      fill: #392800;
+    }
+
+    .label-card rect {
+      fill: rgba(255, 255, 255, 0.93);
+      stroke: rgba(12, 92, 103, 0.24);
+      stroke-width: 2;
+      rx: 8;
+    }
+
+    .label-card text {
+      fill: #0b3440;
+      font-size: 22px;
+      font-weight: 850;
+    }
+
+    .label-card .small-line {
+      font-size: 18px;
+      font-weight: 750;
+      fill: #275862;
+    }
+
+    .simple-label {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease;
+    }
+
+    .simple-label rect {
+      fill: rgba(255, 255, 255, 0.95);
+      stroke: rgba(12, 92, 103, 0.28);
+      stroke-width: 2;
+      rx: 8;
+    }
+
+    .simple-label text {
+      fill: #063e49;
+      font-size: 26px;
+      font-weight: 900;
+      text-anchor: middle;
+      dominant-baseline: central;
+    }
+
+    .process-label rect {
+      fill: rgba(255, 248, 224, 0.96);
+      stroke: rgba(154, 106, 0, 0.28);
+    }
+
+    .process-label text {
+      fill: #5c3e00;
+    }
+
+    .center-badge {
+      fill: rgba(255, 255, 255, 0.72);
+      stroke: rgba(12, 92, 103, 0.22);
+      stroke-width: 3;
+    }
+
+    .center-title {
+      fill: #083d48;
+      font-size: 25px;
+      font-weight: 900;
+      text-anchor: middle;
+    }
+
+    .center-subtitle {
+      fill: #2c5962;
+      font-size: 17px;
+      font-weight: 750;
+      text-anchor: middle;
+    }
+
+    .cell {
+      fill: #c8f28b;
+      stroke: #28783f;
+      stroke-width: 2.5;
+    }
+
+    .nucleus {
+      fill: #2c76c9;
+      opacity: 0.85;
+    }
+
+    .division-line {
+      stroke: #236f3d;
+      stroke-width: 3;
+      stroke-linecap: round;
+      animation: dividePulse 2.4s ease-in-out infinite;
+    }
+
+    .mitosis-ring {
+      fill: none;
+      stroke: var(--gold);
+      stroke-width: 5;
+      stroke-dasharray: 10 8;
+      animation: dashFlow 2.5s linear infinite;
+    }
+
+    .gamete,
+    .zoospore-dot {
+      stroke: #1a7338;
+      stroke-width: 2.3;
+      filter: url("#particleShadow");
+    }
+
+    .gamete.plus {
+      fill: #b8e75e;
+    }
+
+    .gamete.minus {
+      fill: #5fbf73;
+    }
+
+    .zoospore-dot {
+      fill: #85d45c;
+    }
+
+    .flagellum {
+      fill: none;
+      stroke: #236f3d;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+    }
+
+    .swim-trail {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.72);
+      stroke-width: 2;
+      stroke-linecap: round;
+      opacity: 0.72;
+    }
+
+    .particle-layer {
+      opacity: 0;
+      transition: opacity 220ms ease;
+      pointer-events: none;
+    }
+
+    .particle-layer.is-visible {
+      opacity: 1;
+    }
+
+    .zygote-cell {
+      fill: #8ac961;
+      stroke: var(--blue);
+      stroke-width: 5;
+      filter: url("#particleShadow");
+    }
+
+    .zygote-pulse {
+      fill: none;
+      stroke: rgba(43, 118, 210, 0.52);
+      stroke-width: 5;
+      animation: pulseZygote 2.1s ease-out infinite;
+    }
+
+    .motion-path {
+      fill: none;
+      stroke: transparent;
+    }
+
+    .meiosis-zone {
+      fill: rgba(43, 118, 210, 0.13);
+      stroke: rgba(43, 118, 210, 0.60);
+      stroke-width: 3;
+      stroke-dasharray: 7 6;
+      animation: dashFlow 3s linear infinite;
+    }
+
+    .fusion-flash {
+      fill: none;
+      stroke: rgba(224, 91, 82, 0.75);
+      stroke-width: 6;
+      opacity: 0.85;
+      animation: pulseFusion 1.9s ease-out infinite;
+    }
+
+    .growth-steps .growth-2,
+    .growth-steps .growth-3 {
+      opacity: 0.32;
+      transition: opacity 250ms ease;
+    }
+
+    .stage.is-active .growth-steps .growth-2 {
+      opacity: 0.78;
+    }
+
+    .stage.is-active .growth-steps .growth-3 {
+      opacity: 1;
+    }
+
+    .app:not(.show-ploidy) .ploidy-label,
+    .app:not(.show-ploidy) .ploidy-badge {
+      opacity: 0;
+    }
+
+    .app.simple-labels .diagram-layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .app.simple-labels .quiz-answer-label,
+    .app.simple-labels .callout-line,
+    .app.simple-labels #centerLabel {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .app.simple-labels:not(.show-ploidy) .ploidy-badge {
+      opacity: 0;
+    }
+
+    .app.simple-labels .stage .simple-label {
+      opacity: 1 !important;
+    }
+
+    .app.simple-labels .key-card,
+    .app.simple-labels .accuracy-note,
+    .app.simple-labels .summary-card {
+      display: none;
+    }
+
+    .app.simple-labels .diagram-card svg {
+      height: min(74vh, 840px);
+    }
+
+    .app.quiz-mode .quiz-answer-label {
+      opacity: 0;
+    }
+
+    .app.quiz-mode .label-card rect {
+      fill: rgba(255, 255, 255, 0.42);
+      stroke-dasharray: 8 6;
+    }
+
+    .app.quiz-mode .stage {
+      opacity: 0.86;
+    }
+
+    .app.quiz-mode .stage:hover,
+    .app.quiz-mode .stage.is-active {
+      opacity: 1;
+    }
+
+    @keyframes dividePulse {
+      0%,
+      100% {
+        opacity: 0.35;
+        transform: scaleX(0.72);
+      }
+      50% {
+        opacity: 1;
+        transform: scaleX(1);
+      }
+    }
+
+    @keyframes dashFlow {
+      to {
+        stroke-dashoffset: -36;
+      }
+    }
+
+    @keyframes pulseFusion {
+      0% {
+        r: 12;
+        opacity: 0.88;
+      }
+      100% {
+        r: 46;
+        opacity: 0;
+      }
+    }
+
+    @keyframes pulseZygote {
+      0% {
+        r: 20;
+        opacity: 0.65;
+      }
+      100% {
+        r: 54;
+        opacity: 0;
+      }
+    }
+
+    @media (max-width: 1080px) {
+      .diagram-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .key-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .key-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .progress-readout {
+        margin-top: 0;
+      }
+
+      .diagram-card svg {
+        height: min(66vh, 720px);
+      }
+    }
+
+    @media (max-width: 720px) {
+      .app {
+        padding: 0.75rem;
+      }
+
+      .learning-shell {
+        padding: 0.75rem;
+      }
+
+      .controls,
+      .toggles {
+        justify-content: stretch;
+      }
+
+      .controls button,
+      .toggles button {
+        flex: 1 1 145px;
+      }
+
+      .speed-control {
+        flex: 1 1 100%;
+        justify-content: center;
+      }
+
+      .diagram-card svg {
+        min-height: 460px;
+      }
+
+      .key-list {
+        grid-template-columns: 1fr;
+      }
+
+      .quiz-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .stage-info-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .comparison-content {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app simple-labels" id="app">
+    <header class="hero">
+      <h1>Life Cycle of Ulva: Alternation of Generations</h1>
+      <p class="attribution">Animation Prompted by Jerred Seveyka for his biology class.</p>
+    </header>
+
+    <main class="learning-shell" aria-label="Interactive Ulva life cycle animation">
+      <section class="controls" aria-label="Animation controls">
+        <button type="button" class="primary" id="playBtn">Play</button>
+        <button type="button" id="pauseBtn">Pause</button>
+        <button type="button" id="backBtn">Step Back</button>
+        <button type="button" id="forwardBtn">Step Forward</button>
+        <button type="button" class="secondary" id="resetBtn">Reset</button>
+        <label class="speed-control" for="speedSlider">
+          Speed
+          <input id="speedSlider" type="range" min="0.5" max="2" step="0.25" value="1">
+          <span id="speedValue">1x</span>
+        </label>
+      </section>
+
+      <section class="toggles" aria-label="Student interaction toggles">
+        <button type="button" id="ploidyToggle" aria-pressed="false">Show ploidy labels</button>
+        <button type="button" id="meiosisToggle" aria-pressed="false">Highlight meiosis</button>
+        <button type="button" id="fertilizationToggle" aria-pressed="false">Highlight fertilization</button>
+        <button type="button" id="compareToggle" aria-pressed="false">Compare generations</button>
+        <button type="button" id="simpleToggle" aria-pressed="true">Simple labels</button>
+        <button type="button" id="quizToggle" aria-pressed="false">Quiz mode</button>
+      </section>
+
+      <p class="click-hint">Click any stage of the cycle to learn more.</p>
+
+      <section class="stage-info-panel" id="stageInfoPanel" aria-live="polite" hidden>
+        <span class="modal-tag" id="infoTag"></span>
+        <div>
+          <h2 id="infoTitle"></h2>
+          <p id="infoBody"></p>
+        </div>
+        <button type="button" id="infoCloseBtn">Close</button>
+      </section>
+
+      <section class="diagram-layout">
+        <div class="diagram-card">
+          <svg id="cycleSvg" viewBox="0 0 1200 860" role="img" aria-labelledby="svgTitle svgDesc">
+            <title id="svgTitle">Ulva life cycle diagram</title>
+            <desc id="svgDesc">A circular animation of Ulva alternation of generations, from diploid sporophyte to haploid zoospores, haploid gametophytes, gametes, fertilization, zygote, and back to sporophyte.</desc>
+            <defs>
+              <linearGradient id="bladeGradient" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0%" stop-color="#b8ea68"></stop>
+                <stop offset="52%" stop-color="#55bd58"></stop>
+                <stop offset="100%" stop-color="#1d8c48"></stop>
+              </linearGradient>
+              <filter id="bladeShadow" x="-20%" y="-20%" width="140%" height="150%">
+                <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#075c67" flood-opacity="0.22"></feDropShadow>
+              </filter>
+              <filter id="badgeShadow" x="-30%" y="-30%" width="160%" height="160%">
+                <feDropShadow dx="0" dy="3" stdDeviation="2" flood-color="#052d35" flood-opacity="0.25"></feDropShadow>
+              </filter>
+              <filter id="particleShadow" x="-80%" y="-80%" width="260%" height="260%">
+                <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#063d46" flood-opacity="0.25"></feDropShadow>
+              </filter>
+              <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="3" result="glow"></feGaussianBlur>
+                <feMerge>
+                  <feMergeNode in="glow"></feMergeNode>
+                  <feMergeNode in="SourceGraphic"></feMergeNode>
+                </feMerge>
+              </filter>
+              <marker id="arrowHead" viewBox="0 0 12 12" refX="10.5" refY="6" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M1,1 L11,6 L1,11 Z" fill="#0a5260"></path>
+              </marker>
+            </defs>
+
+            <!-- Soft ocean setting. The science elements stay high contrast above it. -->
+            <rect x="0" y="0" width="1200" height="860" fill="transparent"></rect>
+            <path class="water-wave" d="M60 90 C120 62 190 116 250 88 S370 90 430 84 S550 66 620 88 S760 120 840 82 S980 70 1140 95"></path>
+            <path class="water-wave" d="M70 345 C150 310 220 370 302 338 S452 320 520 346 S650 380 740 336 S890 312 1030 350 S1120 362 1160 342"></path>
+            <path class="water-wave" d="M95 560 C178 530 242 588 330 554 S474 526 548 558 S670 594 746 552 S904 526 1095 566"></path>
+            <path class="sand-floor" d="M0 720 C150 690 300 734 450 707 C590 682 730 735 872 704 C1014 673 1105 706 1200 685 L1200 860 L0 860 Z"></path>
+
+            <!-- Hidden motion paths are sampled by JavaScript for swimming zoospores and gametes. -->
+            <path id="zoosporeMotionPath" class="motion-path" d="M720 200 C920 185 1130 300 1080 430 C1040 545 950 635 860 652"></path>
+            <path id="plusGameteMotionPath" class="motion-path" d="M260 510 C165 460 150 325 205 220"></path>
+            <path id="minusGameteMotionPath" class="motion-path" d="M330 535 C230 485 160 350 218 222"></path>
+
+            <!-- Direction arrows around the cycle. -->
+            <g id="arrowLayer" aria-hidden="true">
+              <path id="arrow-sporophyte" class="cycle-arrow" data-arrow="0" d="M720 178 C820 120 930 150 986 218"></path>
+              <path id="arrow-meiosis" class="cycle-arrow" data-arrow="1" d="M1035 296 C1110 330 1125 382 1085 436"></path>
+              <path id="arrow-zoospores" class="cycle-arrow" data-arrow="2" d="M1035 510 C1000 590 930 660 856 670"></path>
+              <path id="arrow-spore-growth" class="cycle-arrow" data-arrow="3" d="M780 700 C650 760 470 760 330 665"></path>
+              <path id="arrow-gametophyte" class="cycle-arrow" data-arrow="4" d="M250 626 C170 590 132 515 147 440"></path>
+              <path id="arrow-gametes" class="cycle-arrow" data-arrow="5" d="M144 362 C139 290 160 235 205 205"></path>
+              <path id="arrow-fertilization" class="cycle-arrow" data-arrow="6" d="M278 160 C315 120 360 112 405 126"></path>
+              <path id="arrow-zygote" class="cycle-arrow" data-arrow="7" d="M475 110 C530 86 600 90 650 120"></path>
+            </g>
+
+            <g id="centerLabel">
+              <ellipse class="center-badge" cx="602" cy="386" rx="178" ry="82"></ellipse>
+              <text class="center-title" x="602" y="362">Alternation of generations</text>
+              <text class="center-subtitle" x="602" y="394">Two similar-looking multicellular forms</text>
+              <text class="center-subtitle" x="602" y="422">change ploidy at meiosis and fertilization</text>
+            </g>
+
+            <!-- Stage 1: mature diploid sporophyte. -->
+            <g class="stage" data-stage="sporophyte" data-step="0" tabindex="0" role="button" aria-label="Sporophyte, diploid 2n" transform="translate(20 0)">
+              <ellipse class="stage-halo" cx="610" cy="170" rx="154" ry="132"></ellipse>
+              <g class="stage-art" transform="translate(0 48)">
+                <path class="rock" d="M548 229 C568 210 644 208 673 230 C655 252 574 257 548 229 Z"></path>
+                <path class="blade" d="M606 225 C573 212 555 188 562 154 C539 137 546 99 576 85 C570 55 601 37 626 58 C653 43 686 65 679 98 C708 116 700 158 670 177 C668 207 636 235 606 225 Z"></path>
+                <path class="blade-line" d="M602 215 C588 184 587 143 603 96 C610 76 623 62 636 55"></path>
+                <path class="blade-line" d="M584 195 C568 166 573 126 592 101 C604 86 615 74 621 58"></path>
+                <path class="blade-line" d="M630 209 C660 184 671 148 658 118 C650 99 656 77 674 63"></path>
+                <path class="blade-line" d="M572 151 C603 139 642 143 684 126"></path>
+                <path class="holdfast" d="M598 226 C606 216 625 217 633 229 C627 241 604 241 598 226 Z"></path>
+                <g class="ploidy-badge badge-2n" transform="translate(688 95)">
+                  <circle class="badge-circle" r="26"></circle>
+                  <text class="badge-text" y="1">2n</text>
+                </g>
+              </g>
+              <path class="callout-line" d="M610 88 L614 102"></path>
+              <g class="label-card quiz-answer-label" transform="translate(474 6)">
+                <rect width="270" height="82"></rect>
+                <text x="18" y="31">Sporophyte</text>
+                <text class="small-line ploidy-label" x="18" y="61">Diploid, 2n</text>
+              </g>
+              <g class="simple-label" transform="translate(520 282)">
+                <rect width="190" height="44"></rect>
+                <text x="95" y="23">sporophyte</text>
+              </g>
+            </g>
+
+            <!-- Stage 2: meiosis occurs in the diploid sporophyte. -->
+            <g class="stage" data-stage="meiosis" data-step="1" tabindex="0" role="button" aria-label="Meiosis reduces chromosome number from 2n to n" transform="translate(75 0)">
+              <ellipse class="stage-halo" cx="905" cy="226" rx="134" ry="92"></ellipse>
+              <path class="meiosis-zone" d="M845 165 C888 130 957 150 983 198 C949 250 878 265 838 218 C826 203 829 180 845 165 Z"></path>
+              <g transform="translate(884 203)">
+                <circle class="cell" cx="-24" cy="-14" r="23"></circle>
+                <circle class="nucleus" cx="-29" cy="-17" r="6"></circle>
+                <circle class="nucleus" cx="-17" cy="-8" r="6"></circle>
+                <line class="division-line" x1="-24" y1="-36" x2="-24" y2="8"></line>
+                <circle class="cell" cx="35" cy="18" r="19"></circle>
+                <circle class="cell" cx="80" cy="20" r="19"></circle>
+                <circle class="nucleus" cx="35" cy="18" r="5"></circle>
+                <circle class="nucleus" cx="80" cy="20" r="5"></circle>
+              </g>
+              <path class="callout-line" d="M930 116 L908 246"></path>
+              <g class="label-card process-label quiz-answer-label" transform="translate(780 22)">
+                <rect width="315" height="94"></rect>
+                <text x="18" y="30">Meiosis</text>
+                <text class="small-line ploidy-label" x="18" y="58">reduces chromosome number:</text>
+                <text class="small-line ploidy-label" x="18" y="82">2n &#8594; n</text>
+              </g>
+            </g>
+
+            <!-- Stage 3: haploid motile zoospores leave sporophyte tissue. -->
+            <g class="stage" data-stage="zoospores" data-step="2" tabindex="0" role="button" aria-label="Zoospores, haploid n" transform="translate(55 0)">
+              <ellipse class="stage-halo" cx="1010" cy="456" rx="132" ry="96"></ellipse>
+              <g transform="translate(1012 430)">
+                <ellipse class="zoospore-dot" cx="-42" cy="-8" rx="17" ry="11"></ellipse>
+                <path class="flagellum" d="M-58 -8 C-72 -20 -84 -2 -98 -12"></path>
+                <ellipse class="zoospore-dot" cx="18" cy="26" rx="15" ry="10"></ellipse>
+                <path class="flagellum" d="M3 26 C-8 14 -20 34 -34 22"></path>
+                <ellipse class="zoospore-dot" cx="62" cy="-24" rx="14" ry="9"></ellipse>
+                <path class="flagellum" d="M48 -24 C34 -35 24 -18 8 -28"></path>
+              </g>
+              <g class="ploidy-badge badge-n" transform="translate(1092 395)">
+                <circle class="badge-circle" r="25"></circle>
+                <text class="badge-text" y="1">n</text>
+              </g>
+              <path class="callout-line" d="M998 560 L1020 472"></path>
+              <g class="label-card quiz-answer-label" transform="translate(884 560)">
+                <rect width="246" height="76"></rect>
+                <text x="18" y="30">Zoospores<tspan class="ploidy-label">, n</tspan></text>
+                <text class="small-line" x="18" y="58">motile cells with flagella</text>
+              </g>
+              <g class="simple-label" transform="translate(940 482)">
+                <rect width="150" height="44"></rect>
+                <text x="75" y="23">zoospore</text>
+              </g>
+            </g>
+
+            <!-- Stage 4: zoospores settle and grow by mitosis into haploid gametophytes. -->
+            <g class="stage" data-stage="zoospore-growth" data-step="3" tabindex="0" role="button" aria-label="Zoospores grow by mitosis into haploid gametophytes" transform="translate(100 0)">
+              <ellipse class="stage-halo" cx="756" cy="632" rx="155" ry="106"></ellipse>
+              <path class="rock" d="M650 708 C680 676 813 678 852 708 C817 739 688 737 650 708 Z"></path>
+              <g class="growth-steps" transform="translate(735 685)">
+                <circle class="zoospore-dot" cx="-62" cy="-8" r="12"></circle>
+                <path class="juvenile-blade growth-2" d="M-6 18 C-25 -8 -16 -42 8 -54 C32 -33 36 -4 16 20 C9 27 1 27 -6 18 Z"></path>
+                <path class="juvenile-blade growth-3" d="M75 26 C40 -10 42 -82 80 -111 C122 -74 135 -14 96 28 C88 37 80 36 75 26 Z"></path>
+              </g>
+              <circle class="mitosis-ring" cx="755" cy="636" r="65"></circle>
+              <path class="callout-line" d="M770 720 L755 670"></path>
+              <g class="label-card process-label quiz-answer-label" transform="translate(760 720)">
+                <rect width="335" height="90"></rect>
+                <text x="18" y="30">Mitosis</text>
+                <text class="small-line ploidy-label" x="18" y="58">Zoospores grow by mitosis</text>
+                <text class="small-line ploidy-label" x="18" y="82">into haploid gametophytes.</text>
+              </g>
+            </g>
+
+            <!-- Stage 5: mature haploid gametophytes, plus and minus mating types. -->
+            <g class="stage" data-stage="gametophytes" data-step="4" tabindex="0" role="button" aria-label="Gametophyte, haploid n, plus and minus mating types" transform="translate(-105 0)">
+              <ellipse class="stage-halo" cx="430" cy="636" rx="176" ry="112"></ellipse>
+              <path class="rock" d="M296 710 C336 678 510 676 560 710 C522 744 342 748 296 710 Z"></path>
+              <g transform="translate(366 682)">
+                <path class="blade" d="M-25 24 C-58 8 -74 -32 -50 -58 C-65 -88 -33 -123 -7 -107 C14 -132 52 -100 37 -66 C62 -43 44 -3 10 25 C0 34 -16 34 -25 24 Z"></path>
+                <path class="blade-line" d="M-18 17 C-34 -15 -29 -60 -6 -103"></path>
+                <path class="blade-line" d="M-43 -40 C-14 -33 15 -46 39 -68"></path>
+                <path class="blade-line" d="M5 18 C26 -10 31 -47 21 -91"></path>
+                <path class="holdfast" d="M-31 26 C-19 17 5 17 16 28 C5 38 -21 38 -31 26 Z"></path>
+                <g class="ploidy-badge badge-n" transform="translate(25 -118)">
+                  <circle class="badge-circle" r="23"></circle>
+                  <text class="badge-text" y="1">n</text>
+                </g>
+              </g>
+              <g transform="translate(480 682)">
+                <path class="blade" d="M-18 23 C-54 4 -63 -39 -38 -64 C-51 -98 -15 -133 12 -112 C40 -130 68 -94 54 -61 C83 -34 58 12 18 31 C5 38 -10 35 -18 23 Z"></path>
+                <path class="blade-line" d="M-8 17 C-22 -20 -13 -73 13 -112"></path>
+                <path class="blade-line" d="M-37 -44 C-8 -31 26 -42 54 -64"></path>
+                <path class="blade-line" d="M17 18 C39 -11 43 -53 31 -96"></path>
+                <path class="holdfast" d="M-24 26 C-10 17 13 18 24 30 C10 39 -14 38 -24 26 Z"></path>
+                <g class="ploidy-badge badge-n" transform="translate(37 -118)">
+                  <circle class="badge-circle" r="23"></circle>
+                  <text class="badge-text" y="1">n</text>
+                </g>
+              </g>
+              <path class="callout-line" d="M386 752 L430 710"></path>
+              <g class="label-card quiz-answer-label" transform="translate(224 752)">
+                <rect width="318" height="96"></rect>
+                <text x="18" y="30">Gametophyte<tspan class="ploidy-label">, n</tspan></text>
+                <text class="small-line" x="18" y="58">+ gametophyte</text>
+                <text class="small-line" x="18" y="82">&#8722; gametophyte</text>
+              </g>
+              <g class="simple-label" transform="translate(332 752)">
+                <rect width="210" height="44"></rect>
+                <text x="105" y="23">gametophyte</text>
+              </g>
+            </g>
+
+            <!-- Stage 6: haploid gametophytes make haploid gametes by mitosis. -->
+            <g class="stage" data-stage="gametes" data-step="5" tabindex="0" role="button" aria-label="Gametes form by mitosis from haploid gametophytes" transform="translate(-75 0)">
+              <ellipse class="stage-halo" cx="222" cy="438" rx="144" ry="108"></ellipse>
+              <g transform="translate(228 430)">
+                <circle class="mitosis-ring" cx="0" cy="0" r="62"></circle>
+                <ellipse class="gamete plus" cx="-46" cy="-25" rx="20" ry="15"></ellipse>
+                <path class="flagellum" d="M-65 -25 C-82 -40 -94 -15 -110 -28"></path>
+                <ellipse class="gamete minus" cx="35" cy="30" rx="13" ry="10"></ellipse>
+                <path class="flagellum" d="M22 30 C8 16 -5 41 -22 28"></path>
+                <circle class="cell" cx="12" cy="-34" r="16"></circle>
+                <line class="division-line" x1="12" y1="-50" x2="12" y2="-18"></line>
+              </g>
+              <path class="callout-line" d="M555 520 L228 470"></path>
+              <g class="label-card process-label quiz-answer-label" transform="translate(555 520)">
+                <rect width="320" height="118"></rect>
+                <text x="18" y="30">Gametes<tspan class="ploidy-label">, n</tspan></text>
+                <text class="small-line" x="18" y="58">Gametes form by mitosis:</text>
+                <text class="small-line ploidy-label" x="18" y="82">n &#8594; n</text>
+                <text class="small-line" x="18" y="106">Egg-like + / sperm-like &#8722;</text>
+              </g>
+              <g class="label-card quiz-answer-label" transform="translate(75 286)">
+                <rect width="332" height="82"></rect>
+                <text class="small-line" x="18" y="31">Egg-like + gamete<tspan class="ploidy-label">, n</tspan></text>
+                <text class="small-line" x="18" y="59">Sperm-like &#8722; gamete<tspan class="ploidy-label">, n</tspan></text>
+              </g>
+              <g class="simple-label" transform="translate(185 470)">
+                <rect width="132" height="44"></rect>
+                <text x="66" y="23">gamete</text>
+              </g>
+            </g>
+
+            <!-- Stage 7: fertilization restores diploidy and forms the zygote. -->
+            <g class="stage" data-stage="fertilization" data-step="6" tabindex="0" role="button" aria-label="Fertilization, n plus n makes 2n" transform="translate(-95 0)">
+              <ellipse class="stage-halo" cx="304" cy="204" rx="140" ry="98"></ellipse>
+              <g transform="translate(304 200)">
+                <ellipse class="gamete plus" cx="-26" cy="0" rx="20" ry="15"></ellipse>
+                <ellipse class="gamete minus" cx="28" cy="0" rx="14" ry="10"></ellipse>
+                <circle class="fusion-flash" cx="0" cy="0" r="18"></circle>
+                <path class="swim-trail" d="M-86 -18 C-66 -32 -50 -18 -38 -8"></path>
+                <path class="swim-trail" d="M82 22 C64 34 49 18 38 8"></path>
+              </g>
+              <path class="callout-line" d="M300 134 L304 200"></path>
+              <g class="label-card process-label quiz-answer-label" transform="translate(120 42)">
+                <rect width="292" height="92"></rect>
+                <text x="18" y="31">Fertilization</text>
+                <text class="small-line ploidy-label" x="18" y="60">n + n &#8594; 2n</text>
+                <text class="small-line" x="18" y="82">compatible gametes fuse</text>
+              </g>
+            </g>
+
+            <!-- Stage 8: zygote grows by mitosis into the diploid sporophyte. -->
+            <g class="stage" data-stage="zygote" data-step="7" tabindex="0" role="button" aria-label="Zygote, diploid 2n, grows by mitosis into sporophyte" transform="translate(-95 0)">
+              <ellipse class="stage-halo" cx="498" cy="144" rx="138" ry="96"></ellipse>
+              <g transform="translate(498 142)">
+                <circle class="zygote-pulse" cx="0" cy="0" r="25"></circle>
+                <circle class="zygote-cell" cx="-42" cy="4" r="22"></circle>
+                <path class="juvenile-blade" d="M33 46 C1 14 4 -50 42 -74 C79 -40 89 15 54 48 C47 56 38 55 33 46 Z"></path>
+                <path class="blade-line" d="M42 40 C38 -6 41 -42 45 -67"></path>
+                <circle class="mitosis-ring" cx="14" cy="4" r="70"></circle>
+              </g>
+              <g class="ploidy-badge badge-2n" transform="translate(565 100)">
+                <circle class="badge-circle" r="25"></circle>
+                <text class="badge-text" y="1">2n</text>
+              </g>
+              <path class="callout-line" d="M380 232 L498 178"></path>
+              <g class="label-card process-label quiz-answer-label" transform="translate(110 190)">
+                <rect width="270" height="94"></rect>
+                <text x="18" y="30">Zygote<tspan class="ploidy-label">, 2n</tspan></text>
+                <text class="small-line" x="18" y="58">Mitosis grows the diploid</text>
+                <text class="small-line" x="18" y="82">sporophyte.</text>
+              </g>
+              <g class="simple-label" transform="translate(437 212)">
+                <rect width="126" height="44"></rect>
+                <text x="63" y="23">zygote</text>
+              </g>
+            </g>
+
+            <g id="zoosporeParticleLayer" class="particle-layer" aria-hidden="true"></g>
+            <g id="gameteParticleLayer" class="particle-layer" aria-hidden="true"></g>
+          </svg>
+        </div>
+
+      </section>
+
+      <section class="quiz-panel" id="quizPanel" aria-live="polite" hidden>
+        <div>
+          <h2>Quiz Mode</h2>
+          <p class="quiz-question" id="quizQuestion"></p>
+          <div class="quiz-feedback" id="quizFeedback"></div>
+        </div>
+        <button type="button" id="quizNextBtn">Next Question</button>
+        <button type="button" id="quizExitBtn">Exit Quiz</button>
+      </section>
+
+      <aside class="accuracy-note">
+        Note: Simplified as egg-like and sperm-like gametes; many Ulva species produce similar motile + and &#8722; gametes.
+      </aside>
+
+      <section class="summary-card" aria-label="Life cycle summary">
+        <p>Ulva alternates between a diploid sporophyte and a haploid gametophyte. The sporophyte makes haploid zoospores by meiosis. Zoospores grow into haploid gametophytes. Gametophytes make gametes by mitosis. Fusion of compatible gametes forms a diploid zygote, which grows into the sporophyte.</p>
+      </section>
+    </main>
+
+    <section class="comparison-panel" id="comparisonPanel" aria-modal="true" role="dialog" aria-labelledby="comparisonTitle" hidden>
+      <div class="comparison-content">
+        <p class="comparison-message" id="comparisonTitle">They look similar, but they have different ploidy.</p>
+        <div class="mini-generation">
+          <svg viewBox="0 0 240 210" role="img" aria-label="Diploid sporophyte sea lettuce blade">
+            <path class="rock" d="M65 182 C84 164 168 164 188 182 C166 198 88 199 65 182 Z"></path>
+            <path class="blade" d="M116 176 C84 162 66 135 74 105 C52 88 63 52 91 43 C89 18 117 8 137 25 C164 14 189 39 179 66 C202 86 193 126 162 142 C158 169 135 190 116 176 Z"></path>
+            <path class="blade-line" d="M120 166 C106 128 109 83 130 25"></path>
+            <path class="blade-line" d="M87 106 C116 95 147 99 179 66"></path>
+            <path class="holdfast" d="M109 178 C119 169 139 170 148 181 C135 190 118 189 109 178 Z"></path>
+            <g class="badge-2n" transform="translate(166 50)">
+              <circle class="badge-circle" r="24"></circle>
+              <text class="badge-text" y="1">2n</text>
+            </g>
+          </svg>
+          <h3>Sporophyte, 2n</h3>
+        </div>
+        <div class="mini-generation">
+          <svg viewBox="0 0 240 210" role="img" aria-label="Haploid gametophyte sea lettuce blade">
+            <path class="rock" d="M65 182 C84 164 168 164 188 182 C166 198 88 199 65 182 Z"></path>
+            <path class="blade" d="M116 176 C84 162 67 136 74 106 C53 88 64 52 91 43 C89 18 118 8 137 25 C164 14 188 39 179 66 C202 86 192 126 162 142 C158 169 135 190 116 176 Z"></path>
+            <path class="blade-line" d="M120 166 C106 128 109 83 130 25"></path>
+            <path class="blade-line" d="M87 106 C116 95 147 99 179 66"></path>
+            <path class="holdfast" d="M109 178 C119 169 139 170 148 181 C135 190 118 189 109 178 Z"></path>
+            <g class="badge-n" transform="translate(166 50)">
+              <circle class="badge-circle" r="24"></circle>
+              <text class="badge-text" y="1">n</text>
+            </g>
+          </svg>
+          <h3>Gametophyte, n</h3>
+        </div>
+        <button type="button" class="comparison-close primary" id="comparisonCloseBtn">Close comparison</button>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    /*
+      Ulva life-cycle animation.
+      Edit STAGES to change playback order or explanations.
+      Edit the hidden SVG motion paths to change swimming routes.
+    */
+    (function () {
+      "use strict";
+
+      const app = document.getElementById("app");
+      const svg = document.getElementById("cycleSvg");
+      const stageReadout = document.getElementById("stageReadout");
+      const zoosporeLayer = document.getElementById("zoosporeParticleLayer");
+      const gameteLayer = document.getElementById("gameteParticleLayer");
+      const zoosporePath = document.getElementById("zoosporeMotionPath");
+      const plusGametePath = document.getElementById("plusGameteMotionPath");
+      const minusGametePath = document.getElementById("minusGameteMotionPath");
+
+      const playBtn = document.getElementById("playBtn");
+      const pauseBtn = document.getElementById("pauseBtn");
+      const backBtn = document.getElementById("backBtn");
+      const forwardBtn = document.getElementById("forwardBtn");
+      const resetBtn = document.getElementById("resetBtn");
+      const speedSlider = document.getElementById("speedSlider");
+      const speedValue = document.getElementById("speedValue");
+      const ploidyToggle = document.getElementById("ploidyToggle");
+      const meiosisToggle = document.getElementById("meiosisToggle");
+      const fertilizationToggle = document.getElementById("fertilizationToggle");
+      const compareToggle = document.getElementById("compareToggle");
+      const simpleToggle = document.getElementById("simpleToggle");
+      const quizToggle = document.getElementById("quizToggle");
+
+      const comparisonPanel = document.getElementById("comparisonPanel");
+      const comparisonCloseBtn = document.getElementById("comparisonCloseBtn");
+      const stageInfoPanel = document.getElementById("stageInfoPanel");
+      const infoTitle = document.getElementById("infoTitle");
+      const infoBody = document.getElementById("infoBody");
+      const infoTag = document.getElementById("infoTag");
+      const infoCloseBtn = document.getElementById("infoCloseBtn");
+      const quizPanel = document.getElementById("quizPanel");
+      const quizQuestion = document.getElementById("quizQuestion");
+      const quizFeedback = document.getElementById("quizFeedback");
+      const quizNextBtn = document.getElementById("quizNextBtn");
+      const quizExitBtn = document.getElementById("quizExitBtn");
+
+      const SVG_NS = "http://www.w3.org/2000/svg";
+
+      const STAGES = [
+        {
+          id: "sporophyte",
+          label: "Sporophyte, 2n",
+          tag: "Diploid generation",
+          readout: "Start: a mature diploid sporophyte makes haploid zoospores after meiosis.",
+          body: "The sporophyte is the multicellular diploid generation of Ulva. It looks like a thin sea-lettuce blade attached to a substrate. In this animation, blue 2n badges mark diploid material."
+        },
+        {
+          id: "meiosis",
+          label: "Meiosis",
+          tag: "2n to n",
+          readout: "Meiosis inside the sporophyte reduces chromosome number: 2n to n.",
+          body: "Meiosis occurs in regions of the diploid sporophyte blade. It reduces chromosome number from 2n to n, producing haploid zoospores rather than gametes."
+        },
+        {
+          id: "zoospores",
+          label: "Zoospores, n",
+          tag: "Haploid motile spores",
+          readout: "Haploid zoospores swim away from the sporophyte tissue.",
+          body: "Zoospores are haploid swimming cells with flagella. They disperse from the sporophyte and can settle onto a new surface."
+        },
+        {
+          id: "zoospore-growth",
+          label: "Mitosis: zoospores to gametophytes",
+          tag: "n stays n",
+          readout: "Zoospores settle and grow by mitosis into haploid gametophytes.",
+          body: "After settling, each haploid zoospore divides by mitosis. Mitosis keeps ploidy the same, so the growing blade remains haploid and becomes a multicellular gametophyte."
+        },
+        {
+          id: "gametophytes",
+          label: "Gametophyte, n",
+          tag: "Haploid generation",
+          readout: "Mature haploid gametophytes look similar to sporophytes but carry n ploidy.",
+          body: "Ulva has isomorphic alternation of generations: the gametophyte is multicellular and sea-lettuce-like, much like the sporophyte. The + and - labels mark compatible mating types."
+        },
+        {
+          id: "gametes",
+          label: "Gametes, n",
+          tag: "Mitosis makes gametes",
+          readout: "Gametophytes produce haploid gametes by mitosis: n stays n.",
+          body: "Haploid gametophytes make haploid gametes by mitosis, not meiosis. The animation labels them as egg-like + and sperm-like - gametes for classroom clarity."
+        },
+        {
+          id: "fertilization",
+          label: "Fertilization",
+          tag: "n + n to 2n",
+          readout: "Fertilization fuses compatible gametes and restores diploidy.",
+          body: "A + gamete and a - gamete fuse. Their haploid nuclei combine, restoring the diploid chromosome number and forming a 2n zygote."
+        },
+        {
+          id: "zygote",
+          label: "Zygote, 2n",
+          tag: "New sporophyte starts",
+          readout: "The diploid zygote grows by mitosis into a new sporophyte.",
+          body: "The zygote is diploid. It settles and divides by mitosis, keeping 2n ploidy as it grows into the next multicellular sporophyte."
+        }
+      ];
+
+      const QUIZ_QUESTIONS = [
+        {
+          prompt: "Which stage is diploid?",
+          answers: ["sporophyte", "zygote"],
+          feedback: "Correct. The multicellular diploid generation is the sporophyte; the zygote is also 2n."
+        },
+        {
+          prompt: "Which stage produces zoospores?",
+          answers: ["sporophyte", "meiosis"],
+          feedback: "Correct. The sporophyte produces haploid zoospores by meiosis."
+        },
+        {
+          prompt: "Where does meiosis occur?",
+          answers: ["meiosis", "sporophyte"],
+          feedback: "Correct. Meiosis occurs in the diploid sporophyte."
+        },
+        {
+          prompt: "Which stage is haploid and multicellular?",
+          answers: ["gametophytes"],
+          feedback: "Correct. The gametophyte is the haploid multicellular generation."
+        },
+        {
+          prompt: "Which event restores diploidy?",
+          answers: ["fertilization"],
+          feedback: "Correct. Fertilization changes n + n into 2n."
+        },
+        {
+          prompt: "What does the zygote grow into?",
+          answers: ["sporophyte"],
+          feedback: "Correct. The zygote grows by mitosis into the diploid sporophyte."
+        }
+      ];
+
+      const state = {
+        step: 0,
+        playing: false,
+        speed: 1,
+        timerId: null,
+        simpleLabels: true,
+        quizMode: false,
+        quizIndex: 0,
+        lastQuizAnswered: false,
+        endRevealDone: false,
+        revealTimerIds: []
+      };
+
+      const stages = Array.from(svg.querySelectorAll(".stage"));
+      const arrows = Array.from(svg.querySelectorAll(".cycle-arrow"));
+      const stageById = new Map(STAGES.map(function (stage) {
+        return [stage.id, stage];
+      }));
+
+      const zoosporeParticles = [];
+      const gameteParticles = [];
+
+      function makeSvgElement(name, attributes) {
+        const element = document.createElementNS(SVG_NS, name);
+        Object.keys(attributes || {}).forEach(function (key) {
+          element.setAttribute(key, attributes[key]);
+        });
+        return element;
+      }
+
+      function makeZoosporeParticle(index) {
+        const group = makeSvgElement("g", { class: "swimming-particle zoospore-particle" });
+        const trail = makeSvgElement("path", { class: "swim-trail", d: "M-32 0 C-46 8 -58 -8 -76 0" });
+        const body = makeSvgElement("ellipse", { class: "zoospore-dot", cx: "0", cy: "0", rx: "12", ry: "8" });
+        const flagellum = makeSvgElement("path", { class: "flagellum", d: "M-10 0 C-20 -10 -30 8 -42 -2" });
+        group.append(trail, body, flagellum);
+        zoosporeLayer.appendChild(group);
+        zoosporeParticles.push({
+          group: group,
+          flagellum: flagellum,
+          trail: trail,
+          offset: index / 8,
+          wobble: 0.6 + (index % 5) * 0.13
+        });
+      }
+
+      function makeGameteParticle(index, type) {
+        const group = makeSvgElement("g", { class: "swimming-particle gamete-particle" });
+        const trail = makeSvgElement("path", { class: "swim-trail", d: "M-26 0 C-40 8 -52 -7 -66 2" });
+        const body = makeSvgElement("ellipse", {
+          class: type === "plus" ? "gamete plus" : "gamete minus",
+          cx: "0",
+          cy: "0",
+          rx: type === "plus" ? "14" : "10",
+          ry: type === "plus" ? "10" : "7"
+        });
+        const flagellum = makeSvgElement("path", { class: "flagellum", d: "M-10 0 C-20 -9 -30 7 -42 -1" });
+        group.append(trail, body, flagellum);
+        gameteLayer.appendChild(group);
+        gameteParticles.push({
+          group: group,
+          flagellum: flagellum,
+          trail: trail,
+          type: type,
+          offset: index * 0.17,
+          wobble: 0.9 + index * 0.08
+        });
+      }
+
+      function initParticles() {
+        for (let index = 0; index < 8; index += 1) {
+          makeZoosporeParticle(index);
+        }
+
+        for (let index = 0; index < 5; index += 1) {
+          makeGameteParticle(index, "plus");
+          makeGameteParticle(index, "minus");
+        }
+      }
+
+      function setPressed(button, pressed) {
+        button.setAttribute("aria-pressed", String(Boolean(pressed)));
+      }
+
+      function clearRevealTimers() {
+        state.revealTimerIds.forEach(function (timerId) {
+          window.clearTimeout(timerId);
+        });
+        state.revealTimerIds = [];
+      }
+
+      function setPloidyVisible(visible) {
+        app.classList.toggle("show-ploidy", visible);
+        setPressed(ploidyToggle, visible);
+      }
+
+      function setSimpleLabelsActive(active) {
+        state.simpleLabels = active;
+        app.classList.toggle("simple-labels", active);
+        setPressed(simpleToggle, active);
+        if (active) {
+          closeStageModal();
+        }
+      }
+
+      function revealEndLabels() {
+        clearRevealTimers();
+        setPloidyVisible(true);
+        state.revealTimerIds.push(window.setTimeout(function () {
+          setSimpleLabelsActive(false);
+        }, 900));
+      }
+
+      function setStep(nextStep) {
+        const stageCount = STAGES.length;
+        state.step = (nextStep + stageCount) % stageCount;
+
+        stages.forEach(function (stageElement) {
+          const isActive = Number(stageElement.dataset.step) === state.step;
+          stageElement.classList.toggle("is-active", isActive);
+        });
+
+        arrows.forEach(function (arrowElement) {
+          arrowElement.classList.toggle("is-active", Number(arrowElement.dataset.arrow) === state.step);
+        });
+
+        const current = STAGES[state.step];
+        if (stageReadout) {
+          stageReadout.textContent = current.readout;
+        }
+        zoosporeLayer.classList.toggle("is-visible", state.step === 2 || state.step === 3 || app.classList.contains("highlight-meiosis"));
+        gameteLayer.classList.toggle("is-visible", state.step === 5 || state.step === 6 || app.classList.contains("highlight-fertilization"));
+
+        if (state.step !== stageCount - 1) {
+          state.endRevealDone = false;
+        } else if (state.playing && !state.endRevealDone) {
+          state.endRevealDone = true;
+          revealEndLabels();
+        }
+      }
+
+      function scheduleNextStep() {
+        window.clearTimeout(state.timerId);
+        if (!state.playing) {
+          return;
+        }
+
+        const duration = 5200 / state.speed;
+        state.timerId = window.setTimeout(function () {
+          setStep(state.step + 1);
+          scheduleNextStep();
+        }, duration);
+      }
+
+      function play() {
+        state.playing = true;
+        playBtn.disabled = true;
+        pauseBtn.disabled = false;
+        scheduleNextStep();
+      }
+
+      function pause() {
+        state.playing = false;
+        playBtn.disabled = false;
+        pauseBtn.disabled = true;
+        window.clearTimeout(state.timerId);
+      }
+
+      function reset() {
+        pause();
+        clearRevealTimers();
+        state.endRevealDone = false;
+        setPloidyVisible(false);
+        setSimpleLabelsActive(true);
+        setStep(0);
+      }
+
+      function stepForward() {
+        pause();
+        setStep(state.step + 1);
+      }
+
+      function stepBack() {
+        pause();
+        setStep(state.step - 1);
+      }
+
+      function updateSpeed() {
+        state.speed = Number(speedSlider.value);
+        speedValue.textContent = state.speed + "x";
+        app.style.setProperty("--motion-speed", state.speed);
+        if (state.playing) {
+          scheduleNextStep();
+        }
+      }
+
+      function openStageModal(stageId) {
+        const info = stageById.get(stageId);
+        if (!info) {
+          return;
+        }
+
+        infoTag.textContent = info.tag;
+        infoTitle.textContent = info.label;
+        infoBody.textContent = info.body;
+        stageInfoPanel.hidden = false;
+        infoCloseBtn.focus();
+      }
+
+      function closeStageModal() {
+        stageInfoPanel.hidden = true;
+      }
+
+      function togglePloidy() {
+        setPloidyVisible(!app.classList.contains("show-ploidy"));
+      }
+
+      function toggleSimpleLabels() {
+        setSimpleLabelsActive(!state.simpleLabels);
+      }
+
+      function toggleMeiosisHighlight() {
+        const isActive = !app.classList.contains("highlight-meiosis");
+        app.classList.toggle("highlight-meiosis", isActive);
+        setPressed(meiosisToggle, isActive);
+        if (isActive) {
+          setStep(1);
+        } else {
+          setStep(state.step);
+        }
+      }
+
+      function toggleFertilizationHighlight() {
+        const isActive = !app.classList.contains("highlight-fertilization");
+        app.classList.toggle("highlight-fertilization", isActive);
+        setPressed(fertilizationToggle, isActive);
+        if (isActive) {
+          setStep(6);
+        } else {
+          setStep(state.step);
+        }
+      }
+
+      function openComparison() {
+        comparisonPanel.hidden = false;
+        setPressed(compareToggle, true);
+        comparisonCloseBtn.focus();
+      }
+
+      function closeComparison() {
+        comparisonPanel.hidden = true;
+        setPressed(compareToggle, false);
+      }
+
+      function updateQuizQuestion() {
+        const question = QUIZ_QUESTIONS[state.quizIndex];
+        quizQuestion.textContent = question.prompt;
+        quizFeedback.textContent = "Click the correct stage in the diagram.";
+        state.lastQuizAnswered = false;
+      }
+
+      function enterQuizMode() {
+        pause();
+        state.quizMode = true;
+        state.quizIndex = 0;
+        app.classList.add("quiz-mode");
+        quizPanel.hidden = false;
+        setPressed(quizToggle, true);
+        updateQuizQuestion();
+      }
+
+      function exitQuizMode() {
+        state.quizMode = false;
+        app.classList.remove("quiz-mode");
+        quizPanel.hidden = true;
+        setPressed(quizToggle, false);
+        quizFeedback.textContent = "";
+      }
+
+      function toggleQuizMode() {
+        if (state.quizMode) {
+          exitQuizMode();
+        } else {
+          enterQuizMode();
+        }
+      }
+
+      function nextQuizQuestion() {
+        state.quizIndex = (state.quizIndex + 1) % QUIZ_QUESTIONS.length;
+        updateQuizQuestion();
+      }
+
+      function handleQuizClick(stageId) {
+        const question = QUIZ_QUESTIONS[state.quizIndex];
+        if (question.answers.includes(stageId)) {
+          quizFeedback.textContent = question.feedback;
+          state.lastQuizAnswered = true;
+          setStep(STAGES.findIndex(function (stage) {
+            return stage.id === stageId;
+          }));
+        } else {
+          const clicked = stageById.get(stageId);
+          quizFeedback.textContent = "Try again. You clicked " + (clicked ? clicked.label : "a different stage") + ".";
+        }
+      }
+
+      function handleStageClick(stageId) {
+        if (state.quizMode) {
+          handleQuizClick(stageId);
+          return;
+        }
+
+        openStageModal(stageId);
+      }
+
+      function getPointOnPath(path, fraction) {
+        const length = path.getTotalLength();
+        const safeFraction = ((fraction % 1) + 1) % 1;
+        return {
+          current: path.getPointAtLength(safeFraction * length),
+          next: path.getPointAtLength(Math.min(length, safeFraction * length + 3))
+        };
+      }
+
+      function setParticleTransform(particle, path, fraction, wiggle) {
+        const points = getPointOnPath(path, fraction);
+        const angle = Math.atan2(points.next.y - points.current.y, points.next.x - points.current.x) * 180 / Math.PI;
+        particle.group.setAttribute("transform", "translate(" + points.current.x.toFixed(2) + " " + points.current.y.toFixed(2) + ") rotate(" + angle.toFixed(2) + ")");
+        particle.flagellum.setAttribute("d", "M-10 0 C-21 " + (-wiggle).toFixed(2) + " -31 " + wiggle.toFixed(2) + " -44 0");
+        particle.trail.setAttribute("d", "M-28 0 C-44 " + wiggle.toFixed(2) + " -58 " + (-wiggle).toFixed(2) + " -76 0");
+      }
+
+      function animateParticles(timestamp) {
+        const time = timestamp * 0.00008 * state.speed;
+        const activeZoosporeStep = state.step === 2 || state.step === 3 || app.classList.contains("highlight-meiosis");
+        const activeGameteStep = state.step === 5 || state.step === 6 || app.classList.contains("highlight-fertilization");
+
+        if (activeZoosporeStep) {
+          zoosporeParticles.forEach(function (particle, index) {
+            const wave = Math.sin(timestamp * 0.012 * particle.wobble + index) * 8;
+            setParticleTransform(particle, zoosporePath, time + particle.offset, wave);
+          });
+        }
+
+        if (activeGameteStep) {
+          gameteParticles.forEach(function (particle, index) {
+            const wave = Math.sin(timestamp * 0.018 * particle.wobble + index) * 7;
+            const path = particle.type === "plus" ? plusGametePath : minusGametePath;
+            setParticleTransform(particle, path, time * 1.35 + particle.offset, wave);
+          });
+        }
+
+        window.requestAnimationFrame(animateParticles);
+      }
+
+      function bindEvents() {
+        playBtn.addEventListener("click", play);
+        pauseBtn.addEventListener("click", pause);
+        backBtn.addEventListener("click", stepBack);
+        forwardBtn.addEventListener("click", stepForward);
+        resetBtn.addEventListener("click", reset);
+        speedSlider.addEventListener("input", updateSpeed);
+        ploidyToggle.addEventListener("click", togglePloidy);
+        simpleToggle.addEventListener("click", toggleSimpleLabels);
+        meiosisToggle.addEventListener("click", toggleMeiosisHighlight);
+        fertilizationToggle.addEventListener("click", toggleFertilizationHighlight);
+        compareToggle.addEventListener("click", openComparison);
+        comparisonCloseBtn.addEventListener("click", closeComparison);
+        quizToggle.addEventListener("click", toggleQuizMode);
+        quizNextBtn.addEventListener("click", nextQuizQuestion);
+        quizExitBtn.addEventListener("click", exitQuizMode);
+        infoCloseBtn.addEventListener("click", closeStageModal);
+
+        comparisonPanel.addEventListener("click", function (event) {
+          if (event.target === comparisonPanel) {
+            closeComparison();
+          }
+        });
+
+        document.addEventListener("keydown", function (event) {
+          if (event.key === "Escape") {
+            if (!stageInfoPanel.hidden) {
+              closeStageModal();
+            }
+            if (!comparisonPanel.hidden) {
+              closeComparison();
+            }
+          }
+        });
+
+        stages.forEach(function (stageElement) {
+          stageElement.addEventListener("click", function () {
+            handleStageClick(stageElement.dataset.stage);
+          });
+
+          stageElement.addEventListener("keydown", function (event) {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              handleStageClick(stageElement.dataset.stage);
+            }
+          });
+        });
+      }
+
+      initParticles();
+      bindEvents();
+      updateSpeed();
+      setStep(0);
+      pause();
+      window.requestAnimationFrame(animateParticles);
+    }());
+  </script>
+</body>
+</html>

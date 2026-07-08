@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cell Signaling Pathways</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1f2937;
+      --muted: #526071;
+      --paper: #f7fafc;
+      --panel: #ffffff;
+      --line: #c8d3df;
+      --cell: #e9f7f0;
+      --cell-line: #2b8a6e;
+      --nucleus: #edf1ff;
+      --nucleus-line: #5967c6;
+      --blue: #2f80ed;
+      --green: #25a567;
+      --amber: #e6a700;
+      --red: #d94d4d;
+      --purple: #8e5ad8;
+      --teal: #1795a8;
+      --orange: #e97835;
+      --shadow: 0 18px 40px rgba(31, 41, 55, 0.14);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(47, 128, 237, 0.12), transparent 32rem),
+        linear-gradient(135deg, #f7fbff 0%, #f8fff9 52%, #fff9f3 100%);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .app {
+      width: min(1180px, calc(100vw - 28px));
+      margin: 0 auto;
+      padding: 18px 0 24px;
+    }
+
+    header {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(30px, 5vw, 48px);
+      line-height: 1.02;
+      letter-spacing: 0;
+      color: #172033;
+    }
+
+    .attribution {
+      width: fit-content;
+      max-width: 100%;
+      margin: 0;
+      padding: 7px 12px;
+      border: 1px solid #d5dfeb;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.82);
+      color: #415064;
+      font-size: clamp(15px, 2vw, 18px);
+      font-weight: 700;
+    }
+
+    .mode-tabs,
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: stretch;
+      margin-bottom: 12px;
+    }
+
+    button,
+    .choice {
+      min-height: 46px;
+      border: 2px solid #bfd0df;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #1d2b3f;
+      font: inherit;
+      font-size: 17px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 150ms ease, border-color 150ms ease, background 150ms ease, color 150ms ease;
+    }
+
+    button {
+      padding: 10px 14px;
+    }
+
+    button:hover,
+    .choice:hover {
+      transform: translateY(-1px);
+      border-color: #6c9ed6;
+    }
+
+    .mode-button {
+      flex: 1 1 245px;
+      text-align: center;
+    }
+
+    .mode-button.active {
+      border-color: #2f80ed;
+      background: #2f80ed;
+      color: #ffffff;
+    }
+
+    .toolbar {
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .signal-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      min-height: 48px;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    .signal-options[hidden] {
+      display: none;
+    }
+
+    .choice {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      user-select: none;
+    }
+
+    .choice input {
+      inline-size: 18px;
+      block-size: 18px;
+      accent-color: #2f80ed;
+    }
+
+    .reset-button {
+      min-width: 124px;
+      border-color: #2b8a6e;
+      background: #e9f7f0;
+      color: #155c48;
+    }
+
+    .speed-control {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-height: 46px;
+      padding: 8px 12px;
+      border: 2px solid #bfd0df;
+      border-radius: 8px;
+      background: #ffffff;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .speed-control input {
+      width: 140px;
+      accent-color: #2f80ed;
+    }
+
+    .speed-value {
+      min-width: 38px;
+      text-align: right;
+    }
+
+    .note {
+      margin: -4px 0 12px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .note[hidden] {
+      display: none;
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .stage-wrap {
+      overflow: hidden;
+      border: 1px solid #d9e2ec;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: var(--shadow);
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1000 / 620;
+    }
+
+    .svg-title {
+      font-size: 28px;
+      font-weight: 900;
+      fill: #172033;
+    }
+
+    .label {
+      font-size: 20px;
+      font-weight: 800;
+      fill: #223047;
+    }
+
+    .small-label {
+      font-size: 16px;
+      font-weight: 800;
+      fill: #223047;
+    }
+
+    .tiny-label {
+      font-size: 14px;
+      font-weight: 800;
+      fill: #223047;
+    }
+
+    .panel-text {
+      font-size: 18px;
+      font-weight: 700;
+      fill: #334155;
+    }
+
+    .panel-heading {
+      font-size: 22px;
+      font-weight: 900;
+      fill: #172033;
+    }
+
+    .cell {
+      fill: var(--cell);
+      stroke: var(--cell-line);
+      stroke-width: 8;
+    }
+
+    .membrane-band {
+      fill: rgba(43, 138, 110, 0.13);
+      stroke: rgba(43, 138, 110, 0.35);
+      stroke-width: 2;
+    }
+
+    .nucleus {
+      fill: var(--nucleus);
+      stroke: var(--nucleus-line);
+      stroke-width: 5;
+    }
+
+    .leader {
+      stroke: #617083;
+      stroke-width: 2;
+      fill: none;
+    }
+
+    .arrow {
+      stroke: #475569;
+      stroke-width: 4;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      marker-end: url(#arrow);
+    }
+
+    .soft-arrow {
+      stroke: #7b8794;
+      stroke-width: 3;
+      fill: none;
+      stroke-dasharray: 8 7;
+      stroke-linecap: round;
+      marker-end: url(#arrowSoft);
+    }
+
+    .molecule-text {
+      font-size: 16px;
+      font-weight: 900;
+      fill: #ffffff;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+
+    .status-pill {
+      font-size: 17px;
+      font-weight: 900;
+      fill: #ffffff;
+    }
+
+    .fade {
+      opacity: 0.18;
+    }
+
+    @media (max-width: 720px) {
+      .app {
+        width: min(100vw - 16px, 1180px);
+        padding-top: 10px;
+      }
+
+      .mode-tabs,
+      .toolbar {
+        gap: 8px;
+      }
+
+      .mode-button {
+        flex-basis: 100%;
+      }
+
+      button,
+      .choice {
+        font-size: 15px;
+      }
+
+      .note {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Cell Signaling Pathways</h1>
+      <p class="attribution">Animation Prompted by Jerred Seveyka for his biology class</p>
+    </header>
+
+    <nav class="mode-tabs" aria-label="Choose a cell signaling pathway">
+      <button class="mode-button active" type="button" data-mode="ion">Ligand-gated ion channel</button>
+      <button class="mode-button" type="button" data-mode="gprotein">G-protein linked receptor / cAMP pathway</button>
+      <button class="mode-button" type="button" data-mode="steroid">Steroid hormone receptor pathway</button>
+    </nav>
+
+    <div class="toolbar">
+      <fieldset class="signal-options" id="signalOptions">
+        <legend class="visually-hidden">Choose receptor molecule</legend>
+        <label class="choice">
+          <input type="radio" name="signalType" value="normal" checked>
+          Normal ligand
+        </label>
+        <label class="choice">
+          <input type="radio" name="signalType" value="agonist">
+          Add agonist
+        </label>
+        <label class="choice">
+          <input type="radio" name="signalType" value="antagonist">
+          Add antagonist
+        </label>
+      </fieldset>
+      <label class="speed-control">
+        Animation speed
+        <input id="speedControl" type="range" min="0.5" max="2" step="0.25" value="1">
+        <output class="speed-value" id="speedValue">1x</output>
+      </label>
+      <button class="reset-button" type="button" id="resetButton">Reset / Replay</button>
+    </div>
+
+    <p class="note" id="agonistNote">Agonist: binds and activates the receptor. Antagonist: binds but blocks receptor activation.</p>
+
+    <section class="stage-wrap" aria-label="Animated cell signaling diagram">
+      <svg id="diagram" viewBox="0 0 1000 620" role="img" aria-labelledby="diagramTitle diagramDescription">
+        <title id="diagramTitle">Cell signaling pathway animation</title>
+        <desc id="diagramDescription">Interactive animation showing ligand-gated ion channels, G-protein linked receptors, and steroid hormone receptor signaling.</desc>
+      </svg>
+    </section>
+  </div>
+
+  <script>
+    /*
+      This single-file animation redraws one SVG scene per frame.
+      Scene helpers keep biology objects distinct while the timeline controls
+      movement, activation colors, and pathway blocking.
+    */
+    const svg = document.getElementById("diagram");
+    const modeButtons = Array.from(document.querySelectorAll(".mode-button"));
+    const resetButton = document.getElementById("resetButton");
+    const signalOptions = document.getElementById("signalOptions");
+    const agonistNote = document.getElementById("agonistNote");
+    const signalInputs = Array.from(document.querySelectorAll("input[name='signalType']"));
+    const speedControl = document.getElementById("speedControl");
+    const speedValue = document.getElementById("speedValue");
+
+    const state = {
+      mode: "ion",
+      signalType: "normal",
+      startedAt: performance.now(),
+      elapsedOffset: 0,
+      speed: 1,
+      rafId: 0
+    };
+
+    const colors = {
+      ink: "#1f2937",
+      muted: "#526071",
+      blue: "#2f80ed",
+      green: "#25a567",
+      amber: "#e6a700",
+      red: "#d94d4d",
+      purple: "#8e5ad8",
+      teal: "#1795a8",
+      orange: "#e97835",
+      gray: "#9aa8b6",
+      dark: "#172033"
+    };
+
+    function clamp(value, min = 0, max = 1) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function ease(value) {
+      const t = clamp(value);
+      return t * t * (3 - 2 * t);
+    }
+
+    function mix(a, b, t) {
+      return a + (b - a) * ease(t);
+    }
+
+    function segment(t, start, end) {
+      return clamp((t - start) / (end - start));
+    }
+
+    function visible(shouldShow) {
+      return shouldShow ? "" : "display='none'";
+    }
+
+    function opacity(value) {
+      return `opacity='${clamp(value).toFixed(2)}'`;
+    }
+
+    function defs() {
+      return `
+        <title id="diagramTitle">Cell signaling pathway animation</title>
+        <desc id="diagramDescription">Interactive animation showing ligand-gated ion channels, G-protein linked receptors, and steroid hormone receptor signaling.</desc>
+        <defs>
+          <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+            <path d="M2,2 L10,6 L2,10 Z" fill="#475569"></path>
+          </marker>
+          <marker id="arrowSoft" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+            <path d="M2,2 L10,6 L2,10 Z" fill="#7b8794"></path>
+          </marker>
+          <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="4" result="blur"></feGaussianBlur>
+            <feMerge>
+              <feMergeNode in="blur"></feMergeNode>
+              <feMergeNode in="SourceGraphic"></feMergeNode>
+            </feMerge>
+          </filter>
+        </defs>`;
+    }
+
+    function text(x, y, label, className = "label", anchor = "start") {
+      return `<text x="${x}" y="${y}" class="${className}" text-anchor="${anchor}">${label}</text>`;
+    }
+
+    function panel(lines, stepLine) {
+      const body = lines.map((line, index) => (
+        `<text x="640" y="${158 + index * 25}" class="panel-text">${line}</text>`
+      )).join("");
+
+      return `
+        <g>
+          <rect x="620" y="88" width="344" height="246" rx="8" fill="#ffffff" stroke="#d4dee8" stroke-width="3"></rect>
+          <text x="640" y="126" class="panel-heading">Explanation</text>
+          ${body}
+          <rect x="640" y="268" width="296" height="38" rx="8" fill="#172033"></rect>
+          <text x="658" y="293" class="status-pill">${stepLine}</text>
+        </g>`;
+    }
+
+    function cellFrame(x, y, width, height) {
+      return `
+        <g>
+          <rect x="${x}" y="${y}" width="${width}" height="${height}" rx="0" class="cell"></rect>
+          <rect x="${x + 5}" y="${y + 5}" width="${width - 10}" height="34" class="membrane-band"></rect>
+          <text x="${x + 18}" y="${y + 32}" class="small-label">plasma membrane</text>
+          <text x="${x + 18}" y="${y + height - 20}" class="small-label">cytoplasm</text>
+        </g>`;
+    }
+
+    function ligandShape(x, y, type, scale = 1, active = false, showLabels = true) {
+      const fill = type === "antagonist" ? colors.red : type === "agonist" ? colors.purple : colors.blue;
+      const label = type === "antagonist" ? "ANT" : type === "agonist" ? "AGO" : "LIG";
+      const name = type === "antagonist" ? "antagonist" : type === "agonist" ? "agonist" : "ligand";
+      const glow = active ? "filter='url(#glow)'" : "";
+
+      if (type === "antagonist") {
+        return `
+          <g transform="translate(${x} ${y}) scale(${scale})" ${glow}>
+            <rect x="-32" y="-22" width="64" height="44" rx="8" fill="${fill}" stroke="#8d2323" stroke-width="3"></rect>
+            <text class="molecule-text" y="1" font-size="13">ANT</text>
+            ${showLabels ? `<text x="0" y="-32" class="small-label" text-anchor="middle">${name}</text>` : ""}
+          </g>`;
+      }
+
+      return `
+        <g transform="translate(${x} ${y}) scale(${scale})" ${glow}>
+          <path d="M0,-29 L28,-10 L18,24 L-18,24 L-28,-10 Z" fill="${fill}" stroke="#184f98" stroke-width="3"></path>
+          <circle cx="-8" cy="-4" r="5" fill="#ffffff" opacity="0.9"></circle>
+          <circle cx="10" cy="6" r="5" fill="#ffffff" opacity="0.9"></circle>
+          ${showLabels ? `<text class="molecule-text" y="41">${label}</text>` : ""}
+          ${showLabels ? `<text x="0" y="-39" class="small-label" text-anchor="middle">${name}</text>` : ""}
+        </g>`;
+    }
+
+    function ion(x, y, label = "+") {
+      return `
+        <g transform="translate(${x} ${y})">
+          <circle r="13" fill="#58b8ff" stroke="#1c6fb4" stroke-width="3"></circle>
+          <text class="molecule-text" font-size="18">${label}</text>
+        </g>`;
+    }
+
+    function moleculeCircle(x, y, label, fill, radius = 24, stroke = "#26384f") {
+      return `
+        <g transform="translate(${x} ${y})">
+          <circle r="${radius}" fill="${fill}" stroke="${stroke}" stroke-width="3"></circle>
+          <text class="molecule-text" font-size="15">${label}</text>
+        </g>`;
+    }
+
+    function enzymeShape(x, y, label, fill, active = false, w = 104, h = 52) {
+      const stroke = active ? colors.green : "#516170";
+      const glow = active ? "filter='url(#glow)'" : "";
+      return `
+        <g transform="translate(${x} ${y})" ${glow}>
+          <path d="M${-w / 2},0 C${-w / 2},${-h / 2} ${-w / 5},${-h / 2} ${-w / 8},${-h / 5} C0,${-h / 2} ${w / 2},${-h / 3} ${w / 2},0 C${w / 2},${h / 2} ${w / 8},${h / 2} 0,${h / 5} C${-w / 4},${h / 2} ${-w / 2},${h / 3} ${-w / 2},0 Z"
+            fill="${fill}" stroke="${stroke}" stroke-width="4"></path>
+          <text class="molecule-text" font-size="14">${label}</text>
+        </g>`;
+    }
+
+    function receptorChannel(cx, y, openAmount, blocked) {
+      const leftX = cx - 36 - openAmount;
+      const rightX = cx + 14 + openAmount;
+      const fill = blocked ? "#eaa0a0" : openAmount > 9 ? "#71d28f" : "#83a8d8";
+      const gateColor = blocked ? colors.red : "#30517d";
+
+      return `
+        <g>
+          <rect x="${leftX}" y="${y - 15}" width="26" height="96" rx="10" fill="${fill}" stroke="#24415f" stroke-width="4"></rect>
+          <rect x="${rightX}" y="${y - 15}" width="26" height="96" rx="10" fill="${fill}" stroke="#24415f" stroke-width="4"></rect>
+          <path d="M${leftX + 26},${y + 30} L${rightX},${y + 30}" stroke="${gateColor}" stroke-width="${openAmount > 9 ? 3 : 8}" stroke-linecap="round" opacity="${blocked ? 1 : openAmount > 9 ? 0.25 : 1}"></path>
+          <path d="M${cx - 42},${y - 17} C${cx - 20},${y - 43} ${cx + 20},${y - 43} ${cx + 42},${y - 17}" fill="none" stroke="#24415f" stroke-width="4"></path>
+          <path d="M${cx + 28},${y - 10} C${cx + 45},${y - 12} ${cx + 46},${y - 27} ${cx + 63},${y - 27}" fill="none" stroke="#24415f" stroke-width="7" stroke-linecap="round"></path>
+        </g>`;
+    }
+
+    function renderIonMode(elapsed) {
+      const t = Math.min(elapsed / 1000, 10);
+      const type = state.signalType;
+      const blocked = type === "antagonist";
+      const ligandY = mix(54, 101, segment(t, 0.2, 1.8));
+      const blockApproach = segment(t, 0.2, 1.6);
+      const blockRetreat = segment(t, 1.6, 2.8);
+      const blockedSignalX = blockRetreat > 0 ? mix(445, 505, blockRetreat) : mix(500, 445, blockApproach);
+      const blockedSignalY = blockRetreat > 0 ? mix(80, 40, blockRetreat) : mix(35, 80, blockApproach);
+      const bound = t >= 1.75;
+      const active = bound && !blocked;
+      const openAmount = active ? mix(0, 24, segment(t, 2.0, 3.1)) : 0;
+      const ionsVisible = active && t > 3.0;
+      const step = blocked
+        ? t < 1.6 ? "Signal approaches blocked receptor" : "Signal deflects away; channel closed"
+        : t < 1.8
+          ? "Step 1: signal molecule binds"
+          : t < 3.1
+            ? "Step 2: receptor changes shape"
+            : "Step 3: ions enter cell";
+
+      let ions = "";
+      if (ionsVisible) {
+        for (let i = 0; i < 9; i += 1) {
+          const cycle = ((t - 3.0) * 0.65 + i * 0.18) % 1;
+          const x = 318 + Math.sin((cycle + i) * Math.PI * 2) * 18;
+          const y = mix(138, 398, cycle);
+          ions += ion(x, y, i % 2 === 0 ? "+" : "Na");
+        }
+      } else {
+        ions = [238, 274, 310, 346].map((x, i) => ion(x, 86 + (i % 2) * 18, i % 2 === 0 ? "+" : "Na")).join("");
+      }
+
+      return `
+        ${defs()}
+        ${cellFrame(90, 130, 460, 330)}
+        ${panel([
+          "The ligand changes the",
+          "receptor's shape, opening",
+          "the ion channel and",
+          "allowing ions to cross",
+          "the membrane."
+        ], step)}
+        ${blocked ? `<path d="M500,35 C482,50 462,68 445,80" class="soft-arrow"></path>` : `<path d="M405,54 C405,72 405,86 405,101" class="soft-arrow"></path>`}
+        ${text(425, 68, blocked ? "antagonist bound" : type === "normal" ? "ligand" : type, "small-label")}
+        ${text(430, 170, "ligand-gated ion channel", "small-label")}
+        <path d="M426,176 L360,162" class="leader"></path>
+        ${text(400, 266, openAmount > 9 ? "channel open" : "channel closed", "label")}
+        <path d="M398,272 L356,201" class="leader"></path>
+        ${active ? text(182, 430, "ions enter cell", "label") : ""}
+        ${blocked ? text(165, 420, "signal deflects away: no ions enter", "label") : ""}
+        ${active ? `<path d="M318,190 C318,246 318,318 318,384" class="arrow"></path>` : ""}
+        <g>${ions}</g>
+        ${receptorChannel(318, 128, openAmount, blocked)}
+        ${blocked ? ligandShape(405, 101, "antagonist", 0.68, true, false) : ligandShape(405, bound ? 101 : ligandY, type, 0.82, bound, false)}
+        ${blocked ? ligandShape(blockedSignalX, blockedSignalY, "normal", 0.65, false, false) : ""}
+        ${blocked && t >= 1.6 ? text(468, 98, "deflected", "small-label") : ""}
+      `;
+    }
+
+    function gpcrShape(x, y, active, blocked) {
+      const stroke = blocked ? colors.red : active ? colors.green : "#355579";
+      const fill = active ? "#9ee2b2" : blocked ? "#efb2b2" : "#b8d7ff";
+      return `
+        <g transform="translate(${x} ${y})">
+          <path d="M-46,-44 C-24,-20 -24,20 -46,44 M-24,-44 C-2,-20 -2,20 -24,44 M-2,-44 C20,-20 20,20 -2,44 M20,-44 C42,-20 42,20 20,44"
+            fill="none" stroke="${stroke}" stroke-width="10" stroke-linecap="round"></path>
+          <ellipse cx="-13" cy="-54" rx="44" ry="18" fill="${fill}" stroke="${stroke}" stroke-width="4"></ellipse>
+        </g>`;
+    }
+
+    function gProtein(x, y, active) {
+      const fillA = active ? colors.green : "#b7c4d1";
+      const fillB = active ? "#a8e0f0" : "#d3dbe5";
+      return `
+        <g transform="translate(${x} ${y})" ${active ? "filter='url(#glow)'" : ""}>
+          <circle cx="-22" cy="0" r="23" fill="${fillA}" stroke="#425466" stroke-width="3"></circle>
+          <circle cx="20" cy="-7" r="17" fill="${fillB}" stroke="#425466" stroke-width="3"></circle>
+          <circle cx="24" cy="23" r="15" fill="${fillB}" stroke="#425466" stroke-width="3"></circle>
+          <text x="-22" y="5" class="molecule-text">G</text>
+        </g>`;
+    }
+
+    function campMolecule(x, y, visibleAmount) {
+      return `
+        <g transform="translate(${x} ${y})" ${opacity(visibleAmount)}>
+          <circle r="18" fill="${colors.teal}" stroke="#0f6874" stroke-width="3"></circle>
+          <text class="molecule-text" font-size="13">cAMP</text>
+        </g>`;
+    }
+
+    function renderGProteinMode(elapsed) {
+      const t = Math.min(elapsed / 1000, 11);
+      const type = state.signalType;
+      const blocked = type === "antagonist";
+      const ligandY = mix(45, 85, segment(t, 0.2, 1.6));
+      const blockApproach = segment(t, 0.2, 1.5);
+      const blockRetreat = segment(t, 1.5, 2.7);
+      const blockedSignalX = blockRetreat > 0 ? mix(277, 330, blockRetreat) : mix(330, 277, blockApproach);
+      const blockedSignalY = blockRetreat > 0 ? mix(58, 20, blockRetreat) : mix(20, 58, blockApproach);
+      const bound = t >= 1.55;
+      const receptorActive = bound && !blocked;
+      const gActive = receptorActive && t >= 2.1;
+      const gMove = receptorActive ? segment(t, 2.4, 3.8) : 0;
+      const gX = mix(254, 410, gMove);
+      const acActive = receptorActive && t >= 3.7;
+      const kinaseActive = receptorActive && t >= 6.4;
+      const enzymeActive = receptorActive && t >= 8.2;
+      const step = blocked
+        ? t < 1.5 ? "Signal approaches blocked receptor" : "Signal deflects away; pathway blocked"
+        : t < 1.7
+          ? "Step 1: ligand binds receptor"
+          : t < 3.8
+            ? "Step 2: G protein activates"
+            : t < 6.4
+              ? "Step 3: cAMP is produced"
+              : t < 8.2
+                ? "Step 4: kinase activates"
+                : "Step 5: enzyme activated";
+
+      const campBurst = acActive ? [0, 1, 2, 3, 4, 5].map((i) => {
+        const appear = segment(t, 4.3 + i * 0.18, 5.3 + i * 0.18);
+        const drift = segment(t, 4.9 + i * 0.18, 6.8 + i * 0.13);
+        const x = mix(466 + (i % 3) * 28, 300 + (i % 3) * 34, drift);
+        const y = mix(182 + Math.floor(i / 3) * 28, 336 + i * 10, drift);
+        return campMolecule(x, y, appear);
+      }).join("") : "";
+
+      return `
+        ${defs()}
+        ${cellFrame(70, 110, 520, 390)}
+        ${panel([
+          "This pathway amplifies",
+          "the original signal because",
+          "one activated receptor can",
+          "lead to production of many",
+          "second messengers."
+        ], step)}
+        ${blocked ? `<path d="M330,20 C312,32 292,47 277,58" class="soft-arrow"></path>` : `<path d="M238,45 C238,58 238,72 238,85" class="soft-arrow"></path>`}
+        ${text(292, 73, blocked ? "antagonist bound" : type === "normal" ? "ligand" : type, "small-label")}
+        ${gpcrShape(238, 134, receptorActive, blocked)}
+        ${blocked ? ligandShape(238, 85, "antagonist", 0.64, true, false) : ligandShape(238, bound ? 85 : ligandY, type, 0.76, bound, false)}
+        ${blocked ? ligandShape(blockedSignalX, blockedSignalY, "normal", 0.62, false, false) : ""}
+        ${blocked && t >= 1.5 ? text(292, 47, "deflected", "small-label") : ""}
+        ${text(92, 205, "G-protein linked receptor", "small-label")}
+        <path d="M254,202 L237,160" class="leader"></path>
+        ${gProtein(gX, 190, gActive)}
+        ${text(104, 248, "G protein", "small-label")}
+        <path d="M190,242 L238,204" class="leader"></path>
+        ${enzymeShape(475, 160, "AC", acActive ? "#98e0a9" : "#c8d4df", acActive, 118, 70)}
+        ${text(382, 116, "adenylyl cyclase", "small-label")}
+        <path d="M475,124 L475,148" class="leader"></path>
+        ${moleculeCircle(490, 260, "ATP", "#f1c85b", 27, "#9d7420")}
+        ${text(522, 266, "ATP", "small-label")}
+        ${acActive ? `<path d="M490,234 C496,210 490,190 475,184" class="arrow"></path>` : ""}
+        ${acActive ? `<text x="505" y="218" class="small-label">ATP to cAMP</text>` : ""}
+        ${campBurst}
+        ${text(255, 342, "cAMP", "small-label")}
+        <path d="M322,336 L358,336" class="leader"></path>
+        ${enzymeShape(302, 365, "PK", kinaseActive ? "#8ee0d0" : "#c8d4df", kinaseActive, 112, 62)}
+        ${text(170, 375, "protein kinase", "small-label")}
+        <path d="M284,357 L246,371" class="leader"></path>
+        ${enzymeShape(476, 430, enzymeActive ? "activated enzyme" : "enzyme", enzymeActive ? "#88d97a" : "#d3dbe5", enzymeActive, 150, 66)}
+        ${text(410, 482, enzymeActive ? "activated enzyme" : "target enzyme", "small-label")}
+        ${kinaseActive ? `<path d="M356,375 C395,382 420,405 452,428" class="arrow"></path>` : ""}
+        ${kinaseActive ? moleculeCircle(mix(360, 444, segment(t, 7.0, 8.2)), mix(350, 414, segment(t, 7.0, 8.2)), "P", colors.orange, 16, "#a24418") : ""}
+        ${receptorActive && t > 2.4 ? `<path d="M282,190 C330,178 372,170 424,164" class="arrow"></path>` : ""}
+        ${blocked ? text(136, 320, "G protein stays inactive", "label") : ""}
+        ${blocked ? text(150, 354, "no cAMP, no kinase activation", "small-label") : ""}
+      `;
+    }
+
+    function steroidHormone(x, y, labelVisible = true, scale = 1) {
+      return `
+        <g transform="translate(${x} ${y}) scale(${scale})" filter="url(#glow)">
+          <ellipse cx="0" cy="0" rx="28" ry="18" fill="${colors.orange}" stroke="#9d4318" stroke-width="3"></ellipse>
+          <ellipse cx="24" cy="0" rx="18" ry="15" fill="#f59e55" stroke="#9d4318" stroke-width="3"></ellipse>
+          <ellipse cx="-22" cy="0" rx="16" ry="14" fill="#ffc078" stroke="#9d4318" stroke-width="3"></ellipse>
+          ${labelVisible ? `<text x="0" y="-30" class="small-label" text-anchor="middle">steroid hormone</text>` : ""}
+        </g>`;
+    }
+
+    function receptorCytoplasm(x, y, bound) {
+      return `
+        <g transform="translate(${x} ${y})">
+          <path d="M-38,18 C-30,-20 18,-28 38,-3 C22,-7 8,3 0,22 C-12,13 -24,13 -38,18 Z"
+            fill="${bound ? "#d6bbfb" : "#c7d2fe"}" stroke="#6654bd" stroke-width="4"></path>
+          <text x="0" y="50" class="small-label" text-anchor="middle">cytoplasmic receptor</text>
+        </g>`;
+    }
+
+    function hormoneReceptorComplex(x, y, label = true) {
+      return `
+        <g transform="translate(${x} ${y})" filter="url(#glow)">
+          <path d="M-42,22 C-36,-22 14,-32 42,-6 C24,-9 8,4 -1,25 C-15,15 -28,15 -42,22 Z"
+            fill="#b794f4" stroke="#5946a8" stroke-width="4"></path>
+          <ellipse cx="-4" cy="-6" rx="24" ry="15" fill="${colors.orange}" stroke="#9d4318" stroke-width="3"></ellipse>
+          ${label ? `<text x="0" y="-42" class="small-label" text-anchor="middle">hormone-receptor complex</text>` : ""}
+        </g>`;
+    }
+
+    function ribosome(x, y, active) {
+      return `
+        <g transform="translate(${x} ${y})" ${active ? "filter='url(#glow)'" : ""}>
+          <ellipse cx="-20" cy="0" rx="34" ry="22" fill="#76c7a3" stroke="#24745a" stroke-width="4"></ellipse>
+          <ellipse cx="20" cy="5" rx="38" ry="25" fill="#9ddabf" stroke="#24745a" stroke-width="4"></ellipse>
+          <text x="0" y="56" class="small-label" text-anchor="middle">ribosome</text>
+        </g>`;
+    }
+
+    function dnaStrand(x, y) {
+      return `
+        <g transform="translate(${x} ${y})">
+          <path d="M-86,0 C-54,-30 -28,30 0,0 C28,-30 54,30 86,0" fill="none" stroke="#5967c6" stroke-width="5"></path>
+          <path d="M-86,28 C-54,-2 -28,58 0,28 C28,-2 54,58 86,28" fill="none" stroke="#5967c6" stroke-width="5"></path>
+          <text x="0" y="-18" class="small-label" text-anchor="middle">DNA</text>
+        </g>`;
+    }
+
+    function mrnaPath(points, progress, stroke = "#25a567") {
+      const [x1, y1, x2, y2] = points;
+      const x = mix(x1, x2, progress);
+      const y = mix(y1, y2, progress);
+      return `<path d="M${x1},${y1} C${(x1 + x2) / 2},${y1 - 30} ${(x1 + x2) / 2},${y2 + 30} ${x},${y}" fill="none" stroke="${stroke}" stroke-width="6" stroke-linecap="round"></path>`;
+    }
+
+    function mrnaStrand(x, y) {
+      return `
+        <path data-mrna-location="moving" transform="translate(${x} ${y})"
+          d="M-58,0 C-42,-12 -26,12 -10,0 C6,-12 22,12 38,0 C47,-7 54,-5 58,0"
+          fill="none" stroke="${colors.green}" stroke-width="6" stroke-linecap="round"></path>`;
+    }
+
+    function foldedProtein(x, y, progress) {
+      const draw = clamp(progress);
+      return `
+        <g transform="translate(${x} ${y})" ${opacity(draw)}>
+          <path d="M-42,3 C-24,-34 10,-30 18,-6 C36,-22 58,-5 42,18 C58,42 18,54 4,28 C-18,54 -54,36 -34,12 C-48,-5 -42,3 -42,3 Z"
+            fill="#f7b267" stroke="#a9501c" stroke-width="4"></path>
+          <circle cx="-17" cy="7" r="6" fill="#fff7ed"></circle>
+          <circle cx="20" cy="12" r="6" fill="#fff7ed"></circle>
+          <text x="0" y="68" class="small-label" text-anchor="middle">folded protein</text>
+        </g>`;
+    }
+
+    function renderSteroidMode(elapsed) {
+      const t = Math.min(elapsed / 1000, 12);
+      const hormoneEntry = segment(t, 0.2, 2.0);
+      const hormoneToReceptor = segment(t, 2.0, 3.0);
+      const complexMove = segment(t, 3.2, 4.8);
+      const transcription = segment(t, 5.0, 6.6);
+      const mrnaExit = segment(t, 6.8, 8.2);
+      const mrnaFullyOutside = mrnaExit >= 1;
+      const translation = mrnaFullyOutside ? segment(t, 8.45, 10.5) : 0;
+      const hormoneX = hormoneToReceptor > 0 ? mix(205, 220, hormoneToReceptor) : mix(148, 205, hormoneEntry);
+      const hormoneY = hormoneToReceptor > 0 ? mix(185, 435, hormoneToReceptor) : mix(65, 185, hormoneEntry);
+      const complexX = mix(220, 412, complexMove);
+      const complexY = mix(435, 275, complexMove);
+      const complexFormed = t >= 3.0;
+      const complexInNucleus = t >= 4.7;
+      const step = t < 2.0
+        ? "Step 1: hormone diffuses in"
+        : t < 3.2
+          ? "Step 2: receptor binding"
+          : t < 5.0
+            ? "Step 3: complex enters nucleus"
+            : t < 6.8
+              ? "Step 4: transcription begins"
+              : t < 8.45
+                ? "Step 5: mRNA exits nucleus"
+                : "Step 6: translation forms protein";
+
+      const mrnaInNucleus = transcription > 0 && mrnaExit === 0
+        ? mrnaPath([400, 240, 470, 260], transcription, colors.green)
+        : "";
+      const mrnaMoving = mrnaExit > 0 && translation === 0
+        ? mrnaStrand(mix(430, 320, mrnaExit), mix(275, 405, mrnaExit))
+        : "";
+      const proteinProgress = translation > 0 ? segment(t, 9.1, 10.6) : 0;
+
+      return `
+        ${defs()}
+        ${cellFrame(65, 115, 525, 390)}
+        ${panel([
+          "Steroid hormones are",
+          "lipid-soluble, so they",
+          "can diffuse through the",
+          "plasma membrane and",
+          "regulate gene expression."
+        ], step)}
+        <ellipse cx="400" cy="270" rx="150" ry="110" class="nucleus"></ellipse>
+        <ellipse cx="540" cy="270" rx="13" ry="25" fill="#ffffff" stroke="#5967c6" stroke-width="4"></ellipse>
+        ${text(322, 170, "nucleus", "label")}
+        <path d="M366,174 L386,188" class="leader"></path>
+        ${text(458, 175, "nuclear membrane", "small-label")}
+        <path d="M512,180 L504,197" class="leader"></path>
+        ${dnaStrand(400, 245)}
+        ${enzymeShape(mix(323, 430, transcription), mix(292, 266, transcription), "RNA pol", transcription > 0 ? "#8ee0d0" : "#c8d4df", transcription > 0, 88, 48)}
+        ${text(258, 340, "RNA polymerase", "small-label")}
+        <path d="M354,326 L380,292" class="leader"></path>
+        ${mrnaInNucleus}
+        ${mrnaMoving}
+        ${text(482, 304, "mRNA", "small-label")}
+        <path d="M520,300 L476,266" class="leader"></path>
+        ${ribosome(300, 435, translation > 0)}
+        ${text(318, 404, "mRNA", "small-label")}
+        ${translation > 0 ? `<path d="M250,430 C285,418 322,424 360,438" fill="none" stroke="${colors.green}" stroke-width="6" stroke-linecap="round"></path>` : ""}
+        ${translation > 0 ? `<path d="M348,435 C382,435 408,435 436,435" class="arrow"></path>` : ""}
+        ${foldedProtein(475, 435, proteinProgress)}
+        ${!complexFormed ? steroidHormone(hormoneX, hormoneY, true, 0.88) : ""}
+        ${!complexFormed ? receptorCytoplasm(220, 435, false) : ""}
+        ${complexFormed ? hormoneReceptorComplex(complexMove > 0 ? complexX : 220, complexMove > 0 ? complexY : 435, true) : ""}
+        <path d="M148,86 C164,120 188,152 205,185" class="soft-arrow"></path>
+        ${text(84, 230, "hormone crosses membrane", "small-label")}
+        ${text(84, 252, "then binds receptor", "small-label")}
+        <path d="M236,236 L204,195" class="leader"></path>
+        ${complexInNucleus ? text(250, 194, "complex stimulates transcription", "small-label") : ""}
+      `;
+    }
+
+    function renderFrame(now) {
+      const elapsed = state.elapsedOffset + (now - state.startedAt) * state.speed;
+      const renderers = {
+        ion: renderIonMode,
+        gprotein: renderGProteinMode,
+        steroid: renderSteroidMode
+      };
+      svg.innerHTML = renderers[state.mode](elapsed);
+      state.rafId = requestAnimationFrame(renderFrame);
+    }
+
+    function resetAnimation() {
+      state.startedAt = performance.now();
+      state.elapsedOffset = 0;
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      modeButtons.forEach((button) => {
+        button.classList.toggle("active", button.dataset.mode === mode);
+      });
+      const usesSignalChoice = mode === "ion" || mode === "gprotein";
+      signalOptions.hidden = !usesSignalChoice;
+      agonistNote.hidden = !usesSignalChoice;
+      resetAnimation();
+    }
+
+    modeButtons.forEach((button) => {
+      button.addEventListener("click", () => setMode(button.dataset.mode));
+    });
+
+    resetButton.addEventListener("click", resetAnimation);
+
+    signalInputs.forEach((input) => {
+      input.addEventListener("change", () => {
+        state.signalType = input.value;
+        resetAnimation();
+      });
+    });
+
+    speedControl.addEventListener("input", () => {
+      const now = performance.now();
+      state.elapsedOffset += (now - state.startedAt) * state.speed;
+      state.startedAt = now;
+      state.speed = Number(speedControl.value);
+      speedValue.textContent = `${Number.isInteger(state.speed) ? state.speed : state.speed.toFixed(2).replace(/0$/, "")}x`;
+    });
+
+    setMode("ion");
+    state.rafId = requestAnimationFrame(renderFrame);
+  </script>
+</body>
+</html>

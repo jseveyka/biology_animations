@@ -1,0 +1,1546 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spirometry Animation</title>
+  <style>
+    :root {
+      --bg: #eef3f7;
+      --panel: #ffffff;
+      --ink: #172333;
+      --muted: #5d6c7c;
+      --line: #c8d3df;
+      --normal: #167ea6;
+      --normal-soft: #d8f0f8;
+      --asthma: #d75b27;
+      --asthma-soft: #ffe1cf;
+      --emphysema: #7346b7;
+      --emphysema-soft: #eadfff;
+      --air: #21a9d8;
+      --rv: #eadf8f;
+      --good: #25764e;
+      --warn: #a84b1d;
+      --shadow: 0 12px 34px rgba(21, 37, 56, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      letter-spacing: 0;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .app {
+      height: 100vh;
+      min-height: 720px;
+      display: grid;
+      grid-template-rows: 24px 68px minmax(0, 1fr);
+      gap: 8px;
+      padding: 10px;
+    }
+
+    .creditLine {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: #24394b;
+      font-size: 14px;
+      font-weight: 800;
+      box-shadow: var(--shadow);
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .titleBlock,
+    .callout {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .titleBlock {
+      padding: 8px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 25px;
+      line-height: 1.05;
+    }
+
+    .titleBlock p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .callout {
+      display: flex;
+      align-items: center;
+      padding: 8px 18px;
+      font-size: 21px;
+      font-weight: 800;
+      line-height: 1.2;
+      color: #143042;
+      background: linear-gradient(90deg, #ffffff 0%, #f7fbfd 100%);
+    }
+
+    .workspace {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(330px, 40%) minmax(0, 60%);
+      grid-template-rows: minmax(380px, 1fr) auto;
+      gap: 10px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .stagePanel,
+    .graphPanel {
+      position: relative;
+    }
+
+    .stagePanel {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .graphPanel {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .sidePanel {
+      grid-column: 1 / span 2;
+      grid-row: 2;
+      display: grid;
+      grid-template-columns: minmax(185px, 0.85fr) minmax(330px, 1.3fr) minmax(250px, 0.82fr) minmax(225px, 0.72fr) minmax(210px, 0.72fr);
+      gap: 8px;
+      align-items: start;
+      padding: 12px;
+      overflow: auto;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .controlGroup {
+      border: 1px solid #d7e0ea;
+      border-radius: 8px;
+      padding: 10px;
+      background: #fbfdff;
+    }
+
+    .controlGroup h2 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      line-height: 1.1;
+    }
+
+    .buttonRow {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .buttonRow.single {
+      grid-template-columns: 1fr;
+    }
+
+    .buttonRow.three {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    button {
+      border: 1px solid #aebdca;
+      background: #ffffff;
+      color: var(--ink);
+      border-radius: 7px;
+      min-height: 40px;
+      padding: 8px 10px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+    }
+
+    button:hover {
+      background: #f1f7fb;
+      border-color: #7ea2bb;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    .primaryButton {
+      background: #143e54;
+      color: #ffffff;
+      border-color: #143e54;
+    }
+
+    .primaryButton:hover {
+      background: #0e3144;
+    }
+
+    .conditionButton[data-active="true"] {
+      color: #ffffff;
+      border-color: transparent;
+    }
+
+    #normalBtn[data-active="true"] {
+      background: var(--normal);
+    }
+
+    #asthmaBtn[data-active="true"] {
+      background: var(--asthma);
+    }
+
+    #emphysemaBtn[data-active="true"] {
+      background: var(--emphysema);
+    }
+
+    .sliders {
+      display: grid;
+      gap: 10px;
+    }
+
+    .sliderLine {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(52px, auto);
+      column-gap: 10px;
+      row-gap: 6px;
+      align-items: center;
+    }
+
+    .sliderLine span {
+      font-size: 14px;
+      font-weight: 800;
+      color: #263747;
+    }
+
+    .sliderLine output {
+      min-width: 52px;
+      text-align: right;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--muted);
+    }
+
+    input[type="range"] {
+      grid-column: 1 / span 2;
+      width: 70%;
+      justify-self: start;
+      accent-color: var(--normal);
+    }
+
+    .values {
+      display: grid;
+      gap: 6px;
+      font-size: 15px;
+    }
+
+    .valueRow {
+      display: grid;
+      grid-template-columns: minmax(118px, 0.72fr) minmax(46px, 0.28fr);
+      gap: 4px;
+      align-items: center;
+      padding: 5px 0;
+      border-bottom: 1px solid #edf2f6;
+    }
+
+    .valueRow:last-child {
+      border-bottom: 0;
+    }
+
+    .valueRow strong {
+      color: #34485b;
+      font-weight: 800;
+    }
+
+    .valueRow span:last-child {
+      font-weight: 900;
+      text-align: right;
+    }
+
+    .note {
+      margin: 0;
+      color: #425566;
+      font-size: 13px;
+      line-height: 1.25;
+      border: 1px solid #dfe8ef;
+      border-radius: 8px;
+      padding: 10px;
+      background: #fbfdff;
+    }
+
+    .svgLabel {
+      font-size: 16px;
+      font-weight: 800;
+      fill: #1b2b3a;
+    }
+
+    .svgSmall {
+      font-size: 12px;
+      font-weight: 800;
+      fill: #33485a;
+    }
+
+    .svgTiny {
+      font-size: 10px;
+      font-weight: 800;
+      fill: #4b5e70;
+    }
+
+    .axisText {
+      font-size: 13px;
+      font-weight: 800;
+      fill: #34485b;
+    }
+
+    .axisTitle {
+      font-size: 16px;
+      font-weight: 900;
+      fill: #1d2c39;
+    }
+
+    .graphLabel {
+      font-size: 14px;
+      font-weight: 900;
+      fill: #14293b;
+      paint-order: stroke;
+      stroke: rgba(255, 255, 255, 0.9);
+      stroke-width: 4px;
+      stroke-linejoin: round;
+    }
+
+    .gridLine {
+      stroke: #e3ebf2;
+      stroke-width: 1;
+    }
+
+    .axisLine {
+      stroke: #24394b;
+      stroke-width: 2;
+    }
+
+    .lungFill {
+      fill: #cbeefa;
+      stroke: #167ea6;
+      stroke-width: 3;
+    }
+
+    .airway {
+      stroke: #53b9d7;
+      stroke-width: 5;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .smallAirway {
+      stroke: #53b9d7;
+      stroke-width: 2.5;
+      fill: none;
+      stroke-linecap: round;
+    }
+
+    .bodyShape {
+      fill: #e2e8f0;
+      stroke: #8898a8;
+      stroke-width: 2.5;
+    }
+
+    .skinShape {
+      fill: #f0c9ae;
+      stroke: #926a52;
+      stroke-width: 2;
+    }
+
+    .tube {
+      fill: none;
+      stroke: #9fb2c2;
+      stroke-width: 14;
+      stroke-linecap: round;
+    }
+
+    .tubeInner {
+      fill: none;
+      stroke: #e9f6fb;
+      stroke-width: 7;
+      stroke-linecap: round;
+    }
+
+    .airDot {
+      fill: var(--air);
+      opacity: 0.85;
+    }
+
+    .retainedDot {
+      fill: var(--rv);
+      stroke: #b7a65b;
+      stroke-width: 0.6;
+    }
+
+    .calloutTag {
+      fill: #ffffff;
+      stroke: #cbd7e2;
+      stroke-width: 1.5;
+    }
+
+    .insetPanel {
+      fill: #ffffff;
+      stroke: #cbd7e2;
+      stroke-width: 1.5;
+      filter: drop-shadow(0 6px 10px rgba(30, 50, 70, 0.14));
+    }
+
+    .diseaseInset {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease;
+    }
+
+    body[data-condition="asthma"] #asthmaInset,
+    body[data-condition="emphysema"] #emphysemaInset {
+      opacity: 1;
+    }
+
+    body[data-condition="asthma"] .airway,
+    body[data-condition="asthma"] .smallAirway {
+      stroke: var(--asthma);
+    }
+
+    body[data-condition="emphysema"] .airway,
+    body[data-condition="emphysema"] .smallAirway {
+      stroke: var(--emphysema);
+    }
+
+    body[data-condition="asthma"] .lungFill {
+      fill: #ffe9dc;
+      stroke: var(--asthma);
+    }
+
+    body[data-condition="emphysema"] .lungFill {
+      fill: #eee7ff;
+      stroke: var(--emphysema);
+    }
+
+    #collapseMarks,
+    #collapseAirways,
+    #emphysemaAirTrapLabel {
+      opacity: 0;
+      transition: opacity 180ms ease;
+    }
+
+    body[data-condition="emphysema"] #collapseAirways,
+    body[data-condition="emphysema"] #emphysemaAirTrapLabel {
+      opacity: 1;
+    }
+
+    @media (max-height: 720px) {
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        height: auto;
+        min-height: 760px;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .workspace {
+        grid-template-columns: 1fr;
+        grid-template-rows: 340px 320px auto;
+      }
+
+      .sidePanel {
+        grid-column: auto;
+        grid-row: auto;
+        grid-template-columns: 1fr;
+      }
+
+      .stagePanel,
+      .graphPanel {
+        grid-column: auto;
+        grid-row: auto;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+      }
+    }
+  </style>
+</head>
+<body data-condition="normal">
+  <div class="app">
+    <div class="creditLine">Animation Prompted by Jerred Seveyka for his biology class</div>
+    <header class="topbar">
+      <div class="titleBlock">
+        <h1>Spirometry Animation</h1>
+        <p>Basic lung volumes, FEV1, FVC, and obstructive patterns</p>
+      </div>
+      <div id="callout" class="callout" aria-live="polite">Quiet breathing produces tidal volume.</div>
+    </header>
+
+    <main class="workspace">
+      <section class="panel stagePanel" aria-label="Human, lungs, mouthpiece, and bellows spirometer animation">
+        <svg id="modelSvg" viewBox="-265 0 705 430" role="img" aria-label="Animated person connected to a bellows spirometer">
+          <defs>
+            <linearGradient id="waterGrad" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#aee7f3"/>
+              <stop offset="1" stop-color="#62bed6"/>
+            </linearGradient>
+            <linearGradient id="bellGrad" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#f6fbff"/>
+              <stop offset="1" stop-color="#b8c8d6"/>
+            </linearGradient>
+            <marker id="arrowHead" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#21a9d8"></path>
+            </marker>
+          </defs>
+
+          <rect x="-265" y="0" width="705" height="430" fill="#fbfdff"></rect>
+          <path d="M74 310 C142 296, 222 300, 300 294 C344 290, 388 294, 432 286" fill="none" stroke="#edf2f6" stroke-width="18" stroke-linecap="round"></path>
+
+          <g id="personGroup">
+            <path class="bodyShape" d="M136 119 C118 150,112 196,123 247 C133 294,176 318,218 300 C251 286,259 230,246 184 C235 146,214 123,189 114 C170 107,150 111,136 119 Z"></path>
+            <path class="skinShape" d="M151 62 C154 39,170 24,192 25 C213 26,228 42,231 64 C237 68,240 76,235 82 C232 86,226 87,223 91 C219 109,204 122,184 122 C164 121,149 108,145 88 C143 78,145 69,151 62 Z"></path>
+            <path d="M193 67 C207 69,220 75,229 88" fill="none" stroke="#926a52" stroke-width="3" stroke-linecap="round"></path>
+            <circle cx="199" cy="62" r="3.4" fill="#263747"></circle>
+            <path d="M218 93 C226 92,235 95,240 101" fill="none" stroke="#8b5f49" stroke-width="3" stroke-linecap="round"></path>
+            <text x="105" y="306" class="svgSmall">Chest expands and recoils</text>
+
+            <g id="lungsScaleGroup">
+              <path id="leftLung" class="lungFill" d="M178 139 C151 143,138 165,139 198 C140 227,155 252,181 257 C188 234,190 207,189 179 C188 160,185 147,178 139 Z"></path>
+              <path id="rightLung" class="lungFill" d="M197 139 C225 144,239 166,237 199 C235 229,218 252,194 257 C188 234,187 207,189 179 C190 160,191 147,197 139 Z"></path>
+              <path class="airway" d="M188 108 L188 150"></path>
+              <path class="airway" d="M188 151 C176 161,168 174,160 191"></path>
+              <path class="airway" d="M188 151 C203 160,213 174,222 193"></path>
+              <g id="collapseAirways">
+                <path id="collapseAirwayLeftOuter" d="M160 192 C150 203,148 218,148 234" fill="none" stroke="#7346b7" stroke-width="8" stroke-linecap="round"></path>
+                <path id="collapseAirwayLeftLumen" d="M160 192 C150 203,148 218,148 234" fill="none" stroke="#eef8fb" stroke-width="4" stroke-linecap="round"></path>
+                <path id="collapseAirwayRightOuter" d="M222 194 C234 205,235 220,232 236" fill="none" stroke="#7346b7" stroke-width="8" stroke-linecap="round"></path>
+                <path id="collapseAirwayRightLumen" d="M222 194 C234 205,235 220,232 236" fill="none" stroke="#eef8fb" stroke-width="4" stroke-linecap="round"></path>
+              </g>
+              <g id="collapseMarks">
+                <path d="M149 221 L161 213" stroke="#b32638" stroke-width="4" stroke-linecap="round"></path>
+                <path d="M223 225 L236 218" stroke="#b32638" stroke-width="4" stroke-linecap="round"></path>
+                <path d="M176 228 L185 219" stroke="#b32638" stroke-width="4" stroke-linecap="round"></path>
+              </g>
+              <g id="airwayDots"></g>
+              <g id="retainedDots"></g>
+            </g>
+
+            <g id="emphysemaAirTrapLabel">
+              <rect x="88" y="258" width="178" height="30" rx="7" class="calloutTag"></rect>
+              <text x="99" y="278" class="svgSmall" fill="#6d4b00">retained air remains</text>
+            </g>
+          </g>
+
+          <g id="tubeGroup">
+            <path class="tube" d="M225 98 C242 100, 256 107, 270 122"></path>
+            <path class="tubeInner" d="M225 98 C242 100, 256 107, 270 122"></path>
+            <g id="tubeDots"></g>
+            <text x="247" y="87" class="svgSmall">mouthpiece and tube</text>
+          </g>
+
+          <g id="spirometerGroup">
+            <text x="263" y="52" class="svgLabel">Bellows spirometer</text>
+            <rect x="260" y="86" width="152" height="178" rx="10" fill="#f7fbfd" stroke="#71899c" stroke-width="3"></rect>
+            <path d="M270 122 C280 122, 286 126, 292 134" fill="none" stroke="#9fb2c2" stroke-width="10" stroke-linecap="round"></path>
+            <path d="M270 122 C280 122, 286 126, 292 134" fill="none" stroke="#e9f6fb" stroke-width="5" stroke-linecap="round"></path>
+            <rect x="276" y="112" width="28" height="86" rx="6" fill="#d7e5ef" stroke="#667f91" stroke-width="2"></rect>
+            <path id="bellowsBody" d="M304 112 L324 104 L324 206 L304 198 Z" fill="#dcecf4" stroke="#5e7283" stroke-width="2"></path>
+            <path id="bellowsFolds" d="M310 116 L318 126 L310 136 L318 146 L310 156 L318 166 L310 176 L318 186" fill="none" stroke="#667f91" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            <g id="bellMoveGroup">
+              <rect x="323" y="104" width="48" height="102" rx="9" fill="url(#bellGrad)" stroke="#5e7283" stroke-width="3"></rect>
+              <path d="M333 126 H361 M333 146 H361 M333 166 H361" stroke="#ffffff" stroke-width="3" opacity="0.7" stroke-linecap="round"></path>
+              <text x="334" y="193" class="svgTiny">moving bellows</text>
+            </g>
+            <g id="recordingGroup">
+              <rect x="278" y="212" width="120" height="42" rx="6" fill="#fff9e8" stroke="#b9aa76" stroke-width="2"></rect>
+              <path id="paperTrace" d="M285 233 C300 226, 316 240, 333 232 C349 224, 369 239, 390 231" fill="none" stroke="#596878" stroke-width="2"></path>
+              <line id="penArm" x1="326" y1="236" x2="352" y2="229" stroke="#364657" stroke-width="3" stroke-linecap="round"></line>
+              <circle id="penTip" cx="352" cy="229" r="3.5" fill="#b32638"></circle>
+              <text x="286" y="244" class="svgTiny">recording pen</text>
+            </g>
+            <text x="286" y="273" class="svgTiny" fill="#314658">
+              <tspan x="286" dy="0">bellows expand</tspan>
+              <tspan x="286" dy="13">and contract</tspan>
+            </text>
+          </g>
+
+          <g id="asthmaInset" class="diseaseInset" transform="matrix(1.7 0 0 1.7 -870 -35)">
+            <rect x="361" y="30" width="202" height="150" rx="8" class="insetPanel"></rect>
+            <text x="377" y="53" class="svgSmall" style="font-size:15px" fill="#8f3516">Asthma airway</text>
+            <circle cx="456" cy="108" r="50" fill="#ffd5bd" stroke="#d75b27" stroke-width="5"></circle>
+            <circle cx="456" cy="108" r="22" fill="#e4f7fd" stroke="#d75b27" stroke-width="3"></circle>
+            <path d="M440 103 C449 94, 464 94, 472 104 C466 99, 450 105, 443 115 Z" fill="#f0b735" stroke="#a86b00" stroke-width="1.5"></path>
+            <path d="M414 78 C435 58, 479 58, 500 78" fill="none" stroke="#bc3b1f" stroke-width="5" stroke-linecap="round"></path>
+            <path d="M414 138 C435 158, 479 158, 500 138" fill="none" stroke="#bc3b1f" stroke-width="5" stroke-linecap="round"></path>
+            <line x1="496" y1="78" x2="530" y2="69" stroke="#d75b27" stroke-width="2"></line>
+            <text x="494" y="65" class="svgTiny" style="font-size:10.5px">bronchiole constriction</text>
+            <line x1="472" y1="108" x2="531" y2="108" stroke="#a86b00" stroke-width="2"></line>
+            <text x="508" y="103" class="svgTiny" style="font-size:11px">mucus</text>
+            <line x1="423" y1="145" x2="385" y2="164" stroke="#d75b27" stroke-width="2"></line>
+            <text x="374" y="171" class="svgTiny" style="font-size:11px">swollen lining</text>
+          </g>
+
+          <g id="emphysemaInset" class="diseaseInset">
+            <rect x="-255" y="14" width="342" height="260" rx="10" class="insetPanel"></rect>
+            <text x="-239" y="45" class="svgSmall" style="font-size:18px" fill="#5d348f">Emphysema alveolar sac</text>
+            <text x="-239" y="69" class="svgTiny" style="font-size:14px">bronchiole enters damaged air spaces</text>
+            <path id="insetBronchioleOuter" d="M-239 135 C-199 116, -166 113, -128 132" fill="none" stroke="#7346b7" stroke-width="18" stroke-linecap="round"></path>
+            <path id="insetBronchioleLumen" d="M-239 135 C-199 116, -166 113, -128 132" fill="none" stroke="#eef8fb" stroke-width="9" stroke-linecap="round"></path>
+            <path d="M-132 132 C-142 96, -112 75, -78 87 C-49 50, 16 69, 20 116 C55 132, 47 192, 5 200 C-23 236, -91 219, -98 178 C-134 181, -153 158, -132 132 Z" fill="#eee7ff" stroke="#7346b7" stroke-width="4"></path>
+            <path d="M-72 109 L-91 161 M-16 102 L-39 174" stroke="#b32638" stroke-width="4" stroke-linecap="round" stroke-dasharray="9 8"></path>
+            <path d="M-8 74 L31 51 M3 89 L45 70" fill="none" stroke="#6a8f54" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="6 7"></path>
+            <text x="-2" y="101" class="svgTiny" style="font-size:14px">few recoil fibers</text>
+            <rect x="-239" y="219" width="310" height="45" rx="7" fill="#ffffff" stroke="#d8cbed" stroke-width="1.5"></rect>
+            <text x="-226" y="237" class="svgTiny" style="font-size:13px">Broken septa create connected enlarged air spaces.</text>
+            <text x="-226" y="255" class="svgTiny" style="font-size:13px">Bronchiole collapses on exhale.</text>
+          </g>
+
+          <g id="stageDiseaseLabel">
+            <rect x="92" y="340" width="326" height="74" rx="8" fill="#ffffff" stroke="#d4dee7" stroke-width="1.5"></rect>
+            <text id="diseaseLabel" x="104" y="363" class="svgSmall">Normal: open airways and elastic recoil support fast exhalation.</text>
+          </g>
+        </svg>
+      </section>
+
+      <section class="panel graphPanel" aria-label="Volume time spirometry graph">
+        <svg id="graphSvg" viewBox="0 0 900 360" role="img" aria-label="Animated volume time graph">
+          <rect x="0" y="0" width="900" height="360" fill="#ffffff"></rect>
+          <g id="gridLayer"></g>
+          <rect id="rvBand" x="70" y="230" width="770" height="1" fill="#eadf8f" opacity="0.42"></rect>
+          <path id="normalReferencePath" fill="none" stroke="#167ea6" stroke-width="4" stroke-dasharray="9 8" opacity="0"></path>
+          <path id="curvePath" fill="none" stroke="#167ea6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path>
+          <rect id="fevShade" x="0" y="0" width="0" height="0" fill="#67c5e0" opacity="0"></rect>
+          <g id="oneSecondGroup" opacity="0">
+            <line id="oneSecondLine" x1="0" y1="24" x2="0" y2="236" stroke="#263747" stroke-width="2.5" stroke-dasharray="7 6"></line>
+            <text id="oneSecondText" x="0" y="38" text-anchor="middle" class="graphLabel">1 sec</text>
+          </g>
+          <g id="tvBracket" opacity="0">
+            <line id="tvLine" x1="0" y1="0" x2="0" y2="0" stroke="#1f6f8a" stroke-width="3"></line>
+            <path id="tvCaps" d="" fill="none" stroke="#1f6f8a" stroke-width="3"></path>
+            <text id="tvText" x="0" y="0" class="graphLabel">TV</text>
+          </g>
+          <g id="irvBracket" opacity="0">
+            <line id="irvLine" x1="0" y1="0" x2="0" y2="0" stroke="#25764e" stroke-width="3"></line>
+            <path id="irvCaps" d="" fill="none" stroke="#25764e" stroke-width="3"></path>
+            <text id="irvText" x="0" y="0" class="graphLabel">IRV</text>
+          </g>
+          <g id="ervBracket" opacity="0">
+            <line id="ervLine" x1="0" y1="0" x2="0" y2="0" stroke="#816c20" stroke-width="3"></line>
+            <path id="ervCaps" d="" fill="none" stroke="#816c20" stroke-width="3"></path>
+            <text id="ervText" x="0" y="0" class="graphLabel">ERV</text>
+          </g>
+          <g id="fevBracket" opacity="0">
+            <line id="fevLine" x1="0" y1="0" x2="0" y2="0" stroke="#b32638" stroke-width="4"></line>
+            <path id="fevCaps" d="" fill="none" stroke="#b32638" stroke-width="4"></path>
+            <text id="fevText" x="0" y="0" class="graphLabel" fill="#b32638">FEV1</text>
+          </g>
+          <g id="fvcBracket" opacity="0">
+            <line id="fvcLine" x1="0" y1="0" x2="0" y2="0" stroke="#143e54" stroke-width="4"></line>
+            <path id="fvcCaps" d="" fill="none" stroke="#143e54" stroke-width="4"></path>
+            <text id="fvcText" x="0" y="0" class="graphLabel">FVC/VC</text>
+          </g>
+          <g id="ratioBadge" opacity="0">
+            <rect id="ratioRect" x="663" y="28" width="167" height="34" rx="7" fill="#ffffff" stroke="#c4d0dc" stroke-width="1.5"></rect>
+            <text id="ratioText" x="746" y="51" text-anchor="middle" class="graphLabel">FEV1/FVC 80%</text>
+          </g>
+          <g id="rvLabelGroup">
+            <text id="rvText" x="74" y="228" class="graphLabel" fill="#6f5d16">RV visual only</text>
+          </g>
+          <g id="legendGroup" opacity="0">
+            <rect x="92" y="58" width="132" height="56" rx="7" fill="#ffffff" stroke="#cbd7e2"></rect>
+            <line x1="106" y1="77" x2="138" y2="77" stroke="#167ea6" stroke-width="4" stroke-dasharray="8 6"></line>
+            <text x="148" y="81" class="svgTiny">Normal</text>
+            <line id="legendDiseaseLine" x1="106" y1="100" x2="138" y2="100" stroke="#d75b27" stroke-width="5"></line>
+            <text id="legendDiseaseText" x="148" y="104" class="svgTiny">Asthma</text>
+          </g>
+        </svg>
+      </section>
+
+      <aside class="panel sidePanel" aria-label="Controls and values">
+        <div class="controlGroup">
+          <h2>Run</h2>
+          <div class="buttonRow single">
+            <button id="runNormalBtn" class="primaryButton" type="button">Run normal spirometry</button>
+          </div>
+          <div class="buttonRow single">
+            <button id="resetBtn" type="button">Reset</button>
+          </div>
+        </div>
+
+        <div class="controlGroup">
+          <h2>Condition</h2>
+          <div class="buttonRow three">
+            <button id="asthmaBtn" class="conditionButton" type="button">Asthma</button>
+            <button id="emphysemaBtn" class="conditionButton" type="button">Emphysema</button>
+            <button id="normalBtn" class="conditionButton" type="button" data-active="true">Normal</button>
+          </div>
+        </div>
+
+        <div class="controlGroup">
+          <div class="sliders">
+            <label class="sliderLine">
+              <span>Airway resistance</span>
+              <output id="resistanceOut">1.0</output>
+              <input id="resistanceSlider" type="range" min="0.5" max="2.5" value="1.0" step="0.05">
+            </label>
+            <label class="sliderLine">
+              <span>Elastic recoil</span>
+              <output id="recoilOut">1.0</output>
+              <input id="recoilSlider" type="range" min="0.3" max="1.3" value="1.0" step="0.05">
+            </label>
+            <label class="sliderLine">
+              <span>Retained air / residual volume</span>
+              <output id="rvOut">1.2 L</output>
+              <input id="rvSlider" type="range" min="1.0" max="2.7" value="1.2" step="0.05">
+            </label>
+          </div>
+        </div>
+
+        <div class="controlGroup">
+          <h2>Displayed values</h2>
+          <div class="values">
+            <div class="valueRow"><strong>Condition</strong><span id="conditionValue">Normal</span></div>
+            <div class="valueRow"><strong>FEV1</strong><span id="fev1Value">3.7 L</span></div>
+            <div class="valueRow"><strong>FVC</strong><span id="fvcValue">4.6 L</span></div>
+            <div class="valueRow"><strong>FEV1/FVC</strong><span id="ratioValue">80%</span></div>
+            <div class="valueRow"><strong>Retained air / RV</strong><span id="rvValue">1.2 L</span></div>
+            <div class="valueRow"><strong>Airway resistance</strong><span id="resValue">1.0</span></div>
+            <div class="valueRow"><strong>Elastic recoil</strong><span id="recoilValue">1.0</span></div>
+          </div>
+        </div>
+
+        <p class="note">Residual volume and air trapping are shown visually; they are not directly measured by simple spirometry.</p>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    // Constants and basic utilities for deterministic SVG animation.
+    const SVG_NS = "http://www.w3.org/2000/svg";
+    const AXIS = { x: 70, y: 30, w: 770, h: 270, xMax: 10, yMax: 6.6 };
+    const PHASE = { quietEnd: 2.8, inhaleEnd: 4.1 };
+    const TV_L = 0.5;
+    const ERV_L = 1.1;
+
+    const PRESETS = {
+      normal: {
+        label: "Normal",
+        resistance: 1.0,
+        recoil: 1.0,
+        rv: 1.2,
+        color: "#167ea6",
+        soft: "#d8f0f8",
+        diseaseText: "Normal: open airways and elastic recoil support fast exhalation."
+      },
+      asthma: {
+        label: "Asthma",
+        resistance: 2.2,
+        recoil: 0.95,
+        rv: 1.45,
+        color: "#d75b27",
+        soft: "#ffe1cf",
+        diseaseText: "Asthma: narrowed airways increase resistance, especially during exhalation."
+      },
+      emphysema: {
+        label: "Emphysema",
+        resistance: 1.8,
+        recoil: 0.35,
+        rv: 2.4,
+        color: "#7346b7",
+        soft: "#eadfff",
+        diseaseText: "Emphysema: alveolar walls are destroyed, elastic recoil is reduced, and bronchioles collapse during exhalation, trapping air."
+      }
+    };
+
+    const els = {
+      callout: document.getElementById("callout"),
+      runNormalBtn: document.getElementById("runNormalBtn"),
+      resetBtn: document.getElementById("resetBtn"),
+      normalBtn: document.getElementById("normalBtn"),
+      asthmaBtn: document.getElementById("asthmaBtn"),
+      emphysemaBtn: document.getElementById("emphysemaBtn"),
+      resistanceSlider: document.getElementById("resistanceSlider"),
+      recoilSlider: document.getElementById("recoilSlider"),
+      rvSlider: document.getElementById("rvSlider"),
+      resistanceOut: document.getElementById("resistanceOut"),
+      recoilOut: document.getElementById("recoilOut"),
+      rvOut: document.getElementById("rvOut"),
+      conditionValue: document.getElementById("conditionValue"),
+      fev1Value: document.getElementById("fev1Value"),
+      fvcValue: document.getElementById("fvcValue"),
+      ratioValue: document.getElementById("ratioValue"),
+      rvValue: document.getElementById("rvValue"),
+      resValue: document.getElementById("resValue"),
+      recoilValue: document.getElementById("recoilValue"),
+      lungsScaleGroup: document.getElementById("lungsScaleGroup"),
+      bellMoveGroup: document.getElementById("bellMoveGroup"),
+      bellowsBody: document.getElementById("bellowsBody"),
+      bellowsFolds: document.getElementById("bellowsFolds"),
+      penArm: document.getElementById("penArm"),
+      penTip: document.getElementById("penTip"),
+      paperTrace: document.getElementById("paperTrace"),
+      airwayDots: document.getElementById("airwayDots"),
+      tubeDots: document.getElementById("tubeDots"),
+      retainedDots: document.getElementById("retainedDots"),
+      collapseMarks: document.getElementById("collapseMarks"),
+      collapseAirwayLeftOuter: document.getElementById("collapseAirwayLeftOuter"),
+      collapseAirwayLeftLumen: document.getElementById("collapseAirwayLeftLumen"),
+      collapseAirwayRightOuter: document.getElementById("collapseAirwayRightOuter"),
+      collapseAirwayRightLumen: document.getElementById("collapseAirwayRightLumen"),
+      insetBronchioleOuter: document.getElementById("insetBronchioleOuter"),
+      insetBronchioleLumen: document.getElementById("insetBronchioleLumen"),
+      diseaseLabel: document.getElementById("diseaseLabel"),
+      gridLayer: document.getElementById("gridLayer"),
+      curvePath: document.getElementById("curvePath"),
+      normalReferencePath: document.getElementById("normalReferencePath"),
+      rvBand: document.getElementById("rvBand"),
+      fevShade: document.getElementById("fevShade"),
+      oneSecondGroup: document.getElementById("oneSecondGroup"),
+      oneSecondLine: document.getElementById("oneSecondLine"),
+      oneSecondText: document.getElementById("oneSecondText"),
+      tvBracket: document.getElementById("tvBracket"),
+      tvLine: document.getElementById("tvLine"),
+      tvCaps: document.getElementById("tvCaps"),
+      tvText: document.getElementById("tvText"),
+      irvBracket: document.getElementById("irvBracket"),
+      irvLine: document.getElementById("irvLine"),
+      irvCaps: document.getElementById("irvCaps"),
+      irvText: document.getElementById("irvText"),
+      ervBracket: document.getElementById("ervBracket"),
+      ervLine: document.getElementById("ervLine"),
+      ervCaps: document.getElementById("ervCaps"),
+      ervText: document.getElementById("ervText"),
+      fevBracket: document.getElementById("fevBracket"),
+      fevLine: document.getElementById("fevLine"),
+      fevCaps: document.getElementById("fevCaps"),
+      fevText: document.getElementById("fevText"),
+      fvcBracket: document.getElementById("fvcBracket"),
+      fvcLine: document.getElementById("fvcLine"),
+      fvcCaps: document.getElementById("fvcCaps"),
+      fvcText: document.getElementById("fvcText"),
+      ratioBadge: document.getElementById("ratioBadge"),
+      ratioText: document.getElementById("ratioText"),
+      rvText: document.getElementById("rvText"),
+      legendGroup: document.getElementById("legendGroup"),
+      legendDiseaseLine: document.getElementById("legendDiseaseLine"),
+      legendDiseaseText: document.getElementById("legendDiseaseText")
+    };
+
+    const state = {
+      condition: "normal",
+      running: false,
+      preview: false,
+      finished: false,
+      runStart: 0,
+      idleStart: performance.now(),
+      lastVolume: 3.0
+    };
+
+    const tubePoints = [
+      [225, 98],
+      [241, 101],
+      [256, 109],
+      [270, 122]
+    ];
+
+    const airwayDotSeeds = [
+      [180, 165], [171, 187], [160, 213], [178, 230], [203, 168],
+      [219, 190], [229, 217], [204, 232], [188, 151], [187, 126]
+    ];
+
+    const retainedDotSeeds = [
+      [153, 222], [164, 241], [181, 228], [211, 236], [226, 222],
+      [202, 213], [151, 201], [220, 198], [171, 214], [234, 238],
+      [144, 232], [194, 245], [215, 183], [160, 183], [185, 205],
+      [199, 225], [226, 207], [154, 242]
+    ];
+
+    const tubeDots = [];
+    const airwayDots = [];
+    const retainedDots = [];
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function easeInOut(t) {
+      const p = clamp(t, 0, 1);
+      return p * p * (3 - 2 * p);
+    }
+
+    function fmt1(value) {
+      return value.toFixed(1);
+    }
+
+    function mapX(t) {
+      return AXIS.x + (t / AXIS.xMax) * AXIS.w;
+    }
+
+    function mapY(liters) {
+      return AXIS.y + AXIS.h - (liters / AXIS.yMax) * AXIS.h;
+    }
+
+    function createSvg(tag, attrs = {}) {
+      const el = document.createElementNS(SVG_NS, tag);
+      Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+      return el;
+    }
+
+    function setWrappedSvgText(textEl, text, x, y, maxChars, lineHeight) {
+      if (textEl.dataset.rawText === text) return;
+      textEl.dataset.rawText = text;
+      textEl.textContent = "";
+      const words = text.split(" ");
+      let line = "";
+      let lineIndex = 0;
+
+      function addLine(value) {
+        const tspan = createSvg("tspan", { x, y: y + lineIndex * lineHeight });
+        tspan.textContent = value;
+        textEl.appendChild(tspan);
+        lineIndex += 1;
+      }
+
+      words.forEach((word) => {
+        const next = line ? `${line} ${word}` : word;
+        if (next.length > maxChars && line) {
+          addLine(line);
+          line = word;
+        } else {
+          line = next;
+        }
+      });
+
+      if (line) addLine(line);
+    }
+
+    // Grid, axes, and deterministic dot fields are built once at startup.
+    function buildStaticSvg() {
+      for (let t = 0; t <= AXIS.xMax; t += 1) {
+        const x = mapX(t);
+        els.gridLayer.appendChild(createSvg("line", {
+          x1: x, y1: AXIS.y, x2: x, y2: AXIS.y + AXIS.h, class: "gridLine"
+        }));
+        const tick = createSvg("text", {
+          x, y: AXIS.y + AXIS.h + 20, "text-anchor": "middle", class: "axisText"
+        });
+        tick.textContent = String(t);
+        els.gridLayer.appendChild(tick);
+      }
+
+      for (let v = 0; v <= 6; v += 1) {
+        const y = mapY(v);
+        els.gridLayer.appendChild(createSvg("line", {
+          x1: AXIS.x, y1: y, x2: AXIS.x + AXIS.w, y2: y, class: "gridLine"
+        }));
+        const tick = createSvg("text", {
+          x: AXIS.x - 12, y: y + 5, "text-anchor": "end", class: "axisText"
+        });
+        tick.textContent = String(v);
+        els.gridLayer.appendChild(tick);
+      }
+
+      els.gridLayer.appendChild(createSvg("line", {
+        x1: AXIS.x, y1: AXIS.y, x2: AXIS.x, y2: AXIS.y + AXIS.h, class: "axisLine"
+      }));
+      els.gridLayer.appendChild(createSvg("line", {
+        x1: AXIS.x, y1: AXIS.y + AXIS.h, x2: AXIS.x + AXIS.w, y2: AXIS.y + AXIS.h, class: "axisLine"
+      }));
+
+      const xTitle = createSvg("text", {
+        x: AXIS.x + AXIS.w / 2,
+        y: 350,
+        "text-anchor": "middle",
+        class: "axisTitle"
+      });
+      xTitle.textContent = "Time (seconds)";
+      els.gridLayer.appendChild(xTitle);
+
+      const yTitle = createSvg("text", {
+        x: 22,
+        y: AXIS.y + AXIS.h / 2,
+        "text-anchor": "middle",
+        transform: `rotate(-90 22 ${AXIS.y + AXIS.h / 2})`,
+        class: "axisTitle"
+      });
+      yTitle.textContent = "Lung volume (liters)";
+      els.gridLayer.appendChild(yTitle);
+
+      for (let i = 0; i < 8; i += 1) {
+        const dot = createSvg("circle", { r: 4.5, class: "airDot" });
+        els.tubeDots.appendChild(dot);
+        tubeDots.push(dot);
+      }
+
+      airwayDotSeeds.forEach(([cx, cy]) => {
+        const dot = createSvg("circle", { cx, cy, r: 3.1, class: "airDot" });
+        els.airwayDots.appendChild(dot);
+        airwayDots.push(dot);
+      });
+
+      retainedDotSeeds.forEach(([cx, cy]) => {
+        const dot = createSvg("circle", { cx, cy, r: 3.4, class: "retainedDot" });
+        els.retainedDots.appendChild(dot);
+        retainedDots.push(dot);
+      });
+    }
+
+    // Slider values are converted into educational spirometry values.
+    function metricsFromControls() {
+      const resistance = Number(els.resistanceSlider.value);
+      const recoil = Number(els.recoilSlider.value);
+      const rv = Number(els.rvSlider.value);
+      const fvc = clamp(
+        4.6 - 0.27 * (resistance - 1) - 0.35 * (rv - 1.2) - 0.25 * (1 - recoil),
+        2.7,
+        5.1
+      );
+      const ratio = clamp(
+        0.80 - 0.22 * (resistance - 1) - 0.26 * (1 - recoil) - 0.04 * (rv - 1.2),
+        0.32,
+        0.84
+      );
+      const fev1 = fvc * ratio;
+      const frc = rv + ERV_L;
+      const top = rv + fvc;
+      const color = PRESETS[state.condition].color;
+      const soft = PRESETS[state.condition].soft;
+      const exhaleDuration = clamp(3.45 + (resistance - 1) * 1.0 + (1 - recoil) * 2.0 + (rv - 1.2) * 0.28, 3.2, 5.6);
+      const curveShape = clamp(1.0 + (resistance - 1) * 0.08 + (1 - recoil) * 0.72, 0.9, 1.62);
+
+      return {
+        resistance,
+        recoil,
+        rv,
+        fvc,
+        ratio,
+        fev1,
+        frc,
+        top,
+        color,
+        soft,
+        exhaleDuration,
+        curveShape,
+        tv: TV_L,
+        erv: ERV_L,
+        irv: Math.max(0.3, top - (frc + TV_L))
+      };
+    }
+
+    function metricsForPreset(key) {
+      const saved = {
+        condition: state.condition,
+        res: els.resistanceSlider.value,
+        recoil: els.recoilSlider.value,
+        rv: els.rvSlider.value
+      };
+      state.condition = key;
+      els.resistanceSlider.value = PRESETS[key].resistance;
+      els.recoilSlider.value = PRESETS[key].recoil;
+      els.rvSlider.value = PRESETS[key].rv;
+      const metrics = metricsFromControls();
+      state.condition = saved.condition;
+      els.resistanceSlider.value = saved.res;
+      els.recoilSlider.value = saved.recoil;
+      els.rvSlider.value = saved.rv;
+      return metrics;
+    }
+
+    function quietVolumeAt(t, metrics) {
+      const base = metrics.frc;
+      const wave = (Math.sin(2 * Math.PI * 0.72 * t - Math.PI / 2) + 1) / 2;
+      return base + metrics.tv * wave;
+    }
+
+    function solveExhaleK(targetFraction, duration, shape) {
+      let lo = 0.001;
+      let hi = 12;
+      const dPow = Math.pow(duration, shape);
+      const onePow = Math.pow(1, shape);
+
+      for (let i = 0; i < 48; i += 1) {
+        const mid = (lo + hi) / 2;
+        const fraction = (1 - Math.exp(-mid * onePow)) / (1 - Math.exp(-mid * dPow));
+        if (fraction < targetFraction) {
+          lo = mid;
+        } else {
+          hi = mid;
+        }
+      }
+      return (lo + hi) / 2;
+    }
+
+    function exhaledAt(u, metrics) {
+      const t = clamp(u, 0, metrics.exhaleDuration);
+      const target = clamp(metrics.fev1 / metrics.fvc, 0.2, 0.9);
+      const k = solveExhaleK(target, metrics.exhaleDuration, metrics.curveShape);
+      const numerator = 1 - Math.exp(-k * Math.pow(t, metrics.curveShape));
+      const denominator = 1 - Math.exp(-k * Math.pow(metrics.exhaleDuration, metrics.curveShape));
+      return metrics.fvc * (numerator / denominator);
+    }
+
+    function volumeAtTime(t, metrics) {
+      if (t <= PHASE.quietEnd) {
+        return quietVolumeAt(t, metrics);
+      }
+
+      if (t <= PHASE.inhaleEnd) {
+        const startVolume = quietVolumeAt(PHASE.quietEnd, metrics);
+        const p = easeInOut((t - PHASE.quietEnd) / (PHASE.inhaleEnd - PHASE.quietEnd));
+        return lerp(startVolume, metrics.top, p);
+      }
+
+      const exhaleTime = t - PHASE.inhaleEnd;
+      if (exhaleTime >= metrics.exhaleDuration) {
+        return metrics.rv;
+      }
+      return metrics.top - exhaledAt(exhaleTime, metrics);
+    }
+
+    function curvePathData(metrics, endTime, quietShift = 0) {
+      const limit = clamp(endTime, 0, AXIS.xMax);
+      const step = 0.035;
+      let d = "";
+      for (let t = 0; t <= limit + 0.0001; t += step) {
+        const graphTime = t;
+        let v;
+        if (!state.running && !state.preview && !state.finished) {
+          v = quietVolumeAt(t + quietShift, metrics);
+        } else {
+          v = volumeAtTime(graphTime, metrics);
+        }
+        const x = mapX(graphTime);
+        const y = mapY(v);
+        d += d ? ` L ${x.toFixed(2)} ${y.toFixed(2)}` : `M ${x.toFixed(2)} ${y.toFixed(2)}`;
+      }
+      return d;
+    }
+
+    function bracketCaps(x, y1, y2, width, direction = 1) {
+      const cap = width * direction;
+      return `M ${x} ${y1} L ${x + cap} ${y1} M ${x} ${y2} L ${x + cap} ${y2}`;
+    }
+
+    function pointOnPolyline(points, t) {
+      const segments = [];
+      let total = 0;
+      for (let i = 0; i < points.length - 1; i += 1) {
+        const [x1, y1] = points[i];
+        const [x2, y2] = points[i + 1];
+        const length = Math.hypot(x2 - x1, y2 - y1);
+        segments.push({ x1, y1, x2, y2, length });
+        total += length;
+      }
+
+      let remaining = clamp(t, 0, 1) * total;
+      for (const segment of segments) {
+        if (remaining <= segment.length) {
+          const p = segment.length === 0 ? 0 : remaining / segment.length;
+          return [lerp(segment.x1, segment.x2, p), lerp(segment.y1, segment.y2, p)];
+        }
+        remaining -= segment.length;
+      }
+      return points[points.length - 1];
+    }
+
+    // The graph annotations update from the same values used by the animation.
+    function updateGraph(metrics, progress, now) {
+      const quietOnly = !state.running && !state.preview && !state.finished;
+      const drawEnd = quietOnly ? PHASE.quietEnd : (state.running ? progress : AXIS.xMax);
+      const shift = quietOnly ? (now - state.idleStart) / 1000 : 0;
+
+      els.curvePath.setAttribute("d", curvePathData(metrics, drawEnd, shift));
+      els.curvePath.setAttribute("stroke", metrics.color);
+
+      if (state.condition === "normal") {
+        els.normalReferencePath.setAttribute("opacity", "0");
+        els.legendGroup.setAttribute("opacity", "0");
+      } else {
+        els.normalReferencePath.setAttribute("d", curvePathData(metricsForPreset("normal"), AXIS.xMax, 0));
+        els.normalReferencePath.setAttribute("opacity", quietOnly ? "0" : "0.42");
+        els.legendGroup.setAttribute("opacity", quietOnly ? "0" : "1");
+        els.legendDiseaseLine.setAttribute("stroke", metrics.color);
+        els.legendDiseaseText.textContent = PRESETS[state.condition].label;
+      }
+
+      const rvY = mapY(metrics.rv);
+      els.rvBand.setAttribute("x", AXIS.x);
+      els.rvBand.setAttribute("y", rvY);
+      els.rvBand.setAttribute("width", AXIS.w);
+      els.rvBand.setAttribute("height", AXIS.y + AXIS.h - rvY);
+      els.rvText.setAttribute("y", clamp(rvY + 18, AXIS.y + 18, AXIS.y + AXIS.h - 10));
+      els.rvText.textContent = `RV visual only ${fmt1(metrics.rv)} L`;
+
+      const forceStart = PHASE.inhaleEnd;
+      const oneSecondX = mapX(forceStart + 1);
+      const topY = mapY(metrics.top);
+      const oneSecondY = mapY(metrics.top - metrics.fev1);
+      const finalY = mapY(metrics.rv);
+      const showForced = !quietOnly && (!state.running || progress > forceStart + 0.15);
+      const showOneSecond = !quietOnly && (!state.running || progress >= forceStart + 1);
+
+      els.oneSecondGroup.setAttribute("opacity", showForced ? "1" : "0");
+      els.oneSecondLine.setAttribute("x1", oneSecondX);
+      els.oneSecondLine.setAttribute("x2", oneSecondX);
+      els.oneSecondLine.setAttribute("y1", AXIS.y);
+      els.oneSecondLine.setAttribute("y2", AXIS.y + AXIS.h);
+      els.oneSecondText.setAttribute("x", oneSecondX);
+      els.oneSecondText.setAttribute("y", AXIS.y + 16);
+
+      els.fevShade.setAttribute("x", oneSecondX - 18);
+      els.fevShade.setAttribute("y", topY);
+      els.fevShade.setAttribute("width", 36);
+      els.fevShade.setAttribute("height", Math.max(0, oneSecondY - topY));
+      els.fevShade.setAttribute("fill", metrics.color);
+      els.fevShade.setAttribute("opacity", showOneSecond ? "0.22" : "0");
+
+      const firstTvCrestTime = 0.5 / 0.72;
+      const tvCrestTime = 1.5 / 0.72;
+      const tvTroughTime = PHASE.quietEnd;
+      const tvX = mapX(firstTvCrestTime / 2);
+      const tvTopY = mapY(metrics.frc + metrics.tv);
+      const tvBottomY = mapY(metrics.frc);
+      els.tvBracket.setAttribute("opacity", quietOnly || progress > 0.55 || state.preview || state.finished ? "1" : "0");
+      els.tvLine.setAttribute("x1", tvX);
+      els.tvLine.setAttribute("x2", tvX);
+      els.tvLine.setAttribute("y1", tvTopY);
+      els.tvLine.setAttribute("y2", tvBottomY);
+      els.tvCaps.setAttribute("d", bracketCaps(tvX, tvTopY, tvBottomY, 12, 1));
+      els.tvText.setAttribute("x", tvX + 18);
+      els.tvText.setAttribute("y", (tvTopY + tvBottomY) / 2 + 5);
+      els.tvText.textContent = "TV 0.5 L";
+
+      const irvX = mapX(tvCrestTime);
+      const irvBottomY = mapY(metrics.frc + metrics.tv);
+      els.irvBracket.setAttribute("opacity", !quietOnly && (!state.running || progress > PHASE.quietEnd + 0.25) ? "1" : "0");
+      els.irvLine.setAttribute("x1", irvX);
+      els.irvLine.setAttribute("x2", irvX);
+      els.irvLine.setAttribute("y1", topY);
+      els.irvLine.setAttribute("y2", irvBottomY);
+      els.irvCaps.setAttribute("d", bracketCaps(irvX, topY, irvBottomY, 13, -1));
+      els.irvText.setAttribute("x", irvX + 18);
+      els.irvText.setAttribute("y", (topY + irvBottomY) / 2 + 5);
+      els.irvText.textContent = "IRV about 3.0 L";
+
+      const ervX = mapX(tvTroughTime);
+      const ervTopY = mapY(metrics.frc);
+      els.ervBracket.setAttribute("opacity", !quietOnly && (!state.running || progress > forceStart + 1.4) ? "1" : "0");
+      els.ervLine.setAttribute("x1", ervX);
+      els.ervLine.setAttribute("x2", ervX);
+      els.ervLine.setAttribute("y1", ervTopY);
+      els.ervLine.setAttribute("y2", finalY);
+      els.ervCaps.setAttribute("d", bracketCaps(ervX, ervTopY, finalY, 13, -1));
+      els.ervText.setAttribute("x", ervX - 104);
+      els.ervText.setAttribute("y", (ervTopY + finalY) / 2 + 5);
+      els.ervText.textContent = "ERV about 1.1 L";
+
+      const fevX = oneSecondX + 26;
+      els.fevBracket.setAttribute("opacity", showOneSecond ? "1" : "0");
+      els.fevLine.setAttribute("x1", fevX);
+      els.fevLine.setAttribute("x2", fevX);
+      els.fevLine.setAttribute("y1", topY);
+      els.fevLine.setAttribute("y2", oneSecondY);
+      els.fevCaps.setAttribute("d", bracketCaps(fevX, topY, oneSecondY, 15, -1));
+      els.fevText.setAttribute("x", fevX + 20);
+      els.fevText.setAttribute("y", (topY + oneSecondY) / 2 + 5);
+      els.fevText.textContent = `FEV1 ${fmt1(metrics.fev1)} L`;
+
+      const fvcX = mapX(Math.min(forceStart + metrics.exhaleDuration + 0.58, AXIS.xMax - 0.18));
+      const fvcDir = -1;
+      els.fvcBracket.setAttribute("opacity", !quietOnly && (!state.running || progress > forceStart + metrics.exhaleDuration * 0.55) ? "1" : "0");
+      els.fvcLine.setAttribute("x1", fvcX);
+      els.fvcLine.setAttribute("x2", fvcX);
+      els.fvcLine.setAttribute("y1", topY);
+      els.fvcLine.setAttribute("y2", finalY);
+      els.fvcCaps.setAttribute("d", bracketCaps(fvcX, topY, finalY, 15, fvcDir));
+      els.fvcText.setAttribute("x", fvcX - 104);
+      els.fvcText.setAttribute("y", (topY + finalY) / 2 + 5);
+      els.fvcText.textContent = `FVC/VC ${fmt1(metrics.fvc)} L`;
+
+      els.ratioBadge.setAttribute("opacity", showOneSecond ? "1" : "0");
+      els.ratioText.textContent = `FEV1/FVC ${Math.round(metrics.ratio * 100)}%`;
+    }
+
+    // The anatomy and spirometer use current lung volume to stay synchronized.
+    function updateModel(metrics, currentVolume, now) {
+      const normalized = clamp((currentVolume - metrics.rv) / metrics.fvc, 0, 1);
+      const lungScaleX = 0.86 + normalized * 0.28;
+      const lungScaleY = 0.82 + normalized * 0.34;
+      els.lungsScaleGroup.setAttribute(
+        "transform",
+        `translate(188 198) scale(${lungScaleX.toFixed(3)} ${lungScaleY.toFixed(3)}) translate(-188 -198)`
+      );
+
+      const bellShift = normalized * 30;
+      const backX = 304;
+      const frontX = 323 + bellShift;
+      const bellTop = 112;
+      const bellBottom = 198;
+      const pleatDepth = 5 + normalized * 7;
+      const foldCount = 5;
+      let foldPath = "";
+
+      for (let i = 0; i < foldCount; i += 1) {
+        const x = lerp(backX + 5, frontX - 6, (i + 1) / (foldCount + 1));
+        const lean = pleatDepth * (i % 2 === 0 ? 1 : -1);
+        foldPath += `M ${(x - lean).toFixed(1)} ${bellTop + 6} L ${(x + lean).toFixed(1)} ${bellTop + 20} L ${(x - lean).toFixed(1)} ${bellTop + 34} L ${(x + lean).toFixed(1)} ${bellTop + 48} L ${(x - lean).toFixed(1)} ${bellTop + 62} L ${(x + lean).toFixed(1)} ${bellTop + 76} `;
+      }
+
+      els.bellowsBody.setAttribute("d", `M ${backX} ${bellTop} L ${frontX.toFixed(1)} 104 L ${frontX.toFixed(1)} 206 L ${backX} ${bellBottom} Z`);
+      els.bellowsFolds.setAttribute("d", foldPath.trim());
+      els.bellMoveGroup.setAttribute("transform", `translate(${bellShift.toFixed(2)} 0)`);
+      const penX = 342 + normalized * 42;
+      const penY = 236 - normalized * 24;
+      els.penArm.setAttribute("x1", 326);
+      els.penArm.setAttribute("y1", 236);
+      els.penArm.setAttribute("x2", penX);
+      els.penArm.setAttribute("y2", penY);
+      els.penTip.setAttribute("cx", penX);
+      els.penTip.setAttribute("cy", penY);
+      els.paperTrace.setAttribute("d", `M285 ${penY.toFixed(1)} C301 ${(penY - 7).toFixed(1)}, 318 ${(penY + 8).toFixed(1)}, 335 ${penY.toFixed(1)} C352 ${(penY - 9).toFixed(1)}, 371 ${(penY + 7).toFixed(1)}, 390 ${penY.toFixed(1)}`);
+
+      const delta = currentVolume - state.lastVolume;
+      const exhaling = delta < -0.003;
+      const flowStrength = clamp(Math.abs(delta) * 45 + 0.35, 0.2, 2.2);
+      const diseaseDrag = clamp(metrics.resistance * (1.35 - metrics.recoil * 0.25), 0.75, 3.2);
+      const speed = (exhaling ? 0.42 / diseaseDrag : 0.32) * flowStrength;
+      const time = now / 1000;
+      const sequenceTime = state.running ? (now - state.runStart) / 1000 : 0;
+      const forceExhaling = state.condition === "emphysema" && state.running && sequenceTime > PHASE.inhaleEnd && exhaling;
+      const quietExhaling = state.condition === "emphysema" && !forceExhaling && exhaling;
+      const inhalingOpen = state.condition === "emphysema" && !exhaling ? 1 : 0;
+      const collapseAmount = forceExhaling ? clamp(0.45 + flowStrength / 2.0, 0.45, 1) : (quietExhaling ? 0.08 : 0);
+      const bronchioleOuterWidth = 8 - collapseAmount * 3 + inhalingOpen * 1.0;
+      const bronchioleLumenWidth = 4 - collapseAmount * 3.4 + inhalingOpen * 0.9;
+
+      els.collapseAirwayLeftOuter.setAttribute("stroke-width", bronchioleOuterWidth.toFixed(2));
+      els.collapseAirwayRightOuter.setAttribute("stroke-width", bronchioleOuterWidth.toFixed(2));
+      els.collapseAirwayLeftLumen.setAttribute("stroke-width", Math.max(0.45, bronchioleLumenWidth).toFixed(2));
+      els.collapseAirwayRightLumen.setAttribute("stroke-width", Math.max(0.45, bronchioleLumenWidth).toFixed(2));
+      els.collapseMarks.style.opacity = collapseAmount.toFixed(2);
+      els.insetBronchioleOuter.setAttribute("stroke-width", (18 - collapseAmount * 8 + inhalingOpen * 1.5).toFixed(2));
+      els.insetBronchioleLumen.setAttribute("stroke-width", Math.max(1.0, 9 - collapseAmount * 7.7 + inhalingOpen * 1.4).toFixed(2));
+
+      tubeDots.forEach((dot, index) => {
+        let p = (time * speed + index / tubeDots.length) % 1;
+        if (!exhaling) p = 1 - p;
+        const [x, y] = pointOnPolyline(tubePoints, p);
+        dot.setAttribute("cx", x);
+        dot.setAttribute("cy", y);
+        dot.setAttribute("fill", metrics.color);
+        dot.setAttribute("opacity", state.condition === "emphysema" && exhaling ? "0.62" : "0.85");
+      });
+
+      airwayDots.forEach((dot, index) => {
+        const pulse = 0.6 + 0.4 * Math.sin(time * 4.0 + index);
+        dot.setAttribute("fill", metrics.color);
+        dot.setAttribute("opacity", clamp(0.25 + pulse * normalized, 0.25, 0.9));
+        dot.setAttribute("r", (2.5 + pulse * 1.3).toFixed(2));
+      });
+
+      const trapAmount = clamp((metrics.rv - 1.15) / 1.35, 0, 1);
+      const exhaleTrapBoost = state.running && (performance.now() - state.runStart) / 1000 > PHASE.inhaleEnd + 1 ? 0.25 : 0;
+      retainedDots.forEach((dot, index) => {
+        const visibleCount = Math.round(4 + trapAmount * retainedDots.length);
+        const visible = index < visibleCount;
+        const shimmer = 0.78 + 0.22 * Math.sin(time * 1.8 + index * 0.7);
+        dot.setAttribute("opacity", visible ? clamp(0.16 + trapAmount * 0.75 + exhaleTrapBoost, 0.12, 0.95) * shimmer : 0.04);
+        dot.setAttribute("r", (2.5 + trapAmount * 2.3).toFixed(2));
+      });
+
+      state.lastVolume = currentVolume;
+    }
+
+    function updateValues(metrics) {
+      const preset = PRESETS[state.condition];
+      els.conditionValue.textContent = preset.label;
+      els.fev1Value.textContent = `${fmt1(metrics.fev1)} L`;
+      els.fvcValue.textContent = `${fmt1(metrics.fvc)} L`;
+      els.ratioValue.textContent = `${Math.round(metrics.ratio * 100)}%`;
+      els.rvValue.textContent = `${fmt1(metrics.rv)} L`;
+      els.resValue.textContent = fmt1(metrics.resistance);
+      els.recoilValue.textContent = fmt1(metrics.recoil);
+      els.resistanceOut.textContent = fmt1(metrics.resistance);
+      els.recoilOut.textContent = fmt1(metrics.recoil);
+      els.rvOut.textContent = `${fmt1(metrics.rv)} L`;
+      setWrappedSvgText(els.diseaseLabel, preset.diseaseText, 104, 363, 42, 14);
+    }
+
+    function updateButtons() {
+      els.normalBtn.dataset.active = state.condition === "normal";
+      els.asthmaBtn.dataset.active = state.condition === "asthma";
+      els.emphysemaBtn.dataset.active = state.condition === "emphysema";
+      document.body.dataset.condition = state.condition;
+    }
+
+    function calloutFor(progress, metrics) {
+      if (!state.running && !state.preview && !state.finished) {
+        return "Quiet breathing produces tidal volume.";
+      }
+      if (state.condition === "emphysema" && progress > PHASE.inhaleEnd + 2.2) {
+        return "Emphysema also traps air because elastic recoil is lost.";
+      }
+      if (state.condition !== "normal" && progress > PHASE.inhaleEnd + 1.15) {
+        return "Obstructive diseases reduce FEV1.";
+      }
+      if (progress < PHASE.quietEnd) {
+        return "Quiet breathing produces tidal volume.";
+      }
+      if (progress < PHASE.inhaleEnd) {
+        return "Maximal inhalation reaches the top of vital capacity.";
+      }
+      if (progress < PHASE.inhaleEnd + 1) {
+        return "FEV1 is the amount exhaled in the first second.";
+      }
+      if (progress < PHASE.inhaleEnd + metrics.exhaleDuration - 0.4) {
+        return "Forced exhalation measures FVC.";
+      }
+      return state.condition === "normal" ? "FEV1 is a timed measure during forced exhalation." : "Obstructive diseases reduce FEV1.";
+    }
+
+    function applyPreset(key, runAfter = false) {
+      const preset = PRESETS[key];
+      state.condition = key;
+      els.resistanceSlider.value = preset.resistance;
+      els.recoilSlider.value = preset.recoil;
+      els.rvSlider.value = preset.rv;
+      state.preview = runAfter;
+      state.finished = false;
+      state.idleStart = performance.now();
+      updateButtons();
+      if (runAfter) {
+        startRun();
+      }
+    }
+
+    function startRun() {
+      state.running = true;
+      state.preview = true;
+      state.finished = false;
+      state.runStart = performance.now();
+      state.lastVolume = metricsFromControls().frc;
+    }
+
+    function resetAll() {
+      const preset = PRESETS.normal;
+      state.condition = "normal";
+      state.running = false;
+      state.preview = false;
+      state.finished = false;
+      state.idleStart = performance.now();
+      els.resistanceSlider.value = preset.resistance;
+      els.recoilSlider.value = preset.recoil;
+      els.rvSlider.value = preset.rv;
+      updateButtons();
+    }
+
+    function sliderChanged() {
+      state.preview = true;
+      state.finished = false;
+    }
+
+    els.runNormalBtn.addEventListener("click", () => {
+      applyPreset("normal", false);
+      startRun();
+    });
+
+    els.resetBtn.addEventListener("click", resetAll);
+    els.normalBtn.addEventListener("click", () => applyPreset("normal", false));
+    els.asthmaBtn.addEventListener("click", () => applyPreset("asthma", true));
+    els.emphysemaBtn.addEventListener("click", () => applyPreset("emphysema", true));
+
+    [els.resistanceSlider, els.recoilSlider, els.rvSlider].forEach((slider) => {
+      slider.addEventListener("input", sliderChanged);
+    });
+
+    // Main animation loop. Every frame recalculates the selected physiology profile.
+    function render(now) {
+      const metrics = metricsFromControls();
+      let progress = 0;
+      let currentVolume;
+
+      if (state.running) {
+        progress = (now - state.runStart) / 1000;
+        if (progress >= AXIS.xMax) {
+          state.running = false;
+          state.finished = true;
+          progress = AXIS.xMax;
+        }
+        currentVolume = volumeAtTime(progress, metrics);
+      } else if (state.preview || state.finished) {
+        progress = AXIS.xMax;
+        const idleTime = (now - state.idleStart) / 1000;
+        currentVolume = quietVolumeAt(idleTime, metrics);
+      } else {
+        const idleTime = (now - state.idleStart) / 1000;
+        progress = PHASE.quietEnd;
+        currentVolume = quietVolumeAt(idleTime, metrics);
+      }
+
+      updateValues(metrics);
+      updateGraph(metrics, progress, now);
+      updateModel(metrics, currentVolume, now);
+      els.callout.textContent = calloutFor(progress, metrics);
+      requestAnimationFrame(render);
+    }
+
+    buildStaticSvg();
+    resetAll();
+    requestAnimationFrame(render);
+  </script>
+</body>
+</html>

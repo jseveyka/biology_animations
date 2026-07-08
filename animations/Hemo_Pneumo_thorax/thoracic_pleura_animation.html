@@ -1,0 +1,1248 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pleural Space Thoracic Injury Animation</title>
+  <style>
+.animation-credit {
+  width: 100%;
+  text-align: center;
+  font-weight: bold;
+  font-size: 16px;
+  padding: 8px 0;
+  background: #f3f4f6;
+  color: #111827;
+  border-bottom: 1px solid #d1d5db;
+  box-sizing: border-box;
+}
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --ink: #1e2937;
+      --muted: #5d6b7a;
+      --line: #d6dee8;
+      --active: #275c7a;
+      --active-ink: #ffffff;
+      --lung: #f5a5b5;
+      --pleura: #6054a4;
+      --air: #6db9e8;
+      --blood: #c84242;
+      --chest: #b9aa97;
+      --diaphragm: #c48a76;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      overflow: hidden;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: minmax(260px, 330px) minmax(0, 1fr);
+      gap: 16px;
+      height: 100vh;
+      padding: 16px;
+      overflow: hidden;
+    }
+
+    .controls,
+    .stage-shell {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 12px 35px rgba(37, 52, 70, 0.08);
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 0;
+      padding: 16px;
+      overflow: auto;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(1.25rem, 2vw, 1.75rem);
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      font-size: 1.05rem;
+      line-height: 1.25;
+    }
+
+    h3 {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .lede {
+      color: var(--muted);
+      font-size: 0.94rem;
+      line-height: 1.45;
+    }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    button {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f9fbfd;
+      color: var(--ink);
+      cursor: pointer;
+      font: inherit;
+      font-weight: 750;
+      min-height: 44px;
+      padding: 10px 12px;
+      transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+    }
+
+    button:hover {
+      background: #eef5f8;
+      border-color: #abc6d4;
+    }
+
+    button:focus-visible,
+    input[type="range"]:focus-visible {
+      outline: 3px solid rgba(39, 92, 122, 0.32);
+      outline-offset: 2px;
+    }
+
+    button[aria-pressed="true"] {
+      background: var(--active);
+      border-color: var(--active);
+      color: var(--active-ink);
+    }
+
+    .reset {
+      background: #fff7f3;
+      border-color: #e8c7b7;
+      color: #743b2f;
+    }
+
+    .reset:hover {
+      background: #ffede5;
+      border-color: #dcaa91;
+    }
+
+    .group {
+      display: grid;
+      gap: 10px;
+    }
+
+    .cause-controls[hidden] {
+      display: none;
+    }
+
+    .slider-row {
+      display: grid;
+      gap: 8px;
+    }
+
+    .slider-label {
+      align-items: center;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 0.93rem;
+      font-weight: 700;
+    }
+
+    input[type="range"] {
+      accent-color: var(--active);
+      width: 100%;
+    }
+
+    .readout {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f9fbfd;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.45;
+      padding: 12px;
+    }
+
+    .readout strong {
+      color: var(--ink);
+    }
+
+    .legend {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: 1fr 1fr;
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+
+    .legend span {
+      align-items: center;
+      display: flex;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .swatch {
+      border-radius: 999px;
+      display: inline-block;
+      height: 12px;
+      flex: 0 0 12px;
+      width: 12px;
+    }
+
+    .stage-shell {
+      display: grid;
+      height: calc(100vh - 32px);
+      min-height: 0;
+      overflow: hidden;
+      padding: 10px;
+    }
+
+    .canvas-wrap {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      min-height: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    canvas {
+      background: #fbfcfe;
+      display: block;
+      height: 100%;
+      width: 100%;
+    }
+
+    @media (max-width: 880px) {
+      .app {
+        grid-template-columns: minmax(220px, 280px) minmax(520px, 1fr);
+        overflow-x: auto;
+      }
+
+      .stage-shell {
+        min-width: 520px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .app {
+        padding: 10px;
+      }
+
+      .segmented,
+      .legend {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        padding: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="animation-credit">
+  Animation Prompted by Jerred Seveyka for his biology class
+</div>
+  <main class="app">
+    <section class="controls" aria-label="Animation controls">
+      <div class="group">
+        <h1>Pleural Space Injury</h1>
+        <p class="lede">Front-view anatomy with one affected pleural space on the viewer's left. Normal breathing continues unless a pathology mode is selected.</p>
+      </div>
+
+      <div class="group">
+        <h3>Mode</h3>
+        <div class="button-grid" role="group" aria-label="Choose animation mode">
+          <button class="mode-button" type="button" data-mode="normal" aria-pressed="true">Normal breathing</button>
+          <button class="mode-button" type="button" data-mode="pneumothorax" aria-pressed="false">Pneumothorax</button>
+          <button class="mode-button" type="button" data-mode="hemothorax" aria-pressed="false">Hemothorax</button>
+          <button class="mode-button" type="button" data-mode="hemopneumothorax" aria-pressed="false">Hemopneumothorax</button>
+        </div>
+      </div>
+
+      <div class="group cause-controls" id="causeControls" hidden>
+        <h3>Pneumothorax cause</h3>
+        <div class="segmented" role="group" aria-label="Choose pneumothorax cause">
+          <button class="cause-button" type="button" data-cause="chest" aria-pressed="true">Chest wall opening</button>
+          <button class="cause-button" type="button" data-cause="lung" aria-pressed="false">Lung surface break</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Severity</h3>
+        <div class="slider-row">
+          <label class="slider-label" for="severitySlider">
+            <span>Intrapleural air or blood</span>
+            <output id="severityOutput" for="severitySlider">60%</output>
+          </label>
+          <input id="severitySlider" type="range" min="0" max="100" value="60">
+        </div>
+      </div>
+
+      <button class="reset" id="resetButton" type="button">Reset to normal</button>
+
+      <article class="readout" aria-live="polite">
+        <h2 id="explanationTitle">Normal</h2>
+        <p id="explanationText">Negative pressure in the intrapleural space keeps the visceral and parietal pleura close together, allowing the chest wall and diaphragm to expand the lungs.</p>
+      </article>
+
+    </section>
+
+    <section class="stage-shell" aria-label="Thoracic cavity animation">
+      <div class="canvas-wrap">
+        <canvas id="animationCanvas" aria-label="Animated thoracic cavity diagram"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const canvas = document.getElementById("animationCanvas");
+    const ctx = canvas.getContext("2d");
+    const modeButtons = Array.from(document.querySelectorAll(".mode-button"));
+    const causeButtons = Array.from(document.querySelectorAll(".cause-button"));
+    const causeControls = document.getElementById("causeControls");
+    const severitySlider = document.getElementById("severitySlider");
+    const severityOutput = document.getElementById("severityOutput");
+    const resetButton = document.getElementById("resetButton");
+    const explanationTitle = document.getElementById("explanationTitle");
+    const explanationText = document.getElementById("explanationText");
+
+    const W = 1100;
+    const H = 720;
+    const MID = W / 2;
+    const affectedSide = "left";
+    const state = {
+      mode: "normal",
+      cause: "chest",
+      severity: 0.6,
+      pathologyProgress: 0,
+      breathTime: 0,
+      breathValue: 0,
+      lastFrame: performance.now()
+    };
+
+    const explanations = {
+      normal: {
+        title: "Normal",
+        text: "Negative pressure in the intrapleural space keeps the visceral and parietal pleura close together, allowing the chest wall and diaphragm to expand the lungs."
+      },
+      pneumothorax: {
+        title: "Pneumothorax",
+        text: "Air in the intrapleural space breaks the pressure seal. The lung recoils inward and partially collapses."
+      },
+      hemothorax: {
+        title: "Hemothorax",
+        text: "Blood in the intrapleural space separates the pleurae and compresses the lung."
+      },
+      hemopneumothorax: {
+        title: "Hemopneumothorax",
+        text: "Both air and blood occupy the intrapleural space, causing lung collapse from loss of negative pressure and compression."
+      }
+    };
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function mirrorX(x) {
+      return W - x;
+    }
+
+    function mirrorPoint(point) {
+      return [mirrorX(point[0]), point[1]];
+    }
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const nextWidth = Math.max(1, Math.round(rect.width * dpr));
+      const nextHeight = Math.max(1, Math.round(rect.height * dpr));
+      if (canvas.width !== nextWidth || canvas.height !== nextHeight) {
+        canvas.width = nextWidth;
+        canvas.height = nextHeight;
+      }
+    }
+
+    function prepareScene() {
+      resizeCanvas();
+      const dpr = window.devicePixelRatio || 1;
+      const cssWidth = canvas.width / dpr;
+      const cssHeight = canvas.height / dpr;
+      const scale = Math.min(cssWidth / W, cssHeight / H);
+      const offsetX = (cssWidth - W * scale) / 2;
+      const offsetY = (cssHeight - H * scale) / 2;
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, cssWidth, cssHeight);
+      ctx.save();
+      ctx.translate(offsetX, offsetY);
+      ctx.scale(scale, scale);
+    }
+
+    function finishScene() {
+      ctx.restore();
+    }
+
+    function pathFromPoints(points, transform) {
+      const path = new Path2D();
+      const t = transform || ((point) => point);
+      const start = t(points[0]);
+      path.moveTo(start[0], start[1]);
+      for (let i = 1; i < points.length; i += 3) {
+        const p1 = t(points[i]);
+        const p2 = t(points[i + 1]);
+        const p3 = t(points[i + 2]);
+        path.bezierCurveTo(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1]);
+      }
+      path.closePath();
+      return path;
+    }
+
+    function getLeftLungPoints() {
+      return [
+        [436, 152],
+        [328, 148], [245, 228], [220, 352],
+        [190, 502], [290, 594], [438, 580],
+        [486, 573], [506, 532], [496, 472],
+        [476, 428], [477, 390], [510, 360],
+        [488, 328], [475, 296], [482, 250],
+        [491, 205], [469, 168], [436, 152]
+      ];
+    }
+
+    function getDiaphragmMove(side, breath, amount) {
+      return side === affectedSide
+        ? 18 * breath * (1 - amount * 0.72)
+        : 18 * breath;
+    }
+
+    function getOuterPleuraPoints(side, breath, amount, diaphragmAmount = amount) {
+      const chestExpansion = 8 * breath;
+      const spring = side === affectedSide ? 16 * amount : 0;
+      const lateralShift = chestExpansion + spring;
+      const diaphragmMove = getDiaphragmMove(side, breath, diaphragmAmount);
+      const centralMove = (diaphragmMove + 18 * breath) / 2;
+      const points = [
+        [438, 128],
+        [315, 125], [212 - lateralShift * 0.65, 202], [185 - lateralShift, 340],
+        [154 - lateralShift, 482], [163 - lateralShift * 0.35, 585 + diaphragmMove], [176, 615 + diaphragmMove],
+        [300, 680 + diaphragmMove], [442, 676 + diaphragmMove * 0.5], [517, 635 + centralMove],
+        [487, 617], [510, 572], [517, 520],
+        [528, 444], [522, 248], [488, 170],
+        [476, 145], [460, 131], [438, 128]
+      ].map((point) => side === "left" ? point : mirrorPoint(point));
+      return points;
+    }
+
+    function createOuterPleuraPath(side, breath, amount, diaphragmAmount = amount) {
+      return pathFromPoints(getOuterPleuraPoints(side, breath, amount, diaphragmAmount));
+    }
+
+    function createLungPath(side, options) {
+      const points = getLeftLungPoints().map((point) => side === "left" ? point : mirrorPoint(point));
+      const hilum = side === "left" ? [505, 356] : [595, 356];
+      const collapse = options.collapse || 0;
+      const breathScale = options.breathScale || 1;
+      const verticalLift = options.verticalLift || 0;
+      const scaleX = breathScale * (1 - collapse);
+      const scaleY = breathScale * (1 - collapse * 0.82);
+      const transform = (point) => {
+        const x = hilum[0] + (point[0] - hilum[0]) * scaleX;
+        const y = hilum[1] + (point[1] - hilum[1]) * scaleY + verticalLift;
+        return [x, y];
+      };
+      return {
+        path: pathFromPoints(points, transform),
+        hilum,
+        transform
+      };
+    }
+
+    function drawTextBox(text, x, y, maxWidth, options = {}) {
+      const size = options.size || 18;
+      const lineHeight = size * 1.25;
+      const words = text.split(" ");
+      const lines = [];
+      let line = "";
+      ctx.font = `700 ${size}px Inter, Arial, sans-serif`;
+      words.forEach((word) => {
+        const test = line ? `${line} ${word}` : word;
+        if (ctx.measureText(test).width > maxWidth && line) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = test;
+        }
+      });
+      if (line) lines.push(line);
+
+      const width = Math.min(maxWidth, Math.max(...lines.map((item) => ctx.measureText(item).width)) + 24);
+      const height = lines.length * lineHeight + 18;
+      ctx.save();
+      ctx.fillStyle = options.fill || "rgba(255, 255, 255, 0.92)";
+      ctx.strokeStyle = options.stroke || "rgba(90, 103, 120, 0.25)";
+      ctx.lineWidth = 1.2;
+      roundRect(ctx, x, y, width, height, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = options.color || "#1e2937";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      lines.forEach((item, index) => {
+        ctx.fillText(item, x + 12, y + 9 + index * lineHeight);
+      });
+      ctx.restore();
+      return { width, height };
+    }
+
+    function roundRect(context, x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      context.beginPath();
+      context.moveTo(x + r, y);
+      context.arcTo(x + width, y, x + width, y + height, r);
+      context.arcTo(x + width, y + height, x, y + height, r);
+      context.arcTo(x, y + height, x, y, r);
+      context.arcTo(x, y, x + width, y, r);
+      context.closePath();
+    }
+
+    function drawCallout(text, x, y, targetX, targetY, options = {}) {
+      ctx.save();
+      const size = options.size || 15;
+      ctx.font = `700 ${size}px Inter, Arial, sans-serif`;
+      const width = Math.min(options.maxWidth || 190, ctx.measureText(text).width + 18);
+      const height = size + 14;
+      const boxX = x;
+      const boxY = y;
+
+      ctx.strokeStyle = options.line || "rgba(74, 85, 104, 0.65)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(boxX + (targetX > boxX ? width : 0), boxY + height / 2);
+      ctx.lineTo(targetX, targetY);
+      ctx.stroke();
+
+      roundRect(ctx, boxX, boxY, width, height, 6);
+      ctx.fillStyle = options.fill || "rgba(255, 255, 255, 0.86)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(74, 85, 104, 0.18)";
+      ctx.stroke();
+      ctx.fillStyle = options.color || "#243241";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, boxX + 9, boxY + height / 2 + 0.5);
+      ctx.restore();
+    }
+
+    function drawArrow(fromX, fromY, toX, toY, color, width = 3) {
+      const angle = Math.atan2(toY - fromY, toX - fromX);
+      const head = 12;
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = width;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(fromX, fromY);
+      ctx.lineTo(toX, toY);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(toX, toY);
+      ctx.lineTo(toX - head * Math.cos(angle - Math.PI / 6), toY - head * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(toX - head * Math.cos(angle + Math.PI / 6), toY - head * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawParticleStream(points, color, count, radius, time, phaseOffset = 0) {
+      ctx.save();
+      ctx.fillStyle = color;
+      for (let i = 0; i < count; i += 1) {
+        const phase = (time * 0.75 + i / count + phaseOffset) % 1;
+        const segment = phase * (points.length - 1);
+        const index = Math.min(points.length - 2, Math.floor(segment));
+        const local = segment - index;
+        const p1 = points[index];
+        const p2 = points[index + 1];
+        const x = lerp(p1[0], p2[0], local);
+        const y = lerp(p1[1], p2[1], local);
+        ctx.globalAlpha = 0.35 + 0.55 * Math.sin(Math.PI * phase);
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawBackground() {
+      ctx.fillStyle = "#fbfcfe";
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(39, 92, 122, 0.06)";
+      ctx.lineWidth = 1;
+      for (let x = 80; x < W; x += 80) {
+        ctx.beginPath();
+        ctx.moveTo(x, 40);
+        ctx.lineTo(x, H - 45);
+        ctx.stroke();
+      }
+      for (let y = 80; y < H; y += 80) {
+        ctx.beginPath();
+        ctx.moveTo(60, y);
+        ctx.lineTo(W - 60, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawMidlineAndMediastinum(shift, amount) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(42, 56, 72, 0.45)";
+      ctx.setLineDash([8, 8]);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(MID, 70);
+      ctx.lineTo(MID, 640);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = "rgba(238, 228, 213, 0.72)";
+      ctx.beginPath();
+      ctx.moveTo(MID + shift - 36, 145);
+      ctx.bezierCurveTo(MID + shift - 54, 255, MID + shift - 48, 475, MID + shift - 22, 610);
+      ctx.lineTo(MID + shift + 22, 610);
+      ctx.bezierCurveTo(MID + shift + 48, 475, MID + shift + 54, 255, MID + shift + 36, 145);
+      ctx.closePath();
+      ctx.fill();
+
+      if (amount > 0.78) {
+        drawTextBox("Severe pressure effect: slight tracheal and mediastinal shift away from affected side.", 640, 168, 300, {
+          size: 16,
+          fill: "rgba(255, 248, 235, 0.95)",
+          stroke: "rgba(194, 133, 53, 0.45)"
+        });
+      }
+      ctx.restore();
+    }
+
+    function drawChestWall(breath, amount, diaphragmAmount = amount) {
+      const expansion = 9 * breath;
+      const spring = 16 * amount;
+      const leftMove = getDiaphragmMove("left", breath, diaphragmAmount);
+      const rightMove = getDiaphragmMove("right", breath, diaphragmAmount);
+      const getChestWallSide = (diaphragmMove) => [
+        [432, 105],
+        [290, 100], [174 - expansion - spring, 215], [148 - expansion - spring, 370],
+        [124 - expansion - spring, 500], [152 - expansion * 0.35 - spring * 0.35, 592 + diaphragmMove], [176, 615 + diaphragmMove]
+      ];
+      const leftOuter = getChestWallSide(leftMove);
+      const rightOuter = getChestWallSide(rightMove).map(mirrorPoint);
+
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = "#aa9b88";
+      ctx.lineWidth = 16;
+      ctx.beginPath();
+      ctx.moveTo(leftOuter[0][0], leftOuter[0][1]);
+      ctx.bezierCurveTo(leftOuter[1][0], leftOuter[1][1], leftOuter[2][0], leftOuter[2][1], leftOuter[3][0], leftOuter[3][1]);
+      ctx.bezierCurveTo(leftOuter[4][0], leftOuter[4][1], leftOuter[5][0], leftOuter[5][1], leftOuter[6][0], leftOuter[6][1]);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(rightOuter[0][0], rightOuter[0][1]);
+      ctx.bezierCurveTo(rightOuter[1][0], rightOuter[1][1], rightOuter[2][0], rightOuter[2][1], rightOuter[3][0], rightOuter[3][1]);
+      ctx.bezierCurveTo(rightOuter[4][0], rightOuter[4][1], rightOuter[5][0], rightOuter[5][1], rightOuter[6][0], rightOuter[6][1]);
+      ctx.stroke();
+
+      ctx.strokeStyle = "rgba(151, 140, 126, 0.58)";
+      ctx.lineWidth = 5;
+      for (let i = 0; i < 6; i += 1) {
+        const y = 190 + i * 62;
+        const sideExpansion = expansion * (0.6 + i * 0.05);
+        ctx.beginPath();
+        ctx.moveTo(MID - 10, y + i * 5);
+        ctx.bezierCurveTo(455, y - 26, 305 - sideExpansion - spring * 0.6, y - 18, 205 - sideExpansion - spring, y + 24);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(MID + 10, y + i * 5);
+        ctx.bezierCurveTo(645, y - 26, 795 + sideExpansion, y - 18, 895 + sideExpansion, y + 24);
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = "#7b708f";
+      ctx.lineWidth = 3;
+      ["left", "right"].forEach((side) => {
+        const pleuraPath = createOuterPleuraPath(
+          side,
+          breath,
+          side === affectedSide ? amount : 0,
+          side === affectedSide ? diaphragmAmount : 0
+        );
+        ctx.stroke(pleuraPath);
+      });
+      ctx.restore();
+    }
+
+    function drawDiaphragm(breath, amount) {
+      const leftMove = getDiaphragmMove("left", breath, amount);
+      const rightMove = getDiaphragmMove("right", breath, amount);
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = "#b97463";
+      ctx.fillStyle = "rgba(196, 138, 118, 0.26)";
+      ctx.lineWidth = 20;
+      ctx.beginPath();
+      ctx.moveTo(176, 615 + leftMove);
+      ctx.bezierCurveTo(300, 680 + leftMove, 442, 676 + leftMove * 0.5, MID, 635 + (leftMove + rightMove) / 2);
+      ctx.bezierCurveTo(658, 676 + rightMove * 0.5, 800, 680 + rightMove, 924, 615 + rightMove);
+      ctx.stroke();
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(170, 615 + leftMove);
+      ctx.bezierCurveTo(300, 690 + leftMove, 442, 690 + leftMove * 0.5, MID, 648 + (leftMove + rightMove) / 2);
+      ctx.bezierCurveTo(658, 690 + rightMove * 0.5, 800, 690 + rightMove, 930, 615 + rightMove);
+      ctx.lineTo(930, 700);
+      ctx.lineTo(170, 700);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      drawCallout("Diaphragm", 486, 666, 560, 636 + (leftMove + rightMove) / 2, { size: 15, maxWidth: 115 });
+    }
+
+    function drawPleuralSpaceContents(breath, amount, chestWallAmount = amount) {
+      if (state.mode === "normal" || amount <= 0.01) return;
+
+      const outer = createOuterPleuraPath(affectedSide, breath, chestWallAmount, amount);
+      ctx.save();
+      ctx.clip(outer);
+
+      if (state.mode === "pneumothorax" || state.mode === "hemopneumothorax") {
+        const alpha = state.mode === "hemopneumothorax" ? 0.27 : 0.35;
+        ctx.fillStyle = `rgba(109, 185, 232, ${alpha})`;
+        ctx.beginPath();
+        ctx.ellipse(348 - 8 * amount, 360, 170 + 58 * amount, 240 + 38 * amount, -0.08, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "rgba(83, 154, 205, 0.72)";
+        const dots = state.mode === "hemopneumothorax" ? 30 : 42;
+        for (let i = 0; i < dots; i += 1) {
+          const seed = i * 97.37;
+          const x = 205 + ((Math.sin(seed) + 1) / 2) * 220;
+          const yMax = state.mode === "hemopneumothorax" ? 405 - 90 * amount : 555;
+          const y = 155 + ((Math.cos(seed * 1.31) + 1) / 2) * (yMax - 155);
+          const drift = Math.sin(state.breathTime * 1.7 + i) * 5;
+          ctx.globalAlpha = 0.25 + 0.65 * amount;
+          ctx.beginPath();
+          ctx.arc(x + drift, y + Math.cos(state.breathTime + i) * 4, 4.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      if (state.mode === "hemothorax" || state.mode === "hemopneumothorax") {
+        const bloodLevel = state.mode === "hemopneumothorax"
+          ? lerp(614, 430, amount)
+          : lerp(626, 392, amount);
+        ctx.fillStyle = "rgba(200, 66, 66, 0.62)";
+        ctx.beginPath();
+        ctx.moveTo(150, bloodLevel);
+        ctx.bezierCurveTo(235, bloodLevel - 12, 320, bloodLevel + 12, 410, bloodLevel - 4);
+        ctx.bezierCurveTo(470, bloodLevel - 18, 515, bloodLevel + 8, 535, bloodLevel - 2);
+        ctx.lineTo(535, 680);
+        ctx.lineTo(130, 680);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "rgba(149, 28, 34, 0.36)";
+        ctx.beginPath();
+        ctx.moveTo(150, bloodLevel + 24);
+        ctx.bezierCurveTo(260, bloodLevel + 36, 360, bloodLevel + 18, 520, bloodLevel + 30);
+        ctx.lineTo(520, 680);
+        ctx.lineTo(150, 680);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawLungs(breath, amount) {
+      const affectedCollapse = getCollapseFraction(amount);
+      const affectedBreathScale = 1 + 0.045 * breath * (1 - amount * 0.92);
+      const unaffectedBreathScale = 1 + 0.046 * breath;
+      const affectedLift = -12 * amount;
+      const leftLung = createLungPath("left", {
+        breathScale: affectedBreathScale,
+        collapse: affectedCollapse,
+        verticalLift: affectedLift
+      });
+      const rightLung = createLungPath("right", {
+        breathScale: unaffectedBreathScale,
+        collapse: 0,
+        verticalLift: 0
+      });
+
+      ctx.save();
+      ctx.fillStyle = "rgba(245, 165, 181, 0.92)";
+      ctx.strokeStyle = "#a65c7b";
+      ctx.lineWidth = 2.5;
+      ctx.fill(leftLung.path);
+      ctx.stroke(leftLung.path);
+      ctx.fill(rightLung.path);
+      ctx.stroke(rightLung.path);
+
+      ctx.strokeStyle = "#6054a4";
+      ctx.lineWidth = 3.6;
+      ctx.stroke(leftLung.path);
+      ctx.stroke(rightLung.path);
+
+      ctx.strokeStyle = "rgba(178, 92, 116, 0.55)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(318 + 55 * amount, 230 - 6 * amount);
+      ctx.bezierCurveTo(360 + 38 * amount, 330, 342 + 44 * amount, 470, 418 + 30 * amount, 560 - 10 * amount);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(782, 230);
+      ctx.bezierCurveTo(740, 330, 758, 470, 682, 560);
+      ctx.stroke();
+
+      ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+      ctx.beginPath();
+      ctx.arc(leftLung.hilum[0] - 4, leftLung.hilum[1], 7, 0, Math.PI * 2);
+      ctx.arc(rightLung.hilum[0] + 4, rightLung.hilum[1], 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      return { leftLung, rightLung };
+    }
+
+    function drawAirway(shift) {
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = "#83b4c6";
+      ctx.lineWidth = 22;
+      ctx.beginPath();
+      ctx.moveTo(MID + shift, 82);
+      ctx.lineTo(MID + shift, 238);
+      ctx.stroke();
+
+      ctx.lineWidth = 16;
+      ctx.beginPath();
+      ctx.moveTo(MID + shift, 238);
+      ctx.bezierCurveTo(MID + shift - 22, 278, 548, 316, 505, 356);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(MID + shift, 238);
+      ctx.bezierCurveTo(MID + shift + 22, 278, 552, 316, 595, 356);
+      ctx.stroke();
+
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.82)";
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(MID + shift, 82);
+      ctx.lineTo(MID + shift, 238);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(MID + shift, 238);
+      ctx.bezierCurveTo(MID + shift - 22, 278, 548, 316, 505, 356);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(MID + shift, 238);
+      ctx.bezierCurveTo(MID + shift + 22, 278, 552, 316, 595, 356);
+      ctx.stroke();
+      ctx.restore();
+
+    }
+
+    function drawOpeningAndAirFlow(amount) {
+      const time = state.breathTime;
+      ctx.save();
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = "#7a5f4b";
+      ctx.beginPath();
+      ctx.moveTo(150 - 16 * amount, 330);
+      ctx.lineTo(216 - 16 * amount, 330);
+      ctx.stroke();
+      ctx.strokeStyle = "#fbfcfe";
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.moveTo(166 - 16 * amount, 330);
+      ctx.lineTo(204 - 16 * amount, 330);
+      ctx.stroke();
+      ctx.restore();
+
+      drawArrow(116, 330, 224 - 14 * amount, 330, "rgba(88, 158, 207, 0.85)", 4);
+      drawParticleStream([[92, 330], [150, 330], [222 - 10 * amount, 330], [278, 342]], "rgba(109, 185, 232, 0.9)", 12, 4.6, time);
+      drawTextBox("Air enters intrapleural space from outside.", 96, 388, 300, {
+        size: 17,
+        fill: "rgba(239, 249, 255, 0.95)",
+        stroke: "rgba(83, 154, 205, 0.42)"
+      });
+    }
+
+    function drawLungBreakAndAirLeak(amount) {
+      const tearX = 328 + 62 * amount;
+      const tearY = 292 - 10 * amount;
+      ctx.save();
+      ctx.strokeStyle = "#5d4579";
+      ctx.lineWidth = 4;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(tearX - 16, tearY - 18);
+      ctx.lineTo(tearX - 4, tearY - 7);
+      ctx.lineTo(tearX - 16, tearY + 5);
+      ctx.lineTo(tearX - 2, tearY + 18);
+      ctx.stroke();
+      ctx.restore();
+
+      drawArrow(tearX + 22, tearY + 10, 242, tearY - 20, "rgba(88, 158, 207, 0.88)", 4);
+      drawParticleStream([[tearX + 18, tearY + 8], [300, tearY - 4], [242, tearY - 20], [220, tearY - 38]], "rgba(109, 185, 232, 0.9)", 12, 4.6, state.breathTime, 0.25);
+      drawTextBox("Air leaks from lung into intrapleural space.", 92, 386, 310, {
+        size: 17,
+        fill: "rgba(239, 249, 255, 0.95)",
+        stroke: "rgba(83, 154, 205, 0.42)"
+      });
+    }
+
+    function drawBleedingSource(amount, mixed) {
+      const sourceX = 260 + 36 * amount;
+      const sourceY = 462 + 8 * amount;
+      ctx.save();
+      ctx.strokeStyle = "#a43138";
+      ctx.lineWidth = 6;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(sourceX - 26, sourceY - 34);
+      ctx.bezierCurveTo(sourceX - 8, sourceY - 16, sourceX + 10, sourceY - 12, sourceX + 26, sourceY + 4);
+      ctx.stroke();
+      ctx.fillStyle = "#c84242";
+      for (let i = 0; i < 8; i += 1) {
+        const dropT = (state.breathTime * 0.45 + i * 0.12) % 1;
+        const x = sourceX + Math.sin(i * 2.1) * 16;
+        const y = sourceY + dropT * (95 + 52 * amount);
+        ctx.globalAlpha = 1 - dropT * 0.25;
+        ctx.beginPath();
+        ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      const label = mixed
+        ? "Air and blood both enter the intrapleural space."
+        : "Blood collects in intrapleural space and compresses lung.";
+      drawTextBox(label, 84, 384, mixed ? 335 : 360, {
+        size: 17,
+        fill: "rgba(255, 244, 244, 0.95)",
+        stroke: "rgba(196, 66, 66, 0.42)"
+      });
+    }
+
+    function drawPneumothoraxCause(amount) {
+      if (state.mode !== "pneumothorax" || amount <= 0.01) return;
+      if (state.cause === "chest") {
+        drawOpeningAndAirFlow(amount);
+      } else {
+        drawLungBreakAndAirLeak(amount);
+      }
+    }
+
+    function drawHemothoraxCause(amount) {
+      if (state.mode !== "hemothorax" || amount <= 0.01) return;
+      drawBleedingSource(amount, false);
+    }
+
+    function drawHemopneumothoraxCause(amount) {
+      if (state.mode !== "hemopneumothorax" || amount <= 0.01) return;
+      drawOpeningAndAirFlow(amount * 0.85);
+      drawBleedingSource(amount, true);
+    }
+
+    function drawPressureGauge(amount) {
+      ctx.save();
+      const x = 68;
+      const y = 72;
+      const w = 260;
+      const h = 82;
+      roundRect(ctx, x, y, w, h, 8);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(79, 96, 113, 0.22)";
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      ctx.fillStyle = "#1e2937";
+      ctx.font = "800 16px Inter, Arial, sans-serif";
+      ctx.textBaseline = "top";
+      ctx.fillText(state.mode === "normal" ? "Negative intrapleural pressure" : "Pressure seal disrupted", x + 14, y + 12);
+
+      const barX = x + 18;
+      const barY = y + 48;
+      const barW = w - 36;
+      const barH = 14;
+      ctx.fillStyle = "#d9ecf5";
+      roundRect(ctx, barX, barY, barW, barH, 7);
+      ctx.fill();
+      ctx.fillStyle = "#78bce1";
+      roundRect(ctx, barX, barY, barW * (state.mode === "normal" ? 0.32 : 0.32 + 0.58 * amount), barH, 7);
+      ctx.fill();
+      const needleX = state.mode === "normal"
+        ? barX + barW * (0.28 + state.breathValue * 0.06)
+        : barX + barW * (0.32 + 0.58 * amount);
+      ctx.fillStyle = "#243241";
+      ctx.beginPath();
+      ctx.moveTo(needleX, barY - 7);
+      ctx.lineTo(needleX - 7, barY + 3);
+      ctx.lineTo(needleX + 7, barY + 3);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = "#5d6b7a";
+      ctx.font = "700 12px Inter, Arial, sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("more negative", barX, barY + 23);
+      ctx.textAlign = "right";
+      ctx.fillText("equalizing", barX + barW, barY + 23);
+      ctx.restore();
+    }
+
+    function drawPleuraLabels(amount) {
+    }
+
+    function drawModeBanner(amount) {
+      let label = "Normal breathing loop";
+      if (state.mode === "pneumothorax") {
+        label = state.cause === "chest"
+          ? "Pneumothorax: chest wall opening"
+          : "Pneumothorax: lung surface break";
+      }
+      if (state.mode === "hemothorax") label = "Hemothorax: dependent blood pool";
+      if (state.mode === "hemopneumothorax") label = "Hemopneumothorax: air above, blood below";
+
+      drawTextBox(label, 740, 62, 300, {
+        size: 18,
+        fill: state.mode === "normal" ? "rgba(246, 252, 246, 0.95)" : "rgba(255, 252, 239, 0.95)",
+        stroke: state.mode === "normal" ? "rgba(78, 144, 91, 0.32)" : "rgba(191, 142, 46, 0.38)"
+      });
+
+      if (state.mode !== "normal" && amount > 0.05) {
+        drawTextBox("Affected pleural space", 158, 142, 235, {
+          size: 17,
+          fill: "rgba(255, 255, 255, 0.88)",
+          stroke: "rgba(96, 84, 164, 0.35)"
+        });
+      }
+    }
+
+    function getPathologyAmount() {
+      if (state.mode === "normal") return 0;
+      return clamp(state.pathologyProgress * state.severity, 0, 1);
+    }
+
+    function getCollapseFraction(amount) {
+      if (state.mode === "pneumothorax") return 0.34 * amount;
+      if (state.mode === "hemothorax") return 0.27 * amount;
+      if (state.mode === "hemopneumothorax") return 0.44 * amount;
+      return 0;
+    }
+
+    function updateBreathingCycle(deltaSeconds) {
+      state.breathTime += deltaSeconds;
+      const wave = Math.sin(state.breathTime * Math.PI * 2 * 0.22 - Math.PI / 2);
+      state.breathValue = (wave + 1) / 2;
+      return state.breathValue;
+    }
+
+    function updatePathologyProgress(deltaSeconds) {
+      const target = state.mode === "normal" ? 0 : 1;
+      const direction = target > state.pathologyProgress ? 1 : -1;
+      const speed = target > state.pathologyProgress ? 0.48 : 0.9;
+      state.pathologyProgress = clamp(state.pathologyProgress + direction * speed * deltaSeconds, 0, 1);
+    }
+
+    function drawNormalBreathing() {
+      const breath = state.breathValue;
+      drawBackground();
+      drawMidlineAndMediastinum(0, 0);
+      drawDiaphragm(breath, 0);
+      drawChestWall(breath, 0);
+      drawPleuralSpaceContents(breath, 0);
+      drawLungs(breath, 0);
+      drawAirway(0);
+      drawPressureGauge(0);
+      drawPleuraLabels(0);
+      drawModeBanner(0);
+    }
+
+    function drawPneumothorax() {
+      const breath = state.breathValue;
+      const amount = getPathologyAmount();
+      const shift = amount > 0.78 ? (amount - 0.78) * 145 : 0;
+      drawBackground();
+      drawMidlineAndMediastinum(shift, amount);
+      drawDiaphragm(breath, amount);
+      drawChestWall(breath, amount);
+      drawPleuralSpaceContents(breath, amount);
+      drawLungs(breath, amount);
+      drawAirway(shift);
+      drawPneumothoraxCause(amount);
+      drawPressureGauge(amount);
+      drawPleuraLabels(amount);
+      drawModeBanner(amount);
+    }
+
+    function drawHemothorax() {
+      const breath = state.breathValue;
+      const amount = getPathologyAmount();
+      const shift = amount > 0.82 ? (amount - 0.82) * 115 : 0;
+      drawBackground();
+      drawMidlineAndMediastinum(shift, amount);
+      drawDiaphragm(breath, amount);
+      drawChestWall(breath, amount * 0.45, amount);
+      drawPleuralSpaceContents(breath, amount, amount * 0.45);
+      drawLungs(breath, amount);
+      drawAirway(shift);
+      drawHemothoraxCause(amount);
+      drawPressureGauge(amount * 0.85);
+      drawPleuraLabels(amount);
+      drawModeBanner(amount);
+    }
+
+    function drawHemopneumothorax() {
+      const breath = state.breathValue;
+      const amount = getPathologyAmount();
+      const shift = amount > 0.74 ? (amount - 0.74) * 150 : 0;
+      drawBackground();
+      drawMidlineAndMediastinum(shift, amount);
+      drawDiaphragm(breath, amount);
+      drawChestWall(breath, amount);
+      drawPleuralSpaceContents(breath, amount);
+      drawLungs(breath, amount);
+      drawAirway(shift);
+      drawHemopneumothoraxCause(amount);
+      drawPressureGauge(amount);
+      drawPleuraLabels(amount);
+      drawModeBanner(amount);
+    }
+
+    function drawScene() {
+      prepareScene();
+      if (state.mode === "pneumothorax") drawPneumothorax();
+      else if (state.mode === "hemothorax") drawHemothorax();
+      else if (state.mode === "hemopneumothorax") drawHemopneumothorax();
+      else drawNormalBreathing();
+      finishScene();
+    }
+
+    function animate(now) {
+      const deltaSeconds = clamp((now - state.lastFrame) / 1000, 0, 0.05);
+      state.lastFrame = now;
+      updateBreathingCycle(deltaSeconds);
+      updatePathologyProgress(deltaSeconds);
+      drawScene();
+      requestAnimationFrame(animate);
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      state.pathologyProgress = 0;
+      modeButtons.forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.mode === mode));
+      });
+      causeControls.hidden = mode !== "pneumothorax";
+      updateExplanation();
+    }
+
+    function setCause(cause) {
+      state.cause = cause;
+      state.pathologyProgress = state.mode === "pneumothorax" ? 0 : state.pathologyProgress;
+      causeButtons.forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.cause === cause));
+      });
+    }
+
+    function updateExplanation() {
+      const detail = explanations[state.mode];
+      explanationTitle.textContent = detail.title;
+      explanationText.textContent = detail.text;
+    }
+
+    function updateSeverity(value) {
+      state.severity = clamp(Number(value) / 100, 0, 1);
+      severityOutput.textContent = `${Math.round(state.severity * 100)}%`;
+    }
+
+    function resetAnimation() {
+      state.mode = "normal";
+      state.cause = "chest";
+      state.severity = 0.6;
+      state.pathologyProgress = 0;
+      severitySlider.value = "60";
+      updateSeverity(60);
+      modeButtons.forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.mode === "normal"));
+      });
+      causeButtons.forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.cause === "chest"));
+      });
+      causeControls.hidden = true;
+      updateExplanation();
+    }
+
+    modeButtons.forEach((button) => {
+      button.addEventListener("click", () => setMode(button.dataset.mode));
+    });
+
+    causeButtons.forEach((button) => {
+      button.addEventListener("click", () => setCause(button.dataset.cause));
+    });
+
+    severitySlider.addEventListener("input", (event) => updateSeverity(event.target.value));
+    resetButton.addEventListener("click", resetAnimation);
+    window.addEventListener("resize", drawScene);
+
+    updateSeverity(severitySlider.value);
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

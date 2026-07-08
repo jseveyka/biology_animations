@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CYP450 Enzymes: Adding Oxygen to Non-polar Molecules</title>
+  <style>
+    :root {
+      --ink: #1f2933;
+      --muted: #51606f;
+      --paper: #fbfcf7;
+      --panel: #ffffff;
+      --enzyme: #72b66d;
+      --enzyme-dark: #2f7a53;
+      --membrane: #f3cc72;
+      --substrate: #f0c44c;
+      --oxygen: #2582c4;
+      --oxygen-red: #d84040;
+      --nadph: #8b5bb4;
+      --water: #69b9d6;
+      --competition: #e46f4a;
+      --success: #3a9b62;
+      --warning: #d65f4a;
+      --line: #d7dfdc;
+      --shadow: 0 12px 32px rgba(31, 41, 51, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(114, 182, 109, 0.12), transparent 28rem),
+        linear-gradient(180deg, #f7fbfa 0%, #eef7f3 100%);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.35;
+    }
+
+    .page {
+      width: min(1440px, 100%);
+      margin: 0 auto;
+      padding: 22px clamp(14px, 2.8vw, 36px) 24px;
+    }
+
+    header {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      color: #163b3e;
+      font-size: clamp(1.35rem, 2.15vw, 2.2rem);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .attribution {
+      margin: 0;
+      color: #243c55;
+      font-size: clamp(1rem, 1.5vw, 1.2rem);
+      font-weight: 700;
+    }
+
+    .reaction {
+      display: inline-flex;
+      width: fit-content;
+      max-width: 100%;
+      align-items: center;
+      padding: 10px 14px;
+      border: 2px solid #c9ded5;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.76);
+      color: #234549;
+      font-size: clamp(1rem, 1.55vw, 1.25rem);
+      font-weight: 700;
+      overflow-wrap: anywhere;
+      box-shadow: 0 4px 16px rgba(31, 41, 51, 0.07);
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.72fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .stage-wrap,
+    .info-panel,
+    .regulation-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: var(--shadow);
+    }
+
+    .stage-wrap {
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .stage-top {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px 8px;
+      border-bottom: 1px solid #e3ebe8;
+    }
+
+    .step-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      align-items: center;
+    }
+
+    .step-pill {
+      min-width: 110px;
+      padding: 8px 10px;
+      border: 1px solid #cbdad5;
+      border-radius: 8px;
+      background: #f4f9f7;
+      color: #2a464d;
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .step-pill.active {
+      border-color: #2f7a53;
+      background: #dff2e6;
+      color: #174233;
+      box-shadow: inset 0 -3px 0 rgba(47, 122, 83, 0.25);
+    }
+
+    .mode-flags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-height: 32px;
+      align-items: center;
+      justify-content: flex-end;
+      color: #4b5f5d;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .mode-flag {
+      display: none;
+      border: 1px solid #d8e4e0;
+      border-radius: 999px;
+      padding: 5px 9px;
+      background: #fff9e8;
+    }
+
+    .mode-flag.visible {
+      display: inline-flex;
+    }
+
+    .stage-svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #fbfdfb;
+    }
+
+    .info-panel {
+      display: flex;
+      min-height: 100%;
+      flex-direction: column;
+      padding: 18px;
+      gap: 16px;
+    }
+
+    .info-panel h2 {
+      margin: 0;
+      color: #163b3e;
+      font-size: clamp(1.2rem, 1.9vw, 1.6rem);
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .info-panel p {
+      margin: 0;
+      color: #314654;
+      font-size: clamp(1rem, 1.25vw, 1.17rem);
+    }
+
+    .info-panel .mode-note {
+      display: none;
+      padding: 11px 12px;
+      border-left: 5px solid #e46f4a;
+      border-radius: 6px;
+      background: #fff4ec;
+      color: #4a3028;
+      font-weight: 700;
+    }
+
+    .info-panel .mode-note.visible {
+      display: block;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      margin-top: 16px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.86);
+      box-shadow: 0 8px 24px rgba(31, 41, 51, 0.08);
+    }
+
+    button,
+    .toggle {
+      min-height: 44px;
+      border: 2px solid #b8cbc5;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #173a3d;
+      font: inherit;
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    button {
+      cursor: pointer;
+      padding: 10px 15px;
+    }
+
+    button:hover,
+    button:focus-visible,
+    .toggle:hover,
+    .toggle:focus-within {
+      border-color: #2f7a53;
+      outline: 3px solid rgba(47, 122, 83, 0.18);
+    }
+
+    button.primary {
+      border-color: #2f7a53;
+      background: #2f7a53;
+      color: white;
+    }
+
+    .toggle {
+      display: inline-flex;
+      gap: 9px;
+      align-items: center;
+      padding: 8px 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle input {
+      width: 22px;
+      height: 22px;
+      accent-color: #2f7a53;
+    }
+
+    .regulation-panel {
+      display: none;
+      margin-top: 16px;
+      padding: 16px;
+    }
+
+    .regulation-panel.visible {
+      display: block;
+    }
+
+    .regulation-panel h2 {
+      margin: 0 0 12px;
+      color: #163b3e;
+      font-size: clamp(1.15rem, 1.8vw, 1.45rem);
+    }
+
+    .reg-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .reg-mini {
+      min-width: 0;
+      border: 1px solid #d8e4e0;
+      border-radius: 8px;
+      background: #fcfffd;
+      overflow: hidden;
+    }
+
+    .reg-mini svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .label {
+      font-size: 26px;
+      font-weight: 800;
+      fill: #173a3d;
+      paint-order: stroke;
+      stroke: #ffffff;
+      stroke-width: 5px;
+      stroke-linejoin: round;
+    }
+
+    .small-label {
+      font-size: 20px;
+      font-weight: 800;
+      fill: #29424c;
+      paint-order: stroke;
+      stroke: #ffffff;
+      stroke-width: 4px;
+      stroke-linejoin: round;
+    }
+
+    .tiny-label {
+      font-size: 17px;
+      font-weight: 800;
+      fill: #29424c;
+      paint-order: stroke;
+      stroke: #ffffff;
+      stroke-width: 3px;
+      stroke-linejoin: round;
+    }
+
+    .callout-text {
+      font-size: 24px;
+      font-weight: 900;
+      fill: #183f42;
+    }
+
+    .arrow {
+      fill: none;
+      stroke: #2c5962;
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      marker-end: url(#arrowHead);
+    }
+
+    .reaction-arrow {
+      stroke: #c04235;
+      stroke-width: 5;
+      stroke-dasharray: 10 9;
+      animation: dash 1.2s linear infinite;
+    }
+
+    .pulse {
+      animation: pulse 1.15s ease-in-out infinite;
+      transform-origin: center;
+      transform-box: fill-box;
+    }
+
+    .bob {
+      animation: bob 2.4s ease-in-out infinite;
+      transform-origin: center;
+      transform-box: fill-box;
+    }
+
+    .spark {
+      animation: spark 1.35s ease-in-out infinite;
+      transform-origin: center;
+      transform-box: fill-box;
+    }
+
+    .water-float {
+      animation: waterFloat 2.1s ease-in-out infinite;
+      transform-origin: center;
+      transform-box: fill-box;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.55; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.05); }
+    }
+
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-7px); }
+    }
+
+    @keyframes spark {
+      0%, 100% { opacity: 0.55; transform: scale(0.92); }
+      50% { opacity: 1; transform: scale(1.12); }
+    }
+
+    @keyframes waterFloat {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-6px) rotate(4deg); }
+    }
+
+    @keyframes dash {
+      to { stroke-dashoffset: -38; }
+    }
+
+    @media (max-width: 1060px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .info-panel {
+        min-height: auto;
+      }
+
+    }
+
+    @media (max-width: 760px) {
+      .page {
+        padding-inline: 10px;
+      }
+
+      .reaction {
+        width: 100%;
+      }
+
+      .step-pill {
+        min-width: calc(50% - 5px);
+      }
+
+      .controls {
+        align-items: stretch;
+      }
+
+      .controls button,
+      .controls .toggle {
+        flex: 1 1 220px;
+        justify-content: center;
+      }
+
+      .reg-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>CYP450 Enzymes: Adding Oxygen to Non-polar Molecules</h1>
+      <p class="attribution">Animation Prompted by Jerred Seveyka for his biology class.</p>
+      <div class="reaction" aria-label="Simplified reaction">
+        Non-polar substrate&nbsp;+&nbsp;O<sub>2</sub>&nbsp;+&nbsp;NADPH&nbsp;&rarr;&nbsp;oxygenated, more polar product&nbsp;+&nbsp;NADP<sup>+</sup>&nbsp;+&nbsp;H<sub>2</sub>O
+      </div>
+    </header>
+
+    <main class="main-grid" aria-label="CYP450 educational animation">
+      <section class="stage-wrap" aria-label="Main animation area">
+        <div class="stage-top">
+          <div class="step-strip" aria-label="Animation steps">
+            <div class="step-pill active" data-step-pill="1">1. Approach</div>
+            <div class="step-pill" data-step-pill="2">2. Bind</div>
+            <div class="step-pill" data-step-pill="3">3. O<sub>2</sub> + NADPH</div>
+            <div class="step-pill" data-step-pill="4">4. Add oxygen</div>
+            <div class="step-pill" data-step-pill="5">5. More polar</div>
+          </div>
+          <div class="mode-flags" aria-live="polite">
+            <span id="competitionFlag" class="mode-flag">Competition shown</span>
+            <span id="regulationFlag" class="mode-flag">Regulation shown</span>
+          </div>
+        </div>
+
+        <svg id="stageSvg" class="stage-svg" viewBox="0 0 1000 500" role="img" aria-labelledby="svgTitle svgDesc">
+          <title id="svgTitle">CYP450 enzyme animation diagram</title>
+          <desc id="svgDesc">A simplified smooth ER membrane with a CYP450 enzyme, non-polar substrate, oxygen, NADPH, and oxygenated product.</desc>
+          <defs>
+            <marker id="arrowHead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+              <path d="M0,0 L12,6 L0,12 Z" fill="#2c5962"></path>
+            </marker>
+            <marker id="redArrowHead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+              <path d="M0,0 L12,6 L0,12 Z" fill="#c04235"></path>
+            </marker>
+            <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="7" result="blur"></feGaussianBlur>
+              <feMerge>
+                <feMergeNode in="blur"></feMergeNode>
+                <feMergeNode in="SourceGraphic"></feMergeNode>
+              </feMerge>
+            </filter>
+          </defs>
+
+          <rect x="0" y="0" width="1000" height="560" fill="#fbfdfb"></rect>
+
+          <g id="membraneLayer" aria-label="Smooth endoplasmic reticulum membrane">
+            <rect x="0" y="344" width="1000" height="74" fill="#ffe3a2"></rect>
+            <rect x="0" y="360" width="1000" height="9" fill="#f2be56" opacity="0.95"></rect>
+            <rect x="0" y="392" width="1000" height="9" fill="#f2be56" opacity="0.95"></rect>
+            <g opacity="0.72">
+              <circle cx="26" cy="365" r="11" fill="#f7c767"></circle>
+              <circle cx="82" cy="365" r="11" fill="#f7c767"></circle>
+              <circle cx="138" cy="365" r="11" fill="#f7c767"></circle>
+              <circle cx="194" cy="365" r="11" fill="#f7c767"></circle>
+              <circle cx="250" cy="365" r="11" fill="#f7c767"></circle>
+              <circle cx="306" cy="365" r="11" fill="#f7c767"></circle>
+              <circle cx="362" cy="365" r="11" fill="#f7c767"></circle>
+              <circle cx="418" cy="365" r="11" fill="#f7c767"></circle>
+              <circle cx="474" cy="365" r="11" fill="#f7c767"></circle>
+              <circle cx="530" cy="365" r="11" fill="#f7c767"></circle>
+              <circle cx="586" cy="365" r="11" fill="#f7c767"></circle>
+              <circle cx="642" cy="365" r="11" fill="#f7c767"></circle>
+              <circle cx="698" cy="365" r="11" fill="#f7c767"></circle>
+              <circle cx="754" cy="365" r="11" fill="#f7c767"></circle>
+              <circle cx="810" cy="365" r="11" fill="#f7c767"></circle>
+              <circle cx="866" cy="365" r="11" fill="#f7c767"></circle>
+              <circle cx="922" cy="365" r="11" fill="#f7c767"></circle>
+              <circle cx="978" cy="365" r="11" fill="#f7c767"></circle>
+              <circle cx="54" cy="397" r="11" fill="#f7c767"></circle>
+              <circle cx="110" cy="397" r="11" fill="#f7c767"></circle>
+              <circle cx="166" cy="397" r="11" fill="#f7c767"></circle>
+              <circle cx="222" cy="397" r="11" fill="#f7c767"></circle>
+              <circle cx="278" cy="397" r="11" fill="#f7c767"></circle>
+              <circle cx="334" cy="397" r="11" fill="#f7c767"></circle>
+              <circle cx="390" cy="397" r="11" fill="#f7c767"></circle>
+              <circle cx="446" cy="397" r="11" fill="#f7c767"></circle>
+              <circle cx="502" cy="397" r="11" fill="#f7c767"></circle>
+              <circle cx="558" cy="397" r="11" fill="#f7c767"></circle>
+              <circle cx="614" cy="397" r="11" fill="#f7c767"></circle>
+              <circle cx="670" cy="397" r="11" fill="#f7c767"></circle>
+              <circle cx="726" cy="397" r="11" fill="#f7c767"></circle>
+              <circle cx="782" cy="397" r="11" fill="#f7c767"></circle>
+              <circle cx="838" cy="397" r="11" fill="#f7c767"></circle>
+              <circle cx="894" cy="397" r="11" fill="#f7c767"></circle>
+              <circle cx="950" cy="397" r="11" fill="#f7c767"></circle>
+            </g>
+            <text x="32" y="333" class="small-label">smooth ER membrane in a liver cell</text>
+          </g>
+
+          <g id="enzymeLayer" aria-label="CYP450 enzyme">
+            <path d="M370,190 C390,140 465,126 520,148 C566,112 645,160 638,228 C686,272 658,352 598,358 C575,400 476,405 449,363 C392,363 346,314 361,260 C342,235 347,205 370,190 Z"
+                  fill="#78bd73" stroke="#2f7a53" stroke-width="5"></path>
+            <path d="M420,338 C438,374 560,374 585,336 L588,405 L416,405 Z" fill="#5ca966" stroke="#2f7a53" stroke-width="4"></path>
+            <ellipse id="activeGlow" cx="500" cy="248" rx="77" ry="57" fill="none" stroke="#f3d34a" stroke-width="9" opacity="0"></ellipse>
+            <path id="activePocket" d="M442,220 C468,188 530,188 558,220 C548,259 524,284 496,286 C468,284 448,258 442,220 Z"
+                  fill="#ffffff" stroke="#185d5f" stroke-width="5"></path>
+            <circle cx="500" cy="230" r="20" fill="#b84d3f" stroke="#7c2f2a" stroke-width="4"></circle>
+            <text x="500" y="130" text-anchor="middle" class="label">CYP450 enzyme</text>
+            <g id="activeSiteLabel" opacity="0.65">
+              <path d="M642,174 C602,177 562,199 531,220" class="arrow" marker-end="url(#arrowHead)"></path>
+              <text x="646" y="170" class="small-label">CYP450 active site</text>
+            </g>
+          </g>
+
+          <g id="substrateArrow">
+            <path d="M132,232 C210,194 300,204 376,233" class="arrow"></path>
+          </g>
+
+          <g id="nadphArrow" opacity="0">
+            <path d="M812,132 C746,142 684,180 614,222" class="arrow"></path>
+          </g>
+
+          <g id="oxygenArrow" opacity="0">
+            <path d="M226,92 C306,104 389,144 458,202" class="arrow"></path>
+          </g>
+
+          <g id="productArrow" opacity="0">
+            <path d="M580,260 C650,245 716,241 790,250" class="arrow"></path>
+          </g>
+
+          <g id="substrateGroup">
+            <g id="substrateShape">
+              <polygon points="-38,-18 0,-40 38,-18 38,22 0,44 -38,22" fill="#f0c44c" stroke="#856a18" stroke-width="4"></polygon>
+              <circle cx="-18" cy="-4" r="11" fill="#6e7577"></circle>
+              <circle cx="15" cy="9" r="11" fill="#6e7577"></circle>
+              <line x1="-8" y1="3" x2="5" y2="6" stroke="#4f5758" stroke-width="5" stroke-linecap="round"></line>
+            </g>
+            <g id="substrateOH" opacity="0">
+              <line x1="35" y1="-12" x2="61" y2="-32" stroke="#d84040" stroke-width="6" stroke-linecap="round"></line>
+              <circle cx="70" cy="-38" r="15" fill="#f06b59" stroke="#a72d2d" stroke-width="4"></circle>
+              <text x="48" y="-61" class="tiny-label">-OH</text>
+            </g>
+          </g>
+
+          <g id="substrateLabel" opacity="1">
+            <text x="48" y="170" class="small-label">Non-polar substrate</text>
+            <text x="63" y="198" class="tiny-label">Poorly water soluble</text>
+          </g>
+
+          <g id="oxygenGroup" opacity="0">
+            <circle cx="-18" cy="0" r="20" fill="#73bdf2" stroke="#2582c4" stroke-width="5"></circle>
+            <circle cx="20" cy="0" r="20" fill="#73bdf2" stroke="#2582c4" stroke-width="5"></circle>
+            <line x1="2" y1="0" x2="0" y2="0" stroke="#2582c4" stroke-width="7" stroke-linecap="round"></line>
+            <text x="-23" y="8" class="tiny-label">O</text>
+            <text x="15" y="8" class="tiny-label">O</text>
+            <text x="-36" y="-36" class="small-label">O<tspan baseline-shift="sub" font-size="15">2</tspan></text>
+          </g>
+
+          <g id="nadphGroup" opacity="0">
+            <rect x="-58" y="-24" width="116" height="48" rx="18" fill="#cdb5ef" stroke="#8b5bb4" stroke-width="5"></rect>
+            <text x="0" y="8" text-anchor="middle" class="tiny-label">NADPH</text>
+            <text x="-60" y="-39" class="tiny-label">Electron donor</text>
+          </g>
+
+          <g id="nadpGroup" opacity="0">
+            <rect x="-48" y="-21" width="96" height="42" rx="16" fill="#e8ddf6" stroke="#8b5bb4" stroke-width="4"></rect>
+            <text x="0" y="7" text-anchor="middle" class="tiny-label">NADP<tspan baseline-shift="super" font-size="12">+</tspan></text>
+          </g>
+
+          <g id="electronSparks" opacity="0">
+            <circle class="spark" cx="624" cy="206" r="7" fill="#f3d34a"></circle>
+            <circle class="spark" cx="588" cy="224" r="6" fill="#f3d34a"></circle>
+            <circle class="spark" cx="552" cy="232" r="5" fill="#f3d34a"></circle>
+          </g>
+
+          <g id="oxygenTransfer" opacity="0">
+            <circle cx="0" cy="0" r="14" fill="#f06b59" stroke="#a72d2d" stroke-width="4"></circle>
+            <text x="-5" y="6" class="tiny-label">O</text>
+          </g>
+
+          <g id="waterGroup" opacity="0">
+            <circle cx="0" cy="0" r="15" fill="#73bdf2" stroke="#2582c4" stroke-width="4"></circle>
+            <circle cx="-18" cy="17" r="8" fill="#e9fbff" stroke="#69b9d6" stroke-width="3"></circle>
+            <circle cx="18" cy="17" r="8" fill="#e9fbff" stroke="#69b9d6" stroke-width="3"></circle>
+            <text x="-24" y="-24" class="tiny-label">H<tspan baseline-shift="sub" font-size="12">2</tspan>O</text>
+          </g>
+
+          <g id="reactionCallout" opacity="0">
+            <rect x="252" y="40" width="496" height="54" rx="8" fill="#fff7d6" stroke="#e1bc40" stroke-width="3"></rect>
+            <text x="500" y="75" text-anchor="middle" class="callout-text">CYP450 adds oxygen to the substrate.</text>
+          </g>
+
+          <g id="productGroup" opacity="0">
+            <polygon points="-38,-18 0,-40 38,-18 38,22 0,44 -38,22" fill="#ffd86b" stroke="#856a18" stroke-width="4"></polygon>
+            <circle cx="-18" cy="-4" r="11" fill="#6e7577"></circle>
+            <circle cx="15" cy="9" r="11" fill="#6e7577"></circle>
+            <line x1="-8" y1="3" x2="5" y2="6" stroke="#4f5758" stroke-width="5" stroke-linecap="round"></line>
+            <line x1="35" y1="-12" x2="61" y2="-32" stroke="#d84040" stroke-width="6" stroke-linecap="round"></line>
+            <circle cx="70" cy="-38" r="15" fill="#f06b59" stroke="#a72d2d" stroke-width="4"></circle>
+            <text x="47" y="-60" class="tiny-label">-OH</text>
+            <text x="70" y="-63" class="tiny-label" fill="#a72d2d">&delta;-</text>
+            <text x="-37" y="60" class="tiny-label" fill="#a72d2d">&delta;+</text>
+          </g>
+
+          <g id="waterCluster" opacity="0">
+            <g transform="translate(690 183)">
+              <g class="water-float">
+              <circle cx="0" cy="0" r="12" fill="#73bdf2" stroke="#2582c4" stroke-width="3"></circle>
+              <circle cx="-12" cy="12" r="6" fill="#e9fbff" stroke="#69b9d6" stroke-width="2"></circle>
+              <circle cx="13" cy="12" r="6" fill="#e9fbff" stroke="#69b9d6" stroke-width="2"></circle>
+              </g>
+            </g>
+            <g transform="translate(850 177)">
+              <g class="water-float">
+              <circle cx="0" cy="0" r="12" fill="#73bdf2" stroke="#2582c4" stroke-width="3"></circle>
+              <circle cx="-12" cy="12" r="6" fill="#e9fbff" stroke="#69b9d6" stroke-width="2"></circle>
+              <circle cx="13" cy="12" r="6" fill="#e9fbff" stroke="#69b9d6" stroke-width="2"></circle>
+              </g>
+            </g>
+            <g transform="translate(700 332)">
+              <g class="water-float">
+              <circle cx="0" cy="0" r="12" fill="#73bdf2" stroke="#2582c4" stroke-width="3"></circle>
+              <circle cx="-12" cy="12" r="6" fill="#e9fbff" stroke="#69b9d6" stroke-width="2"></circle>
+              <circle cx="13" cy="12" r="6" fill="#e9fbff" stroke="#69b9d6" stroke-width="2"></circle>
+              </g>
+            </g>
+            <g transform="translate(870 322)">
+              <g class="water-float">
+              <circle cx="0" cy="0" r="12" fill="#73bdf2" stroke="#2582c4" stroke-width="3"></circle>
+              <circle cx="-12" cy="12" r="6" fill="#e9fbff" stroke="#69b9d6" stroke-width="2"></circle>
+              <circle cx="13" cy="12" r="6" fill="#e9fbff" stroke="#69b9d6" stroke-width="2"></circle>
+              </g>
+            </g>
+          </g>
+
+          <g id="productLabel" opacity="0">
+            <text x="802" y="370" text-anchor="middle" class="small-label">More polar product</text>
+            <text x="802" y="402" text-anchor="middle" class="tiny-label">More water soluble</text>
+            <text x="802" y="430" text-anchor="middle" class="tiny-label">Easier to move toward elimination</text>
+          </g>
+
+          <g id="competitionLayer" opacity="0" aria-label="Competition mode">
+            <rect x="20" y="422" width="554" height="70" rx="8" fill="#fff2e9" stroke="#e46f4a" stroke-width="3"></rect>
+            <text x="40" y="451" class="tiny-label">Some drugs or molecules compete for the CYP450 active site,</text>
+            <text x="40" y="476" class="tiny-label">slowing metabolism of other substrates.</text>
+
+            <g transform="translate(502 247)">
+              <g class="pulse">
+              <polygon points="-34,-27 14,-36 44,-2 27,36 -26,35 -48,0" fill="#e46f4a" stroke="#9f3f28" stroke-width="5"></polygon>
+              <text x="0" y="8" text-anchor="middle" class="tiny-label">block</text>
+              </g>
+            </g>
+            <g transform="translate(338 270)">
+              <polygon points="-31,-15 0,-34 31,-15 31,19 0,37 -31,19" fill="#f0c44c" stroke="#856a18" stroke-width="4"></polygon>
+              <text x="-62" y="68" class="tiny-label">Main substrate</text>
+              <path d="M55,-2 C82,-2 100,-2 122,-2" class="arrow"></path>
+              <line x1="91" y1="-36" x2="91" y2="36" stroke="#c04235" stroke-width="9" stroke-linecap="round"></line>
+            </g>
+            <path d="M600,288 C565,275 540,263 520,252" fill="none" stroke="#9f3f28" stroke-width="4" marker-end="url(#redArrowHead)"></path>
+            <text x="610" y="290" class="tiny-label">Competing substrate or inhibitor</text>
+
+            <g transform="translate(724 421)">
+              <text x="0" y="0" class="tiny-label">Reaction rate decreases</text>
+              <rect x="0" y="15" width="204" height="24" rx="12" fill="#f1e8e4" stroke="#c9b7b0" stroke-width="2"></rect>
+              <rect x="0" y="15" width="68" height="24" rx="12" fill="#d65f4a"></rect>
+              <text x="82" y="35" class="tiny-label">slower</text>
+            </g>
+          </g>
+        </svg>
+      </section>
+
+      <aside class="info-panel" aria-live="polite" aria-label="Step explanation">
+        <h2 id="stepTitle">Step 1: Non-polar substrate approaches CYP450</h2>
+        <p id="stepText">Many CYP450 substrates are non-polar molecules, including many drugs, toxins, and hormones.</p>
+        <p id="competitionNote" class="mode-note">Another molecule can compete for the active site, reducing metabolism of the original substrate.</p>
+        <p id="regulationNote" class="mode-note">Changing the number or activity of CYP450 enzymes changes how quickly substrates are metabolized.</p>
+      </aside>
+    </main>
+
+    <section id="regulationPanel" class="regulation-panel" aria-label="Enzyme regulation display">
+      <h2>Enzyme regulation changes metabolism speed</h2>
+      <div class="reg-grid">
+        <div class="reg-mini">
+          <svg viewBox="0 0 560 250" role="img" aria-label="Upregulation increases CYP450 activity">
+            <rect width="560" height="250" fill="#fcfffd"></rect>
+            <text x="24" y="34" class="small-label">Upregulation: more CYP450 enzyme made</text>
+            <rect x="0" y="152" width="560" height="44" fill="#ffe3a2"></rect>
+            <g transform="translate(88 130)">
+              <path d="M-36,-34 C-12,-58 34,-50 44,-16 C68,4 46,46 8,42 C-28,50 -62,20 -48,-12 C-56,-24 -48,-34 -36,-34 Z" fill="#78bd73" stroke="#2f7a53" stroke-width="4"></path>
+              <ellipse cx="0" cy="-4" rx="24" ry="17" fill="#ffffff" stroke="#185d5f" stroke-width="3"></ellipse>
+            </g>
+            <g transform="translate(178 130)">
+              <path d="M-36,-34 C-12,-58 34,-50 44,-16 C68,4 46,46 8,42 C-28,50 -62,20 -48,-12 C-56,-24 -48,-34 -36,-34 Z" fill="#78bd73" stroke="#2f7a53" stroke-width="4"></path>
+              <ellipse cx="0" cy="-4" rx="24" ry="17" fill="#ffffff" stroke="#185d5f" stroke-width="3"></ellipse>
+            </g>
+            <g transform="translate(268 130)">
+              <path d="M-36,-34 C-12,-58 34,-50 44,-16 C68,4 46,46 8,42 C-28,50 -62,20 -48,-12 C-56,-24 -48,-34 -36,-34 Z" fill="#78bd73" stroke="#2f7a53" stroke-width="4"></path>
+              <ellipse cx="0" cy="-4" rx="24" ry="17" fill="#ffffff" stroke="#185d5f" stroke-width="3"></ellipse>
+            </g>
+            <g transform="translate(358 130)">
+              <path d="M-36,-34 C-12,-58 34,-50 44,-16 C68,4 46,46 8,42 C-28,50 -62,20 -48,-12 C-56,-24 -48,-34 -36,-34 Z" fill="#78bd73" stroke="#2f7a53" stroke-width="4"></path>
+              <ellipse cx="0" cy="-4" rx="24" ry="17" fill="#ffffff" stroke="#185d5f" stroke-width="3"></ellipse>
+            </g>
+            <g class="spark">
+              <circle cx="434" cy="104" r="12" fill="#ffd86b" stroke="#856a18" stroke-width="3"></circle>
+              <circle cx="462" cy="104" r="12" fill="#ffd86b" stroke="#856a18" stroke-width="3"></circle>
+              <circle cx="490" cy="104" r="12" fill="#ffd86b" stroke="#856a18" stroke-width="3"></circle>
+            </g>
+            <text x="394" y="144" class="tiny-label">faster conversion</text>
+            <text x="28" y="226" class="tiny-label">Rate meter</text>
+            <rect x="146" y="208" width="350" height="24" rx="12" fill="#e7eee9" stroke="#bdd2c7" stroke-width="2"></rect>
+            <rect x="146" y="208" width="304" height="24" rx="12" fill="#3a9b62"></rect>
+          </svg>
+        </div>
+
+        <div class="reg-mini">
+          <svg viewBox="0 0 560 250" role="img" aria-label="Downregulation or inhibition decreases CYP450 activity">
+            <rect width="560" height="250" fill="#fcfffd"></rect>
+            <text x="24" y="31" class="small-label">Downregulation or inhibition:</text>
+            <text x="24" y="58" class="small-label">less CYP450 activity</text>
+            <rect x="0" y="152" width="560" height="44" fill="#ffe3a2"></rect>
+            <g transform="translate(135 130)" opacity="0.95">
+              <path d="M-36,-34 C-12,-58 34,-50 44,-16 C68,4 46,46 8,42 C-28,50 -62,20 -48,-12 C-56,-24 -48,-34 -36,-34 Z" fill="#78bd73" stroke="#2f7a53" stroke-width="4"></path>
+              <ellipse cx="0" cy="-4" rx="24" ry="17" fill="#ffffff" stroke="#185d5f" stroke-width="3"></ellipse>
+            </g>
+            <g transform="translate(260 130)" opacity="0.28">
+              <path d="M-36,-34 C-12,-58 34,-50 44,-16 C68,4 46,46 8,42 C-28,50 -62,20 -48,-12 C-56,-24 -48,-34 -36,-34 Z" fill="#78bd73" stroke="#2f7a53" stroke-width="4"></path>
+              <ellipse cx="0" cy="-4" rx="24" ry="17" fill="#ffffff" stroke="#185d5f" stroke-width="3"></ellipse>
+              <line x1="-42" y1="-44" x2="50" y2="42" stroke="#c04235" stroke-width="8" stroke-linecap="round"></line>
+            </g>
+            <g opacity="0.8">
+              <circle cx="380" cy="106" r="12" fill="#ffd86b" stroke="#856a18" stroke-width="3"></circle>
+            </g>
+            <text x="332" y="144" class="tiny-label">slower conversion</text>
+            <text x="28" y="226" class="tiny-label">Rate meter</text>
+            <rect x="146" y="208" width="350" height="24" rx="12" fill="#e7eee9" stroke="#bdd2c7" stroke-width="2"></rect>
+            <rect x="146" y="208" width="92" height="24" rx="12" fill="#d65f4a"></rect>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <nav class="controls" aria-label="Animation controls">
+      <button id="playPause" class="primary" type="button">Pause</button>
+      <button id="resetButton" type="button">Reset</button>
+      <button id="stepButton" type="button">Step Forward</button>
+      <label class="toggle">
+        <input id="competitionToggle" type="checkbox" />
+        <span>Show competition</span>
+      </label>
+      <label class="toggle">
+        <input id="regulationToggle" type="checkbox" />
+        <span>Show enzyme regulation</span>
+      </label>
+    </nav>
+  </div>
+
+  <script>
+    const steps = {
+      1: {
+        title: "Step 1: Non-polar substrate approaches CYP450",
+        text: "Many CYP450 substrates are non-polar molecules, including many drugs, toxins, and hormones."
+      },
+      2: {
+        title: "Step 2: Substrate binds active site",
+        text: "The substrate binds inside the CYP450 active site."
+      },
+      3: {
+        title: "Step 3: NADPH and O\u2082 enter the reaction",
+        text: "O\u2082 and NADPH are required. NADPH provides electrons that help activate oxygen."
+      },
+      4: {
+        title: "Step 4: Oxygen is added to the substrate",
+        text: "One oxygen atom is added to the substrate. The other oxygen atom is reduced to water."
+      },
+      5: {
+        title: "Step 5: Product becomes more polar",
+        text: "The product is now more polar, often because it gained an oxygen-containing group such as \u2013OH."
+      }
+    };
+
+    const el = (id) => document.getElementById(id);
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+    const lerp = (start, end, t) => start + (end - start) * t;
+    const ease = (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+    const state = {
+      step: 1,
+      progress: 0,
+      playing: true,
+      lastTime: null,
+      competition: false,
+      regulation: false
+    };
+
+    const duration = 5200;
+
+    function setTransform(id, x, y, scale = 1) {
+      el(id).setAttribute("transform", `translate(${x} ${y}) scale(${scale})`);
+    }
+
+    function setOpacity(id, value) {
+      el(id).style.opacity = String(clamp(value, 0, 1));
+    }
+
+    function setDisplay(id, show) {
+      el(id).style.display = show ? "" : "none";
+    }
+
+    function updateText() {
+      el("stepTitle").textContent = steps[state.step].title;
+      el("stepText").textContent = steps[state.step].text;
+      el("competitionNote").classList.toggle("visible", state.competition);
+      el("regulationNote").classList.toggle("visible", state.regulation);
+      el("competitionFlag").classList.toggle("visible", state.competition);
+      el("regulationFlag").classList.toggle("visible", state.regulation);
+      document.querySelectorAll("[data-step-pill]").forEach((pill) => {
+        pill.classList.toggle("active", Number(pill.dataset.stepPill) === state.step);
+      });
+    }
+
+    function updateScene() {
+      const p = ease(state.progress);
+      const raw = state.progress;
+
+      updateText();
+
+      setOpacity("activeGlow", state.step === 2 ? 0.9 : state.step === 4 ? 0.5 : 0);
+      el("activeGlow").classList.toggle("pulse", state.step === 2 || state.step === 4);
+      setOpacity("activeSiteLabel", state.step >= 2 ? 1 : 0.65);
+
+      setOpacity("substrateArrow", state.step <= 2 ? 0.95 : 0.15);
+      setOpacity("oxygenArrow", state.step === 3 ? 0.95 : 0);
+      setOpacity("nadphArrow", state.step === 3 ? 0.95 : 0);
+      setOpacity("productArrow", state.step === 5 ? 0.95 : 0);
+
+      let substrateX = 120;
+      let substrateY = 252;
+      let substrateScale = 1;
+      let substrateOpacity = 1;
+      let ohOpacity = 0;
+
+      if (state.step === 1) {
+        substrateX = lerp(120, 342, p);
+        substrateY = 252 - Math.sin(raw * Math.PI) * 18;
+      } else if (state.step === 2) {
+        substrateX = lerp(342, 492, p);
+        substrateY = lerp(242, 250, p);
+        substrateScale = lerp(1, 0.82, p);
+      } else if (state.step === 3) {
+        substrateX = 492;
+        substrateY = 250;
+        substrateScale = 0.82;
+      } else if (state.step === 4) {
+        substrateX = 492;
+        substrateY = 250;
+        substrateScale = 0.82;
+        ohOpacity = clamp((raw - 0.45) / 0.28, 0, 1);
+      } else {
+        substrateOpacity = 0;
+      }
+
+      setTransform("substrateGroup", substrateX, substrateY, substrateScale);
+      setOpacity("substrateGroup", substrateOpacity);
+      setOpacity("substrateOH", ohOpacity);
+      setOpacity("substrateLabel", state.step === 1 ? 1 : state.step === 2 ? 0.72 : 0);
+
+      let oxygenOpacity = 0;
+      let oxygenX = 226;
+      let oxygenY = 92;
+      if (state.step === 3) {
+        oxygenOpacity = 1;
+        oxygenX = lerp(226, 510, p);
+        oxygenY = lerp(92, 190, p);
+      } else if (state.step === 4) {
+        oxygenOpacity = 1 - clamp((raw - 0.28) / 0.55, 0, 1);
+        oxygenX = 510;
+        oxygenY = 190;
+      }
+      setTransform("oxygenGroup", oxygenX, oxygenY);
+      setOpacity("oxygenGroup", oxygenOpacity);
+
+      let nadphOpacity = 0;
+      let nadphX = 820;
+      let nadphY = 128;
+      let nadpOpacity = 0;
+      if (state.step === 3) {
+        nadphOpacity = 1 - clamp((raw - 0.62) / 0.3, 0, 1);
+        nadphX = lerp(820, 612, p);
+        nadphY = lerp(128, 214, p);
+        nadpOpacity = clamp((raw - 0.58) / 0.25, 0, 1);
+      } else if (state.step === 4) {
+        nadpOpacity = 0.9;
+      }
+      setTransform("nadphGroup", nadphX, nadphY);
+      setOpacity("nadphGroup", nadphOpacity);
+      setTransform("nadpGroup", state.step === 3 ? lerp(628, 744, p) : 744, state.step === 3 ? lerp(210, 125, p) : 125);
+      setOpacity("nadpGroup", nadpOpacity);
+      setOpacity("electronSparks", state.step === 3 ? clamp((raw - 0.25) / 0.4, 0, 1) : 0);
+
+      if (state.step === 4) {
+        const t = clamp((raw - 0.12) / 0.58, 0, 1);
+        const ox = lerp(510, 552, ease(t));
+        const oy = lerp(190, 218, ease(t));
+        setTransform("oxygenTransfer", ox, oy);
+        setOpacity("oxygenTransfer", t > 0 && t < 0.98 ? 1 : 0);
+        setTransform("waterGroup", lerp(540, 626, p), lerp(184, 132, p));
+        setOpacity("waterGroup", clamp((raw - 0.48) / 0.2, 0, 1));
+      } else {
+        setOpacity("oxygenTransfer", 0);
+        setOpacity("waterGroup", 0);
+      }
+
+      setOpacity("reactionCallout", state.step === 4 ? clamp((raw - 0.18) / 0.24, 0, 1) : 0);
+
+      if (state.step === 5) {
+        const productX = lerp(510, 796, p);
+        const productY = lerp(250, 258, p);
+        setTransform("productGroup", productX, productY);
+        setOpacity("productGroup", 1);
+        setOpacity("waterCluster", clamp((raw - 0.35) / 0.28, 0, 1));
+        setOpacity("productLabel", clamp((raw - 0.32) / 0.22, 0, 1));
+      } else {
+        setOpacity("productGroup", 0);
+        setOpacity("waterCluster", 0);
+        setOpacity("productLabel", 0);
+      }
+
+      setOpacity("competitionLayer", state.competition ? 1 : 0);
+      el("competitionLayer").style.pointerEvents = state.competition ? "auto" : "none";
+      el("regulationPanel").classList.toggle("visible", state.regulation);
+      el("playPause").textContent = state.playing ? "Pause" : "Play";
+      el("playPause").classList.toggle("primary", state.playing);
+    }
+
+    function stepForward() {
+      state.step = state.step === 5 ? 1 : state.step + 1;
+      state.progress = 0.62;
+      updateScene();
+    }
+
+    function resetAnimation() {
+      state.step = 1;
+      state.progress = 0;
+      state.playing = true;
+      state.lastTime = null;
+      updateScene();
+    }
+
+    function frame(time) {
+      if (state.lastTime === null) {
+        state.lastTime = time;
+      }
+      const delta = time - state.lastTime;
+      state.lastTime = time;
+
+      if (state.playing) {
+        state.progress += delta / duration;
+        if (state.progress >= 1) {
+          state.progress = 0;
+          state.step = state.step === 5 ? 1 : state.step + 1;
+        }
+      }
+
+      updateScene();
+      requestAnimationFrame(frame);
+    }
+
+    el("playPause").addEventListener("click", () => {
+      state.playing = !state.playing;
+      state.lastTime = null;
+      updateScene();
+    });
+
+    el("resetButton").addEventListener("click", resetAnimation);
+
+    el("stepButton").addEventListener("click", () => {
+      state.playing = false;
+      stepForward();
+    });
+
+    el("competitionToggle").addEventListener("change", (event) => {
+      state.competition = event.target.checked;
+      updateScene();
+    });
+
+    el("regulationToggle").addEventListener("change", (event) => {
+      state.regulation = event.target.checked;
+      updateScene();
+    });
+
+    updateScene();
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>
