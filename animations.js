@@ -28,7 +28,7 @@ window.ANIMATIONS = [
     "url": "animations/Cell_Biology_Chemistry/endosymbiosis.html"
   },
   {
-    "title": "pH Buffers Animation",
+    "title": "pH and buffers",
     "category": "Cell_Biology_Chemistry",
     "categoryLabel": "Cell Biology Chemistry",
     "file": "ph-buffers-animation.html",
