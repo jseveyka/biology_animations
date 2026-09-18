@@ -35,8 +35,8 @@ Molecular Genetics Genomic Diversity	Gene Duplication Animation	animations/Molec
 Molecular Genetics Genomic Diversity	Gene Expression Control	animations/Molecular_Genetics_Genomic_Diversity/gene-expression-control.html
 Molecular Genetics Genomic Diversity	Histone Modification DNA Compression	animations/Molecular_Genetics_Genomic_Diversity/histone-modification-dna-compression.html
 Molecular Genetics Genomic Diversity	Horizontal Gene Transfer Animation	animations/Molecular_Genetics_Genomic_Diversity/horizontal_gene_transfer_animation.html
-Blood	Blood Transfusion	animations/Physiology_Blood/Blood_transfusion.html
-Blood	Blood Typing	animations/Physiology_Blood/blood_typing.html
+Physiology Blood	Blood Transfusion	animations/Physiology_Blood/Blood_transfusion.html
+Physiology Blood	Blood Typing	animations/Physiology_Blood/blood_typing.html
 Physiology Cardiovascular	Baroreceptor Chemoreceptor Reflexes	animations/Physiology_Cardiovascular/baroreceptor_chemoreceptor_reflexes.html
 Physiology Cardiovascular	Blood Pressure Control	animations/Physiology_Cardiovascular/blood-pressure-control.html
 Physiology Cardiovascular	Blood Pressure Measurement	animations/Physiology_Cardiovascular/blood-pressure-measurement.html
