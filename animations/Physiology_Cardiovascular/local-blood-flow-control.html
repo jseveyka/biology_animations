@@ -1,3 +1,6 @@
+Use **Copy code** below, then replace the entire contents of the GitHub file with it.
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -413,7 +416,7 @@
     const state = {
       mode: "metabolic",
       metabolic: { ...metabolicDefaults },
-      myogenic: { ...myogenicDefaults },
+      myogenic: { ...myogenicDefaults, previousPressure: 50, responseDelay: 0 },
       target: {
         diameter: 40,
         sphincter: 0.5,
@@ -537,23 +540,33 @@
       state.target.contraction = 1 - dilation;
     }
 
-    function updateMyogenicControl() {
-      const pressure = state.myogenic.pressure / 100;
-      const relaxation = 1 - pressure;
-
-      state.target.diameter = 24 + relaxation * 34;
-      state.target.sphincter = 0.30 + relaxation * 0.55;
-      state.target.flow = 0.18 + relaxation * 0.76;
+    function updateMyogenicControl(dt = 0) {
+      const model = state.myogenic;
+      const pressureRatio = (50 + model.pressure) / 100;
+      const baselineDiameter = 41;
+      // Hold muscle tone for two simulation seconds after each pressure change.
+      if (model.pressure !== model.previousPressure) {
+        model.previousPressure = model.pressure;
+        model.responseDelay = 2;
+      }
+      model.responseDelay = Math.max(0, model.responseDelay - dt);
+      const compensatedDiameter = baselineDiameter * Math.pow(1 / pressureRatio, 0.25);
+      if (model.responseDelay === 0) {
+        state.target.diameter = lerp(state.target.diameter, compensatedDiameter, 1 - Math.exp(-dt / 1.1));
+      }
+      // Pressure changes flow first; resistance changes later with actual radius.
+      state.target.flow = clamp(0.5 * pressureRatio * Math.pow(state.visual.diameter / baselineDiameter, 4));
+      state.target.sphincter = 0.575;
       state.target.demand = 0.5;
-      state.target.stretch = pressure;
-      state.target.contraction = pressure;
+      state.target.stretch = model.pressure / 100;
+      state.target.contraction = clamp(0.5 + (baselineDiameter - state.visual.diameter) / 20);
     }
 
-    function updateModeModel() {
+    function updateModeModel(dt = 0) {
       if (state.mode === "metabolic") {
         updateMetabolicControl();
       } else {
-        updateMyogenicControl();
+        updateMyogenicControl(dt);
       }
     }
 
@@ -972,12 +985,22 @@
         elements.explanationText.textContent = "Metabolically active tissues release more CO2, produce more acid, and consume more O2. High CO2, low pH, and low O2 relax arteriolar smooth muscle and precapillary sphincters, increasing local blood flow.";
       } else {
         const pressure = state.myogenic.pressure / 100;
-        elements.signalState.textContent = pressure > 0.64 ? "high pressure stretch response" : pressure < 0.36 ? "low pressure, muscle relaxed" : "balanced pressure response";
-        elements.explanationText.textContent = "When blood pressure rises, arteriolar smooth muscle is stretched and responds by contracting. This limits excess flow. When pressure falls, stretch decreases, smooth muscle relaxes, and local flow increases.";
+        const waiting = state.myogenic.responseDelay > 0;
+        const restored = Math.abs(state.target.flow - 0.5) < 0.015;
+        elements.signalState.textContent = waiting ? "pressure changed; response delayed" : restored ? "flow restored to baseline" : pressure > 0.5 ? "smooth muscle contracting" : "smooth muscle relaxing";
+        elements.arterioleState.textContent = state.visual.diameter > 42 ? "dilated" : state.visual.diameter < 40 ? "constricted" : "baseline diameter";
+        elements.flowState.textContent = restored && !waiting ? "baseline" : state.target.flow > 0.515 ? "above baseline" : state.target.flow < 0.485 ? "below baseline" : "baseline";
+        elements.explanationText.textContent = "When blood pressure rises, stretch increases and capillary flow initially becomes faster and greater. After a two-second demonstration delay, arteriolar smooth muscle contracts and flow returns to baseline. When pressure falls, flow initially slows and decreases; after the delay, the arteriole dilates and restores baseline flow. The delay is illustrative, not a fixed physiological response time.";
       }
     }
 
     function setMode(mode) {
+      if (mode === "myogenic" && state.mode !== "myogenic") {
+        state.target.diameter = state.visual.diameter = 41;
+        state.target.flow = state.visual.flow = 0.5;
+        state.myogenic.previousPressure = state.myogenic.pressure;
+        state.myogenic.responseDelay = 2;
+      }
       state.mode = mode;
       elements.metabolicTab.classList.toggle("active", mode === "metabolic");
       elements.myogenicTab.classList.toggle("active", mode === "myogenic");
@@ -1005,7 +1028,9 @@
         elements.phSlider.value = metabolicDefaults.ph;
         elements.o2Slider.value = metabolicDefaults.o2;
       } else {
-        Object.assign(state.myogenic, myogenicDefaults);
+        Object.assign(state.myogenic, myogenicDefaults, { previousPressure: 50, responseDelay: 0 });
+        state.target.diameter = state.visual.diameter = 41;
+        state.target.flow = state.visual.flow = 0.5;
         elements.pressureSlider.value = myogenicDefaults.pressure;
       }
       syncStateFromControls();
@@ -1016,7 +1041,7 @@
       lastTime = now;
       labelUpdateClock += dt;
 
-      updateModeModel();
+      updateModeModel(dt);
       updateVisualState();
       animateRedBloodCellFlow(dt);
       drawCapillaryBed(now);
@@ -1052,3 +1077,4 @@
   </script>
 </body>
 </html>
+```
