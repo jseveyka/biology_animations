@@ -329,6 +329,13 @@ window.ANIMATIONS = [
     "url": "animations/Physiology_Cardiovascular/movement-across-capillaries.html"
   },
   {
+  "title": "Oncotic Pressure",
+  "category": "Physiology_Cardiovascular",
+  "categoryLabel": "Physiology Cardiovascular",
+  "file": "oncotic-pressure.html",
+  "url": "animations/Physiology_Cardiovascular/oncotic-pressure.html"
+},
+  {
     "title": "CYP450 Animation",
     "category": "Physiology_Digestive_Urinary",
     "categoryLabel": "Physiology Digestive Urinary",
