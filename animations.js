@@ -1,5 +1,12 @@
 window.ANIMATIONS = [
   {
+    "title": "Cranial Parasympathetic Pathways",
+    "category": "Anatomy_Nervous_System",
+    "categoryLabel": "Anatomy Nervous System",
+    "file": "parasympathetic-pathways.html",
+    "url": "animations/Anatomy_Nervous_System/parasympathetic-pathways.html"
+  },
+  {
     "title": "Torque Around A Joint",
     "category": "Anatomy_Musculoskeletal",
     "categoryLabel": "Anatomy Musculoskeletal",
